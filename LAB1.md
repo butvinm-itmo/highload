@@ -11,6 +11,7 @@
 Следовать принципам разработки ПО, таким как SOLID, DRY, KISS и др.
 
 При разработке использовать git feature branching strategy. При выборе имен для коммитов необходимо придерживаться [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
+!!! conventional commits только для Squash Commit при влитии Pull Request, промежуточные коммиты в любом формате
 
 Код должен быть покрыт модульными и интеграционными тестами с помощью testcontainers и junit-jupiter-api, берём лучше [отсюда](https://se.ifmo.ru/courses/testing), ещё можно зайти [сюда](https://docs.google.com/presentation/d/1tcPapWwmrAb0Ju88OILOAiOShcTVbHrvw9ZFii2bLpI/edit?usp=sharing). Минимальный общий процент покрытия кода тестами 70%.
 
