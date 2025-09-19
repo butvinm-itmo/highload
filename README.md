@@ -80,38 +80,49 @@ https://github.com/Discipliny/highload_systems
 ```mermaid
 erDiagram
   user {
-    Long id PK
-    String username
+    integer id PK
+    varchar username
+  }
+
+  layout_type {
+    integer id PK
+    varchar name "ONE_CARD, THREE_CARDS, CROSS"
+    integer cards_count
+  }
+
+  arcana_type {
+    integer id PK
+    varchar name "MAJOR, MINOR"
   }
 
   spread {
-    Long id PK
-    String question
-    String layout_type "ONE_CARD, THREE_CARDS, CROSS"
-    Timestamp created_at
-    Long author_id FK
+    integer id PK
+    text question
+    integer layout_type_id FK
+    timestamptz created_at
+    integer author_id FK
   }
 
   interpretation {
-    Long id PK
-    String text
-    Timestamp created_at
-    Long author_id FK
-    Long spread_id FK
+    integer id PK
+    text text
+    timestamptz created_at
+    integer author_id FK
+    integer spread_id FK
   }
 
   card {
-    Integer id PK
-    String name
-    String arcana_type "MAJOR, MINOR"
+    integer id PK
+    varchar name
+    integer arcana_type_id FK
   }
 
   spread_card {
-    Long id PK
-    Long spread_id FK
-    Integer card_id FK
-    Integer position_in_spread
-    Boolean is_reversed
+    integer id PK
+    integer spread_id FK
+    integer card_id FK
+    integer position_in_spread
+    boolean is_reversed
   }
 
   %% Relationships
@@ -120,12 +131,16 @@ erDiagram
   spread ||--o{ interpretation : "has"
   spread ||--o{ spread_card : "consists of"
   card ||--o{ spread_card : "appears in"
+  layout_type ||--o{ spread : "defines"
+  arcana_type ||--o{ card : "categorizes"
 
   %% Additional notes about relationships:
   %% - user to spread: One-to-Many (один пользователь может создать много раскладов)
   %% - user to interpretation: One-to-Many (один пользователь может написать много интерпретаций)
   %% - spread to interpretation: One-to-Many (один расклад может иметь много интерпретаций)
   %% - spread to card: Many-to-Many через spread_card (расклад может содержать много карт, карта может появляться во многих раскладах)
+  %% - layout_type to spread: One-to-Many (один тип раскладки может использоваться во многих раскладах)
+  %% - arcana_type to card: One-to-Many (один тип арканов может включать много карт)
   %% - Unique constraint: author_id + spread_id в таблице interpretation (один пользователь - одна интерпретация на расклад)
 ```
 
