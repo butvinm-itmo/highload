@@ -80,23 +80,23 @@ https://github.com/Discipliny/highload_systems
 ```mermaid
 erDiagram
   user {
-    integer id PK
-    varchar username
+    UUID id PK
+    varchar(128) username
   }
 
   layout_type {
-    integer id PK
-    varchar name "ONE_CARD, THREE_CARDS, CROSS"
+    UUID id PK
+    varchar(32) name "ONE_CARD, THREE_CARDS, CROSS"
     integer cards_count
   }
 
   arcana_type {
-    integer id PK
-    varchar name "MAJOR, MINOR"
+    UUID id PK
+    varchar(16) name "MAJOR, MINOR"
   }
 
   spread {
-    integer id PK
+    UUID id PK
     text question
     integer layout_type_id FK
     timestamptz created_at
@@ -104,23 +104,23 @@ erDiagram
   }
 
   interpretation {
-    integer id PK
+    UUID id PK
     text text
     timestamptz created_at
-    integer author_id FK
-    integer spread_id FK
+    UUID author_id FK
+    UUID spread_id FK
   }
 
   card {
-    integer id PK
-    varchar name
-    integer arcana_type_id FK
+    UUID id PK
+    varchar(128) name
+    UUID arcana_type_id FK
   }
 
   spread_card {
-    integer id PK
-    integer spread_id FK
-    integer card_id FK
+    UUID id PK
+    UUID spread_id FK
+    UUID card_id FK
     integer position_in_spread
     boolean is_reversed
   }
@@ -146,21 +146,21 @@ erDiagram
 
 ## Спецификация API (API Layer)
 
-### Расклады (`/api/spreads`)
+### Расклады (`/api/v0.0.1/spreads`)
 
-#### POST /api/spreads
+#### POST /api/v0.0.1/spreads
 
 - **Назначение:** Создать новый расклад.
 - **Тело запроса:** `{ "userId": number, "question": "string", "layoutType": "ONE_CARD|THREE_CARDS|CROSS" }`
 - **Успешный ответ:** 201 Created с JSON-объектом созданного расклада.
 
-#### GET /api/spreads
+#### GET /api/v0.0.1/spreads
 
 - **Назначение:** Получить постраничный список всех раскладов.
 - **Параметры запроса:** `?page=<номер_страницы>&size=<размер_страницы>`
 - **Успешный ответ:** 200 OK с JSON-массивом раскладов. В HTTP-заголовке ответа должен присутствовать X-Total-Count с общим количеством записей.
 
-#### GET /api/spreads/scroll
+#### GET /api/v0.0.1/spreads/scroll
 
 - **Назначение:** Получить следующую порцию раскладов для "бесконечной прокрутки".
 - **Параметры запроса:**
@@ -169,14 +169,14 @@ erDiagram
 - **Успешный ответ:** 200 OK с JSON-массивом раскладов.
 - **Примечание:** Если параметр `after` не указан, возвращаются самые новые расклады.
 
-#### GET /api/spreads/{id}
+#### GET /api/v0.0.1/spreads/{id}
 
 - **Назначение:** Получить детальную информацию о конкретном раскладе.
 - **Параметр пути:** id (идентификатор расклада).
 - **Успешный ответ:** 200 OK с JSON-объектом расклада.
 - **Ответ в случае ошибки:** 404 Not Found, если расклад не найден.
 
-#### DELETE /api/spreads/{id}
+#### DELETE /api/v0.0.1/spreads/{id}
 
 - **Назначение:** Удалить расклад.
 - **Параметр пути:** id (идентификатор расклада).
@@ -184,9 +184,9 @@ erDiagram
 - **Успешный ответ:** 204 No Content (без тела ответа).
 - **Ответ в случае ошибки:** 403 Forbidden, если пользователь пытается удалить чужой расклад.
 
-### Интерпретации (`/api/spreads/{spreadId}/interpretations`)
+### Интерпретации (`/api/v0.0.1/spreads/{spreadId}/interpretations`)
 
-#### POST /api/spreads/{spreadId}/interpretations
+#### POST /api/v0.0.1/spreads/{spreadId}/interpretations
 
 - **Назначение:** Добавить новую интерпретацию к существующему раскладу.
 - **Параметр пути:** spreadId (идентификатор расклада).
@@ -194,7 +194,7 @@ erDiagram
 - **Успешный ответ:** 201 Created с JSON-объектом созданной интерпретации.
 - **Ответ в случае ошибки:** 409 Conflict, если пользователь уже имеет интерпретацию к этому раскладу.
 
-#### PUT /api/spreads/{spreadId}/interpretations/{id}
+#### PUT /api/v0.0.1/spreads/{spreadId}/interpretations/{id}
 
 - **Назначение:** Обновить текст существующей интерпретации.
 - **Параметры пути:**
@@ -204,7 +204,7 @@ erDiagram
 - **Успешный ответ:** 200 OK с JSON-объектом обновленной интерпретации.
 - **Ответ в случае ошибки:** 403 Forbidden, если пользователь пытается редактировать чужую интерпретацию.
 
-#### DELETE /api/spreads/{spreadId}/interpretations/{id}
+#### DELETE /api/v0.0.1/spreads/{spreadId}/interpretations/{id}
 
 - **Назначение:** Удалить интерпретацию.
 - **Параметры пути:**
@@ -214,29 +214,29 @@ erDiagram
 - **Успешный ответ:** 204 No Content (без тела ответа).
 - **Ответ в случае ошибки:** 403 Forbidden, если пользователь пытается удалить чужую интерпретацию.
 
-### Пользователи (`/api/users`)
+### Пользователи (`/api/v0.0.1/users`)
 
-#### POST /api/users
+#### POST /api/v0.0.1/users
 
 - **Назначение:** Создать нового пользователя.
 - **Тело запроса:** `{ "id": number }`
 - **Успешный ответ:** 201 Created с JSON-объектом созданного пользователя.
 - **Ответ в случае ошибки:** 409 Conflict, если пользователь с таким ID уже существует.
 
-#### GET /api/users
+#### GET /api/v0.0.1/users
 
 - **Назначение:** Получить постраничный список всех пользователей.
 - **Параметры запроса:** `?page=<номер_страницы>&size=<размер_страницы>`
 - **Успешный ответ:** 200 OK с JSON-массивом пользователей.
 
-#### GET /api/users/{id}
+#### GET /api/v0.0.1/users/{id}
 
 - **Назначение:** Получить информацию о пользователе.
 - **Параметр пути:** id (идентификатор пользователя).
 - **Успешный ответ:** 200 OK с JSON-объектом пользователя.
 - **Ответ в случае ошибки:** 404 Not Found, если пользователь не найден.
 
-#### PUT /api/users/{id}
+#### PUT /api/v0.0.1/users/{id}
 
 - **Назначение:** Обновить информацию о пользователе.
 - **Параметр пути:** id (идентификатор пользователя).
@@ -244,7 +244,7 @@ erDiagram
 - **Успешный ответ:** 200 OK с JSON-объектом обновленного пользователя.
 - **Ответ в случае ошибки:** 404 Not Found, если пользователь не найден.
 
-#### DELETE /api/users/{id}
+#### DELETE /api/v0.0.1/users/{id}
 
 - **Назначение:** Удалить пользователя и все связанные с ним данные.
 - **Параметр пути:** id (идентификатор пользователя).
@@ -268,7 +268,7 @@ erDiagram
 #### Получение списка раскладов:
 
 - Система запрашивает из базы данных список раскладов, отсортированный по дате создания (от новых к старым).
-- Для эндпоинта `/api/spreads` дополнительно выполняется запрос на получение общего количества записей в таблице.
+- Для эндпоинта `/api/v0.0.1/spreads` дополнительно выполняется запрос на получение общего количества записей в таблице.
 
 #### Получение одного расклада:
 
