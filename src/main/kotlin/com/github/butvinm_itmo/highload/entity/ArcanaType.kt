@@ -1,7 +1,6 @@
 package com.github.butvinm_itmo.highload.entity
 
 import jakarta.persistence.*
-import org.hibernate.annotations.GenericGenerator
 import java.util.UUID
 
 @Entity
@@ -12,5 +11,5 @@ data class ArcanaType(
     val id: UUID,
     
     @Column(nullable = false, length = 16)
-    val name: String // "MAJOR" или "MINOR"
+    val name: String
 )

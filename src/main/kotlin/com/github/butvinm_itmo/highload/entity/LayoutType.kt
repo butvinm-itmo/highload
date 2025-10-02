@@ -1,7 +1,6 @@
 package com.github.butvinm_itmo.highload.entity
 
 import jakarta.persistence.*
-import org.hibernate.annotations.GenericGenerator
 import java.util.UUID
 
 @Entity
@@ -10,10 +9,10 @@ data class LayoutType(
     @Id
     @Column(columnDefinition = "uuid")
     val id: UUID,
-    
+
     @Column(nullable = false, length = 32)
-    val name: String, // "ONE_CARD", "THREE_CARDS", "CROSS"
-    
+    val name: String,
+
     @Column(name = "cards_count", nullable = false)
     val cardsCount: Int
 )

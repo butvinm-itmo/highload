@@ -1,15 +1,13 @@
 package com.github.butvinm_itmo.highload.entity
 
 import jakarta.persistence.*
-import org.hibernate.annotations.GenericGenerator
 import java.util.UUID
 
 @Entity
 @Table(name = "spread_card")
 data class SpreadCard(
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid")
     val id: UUID? = null,
     

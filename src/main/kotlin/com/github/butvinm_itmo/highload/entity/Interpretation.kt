@@ -1,7 +1,6 @@
 package com.github.butvinm_itmo.highload.entity
 
 import jakarta.persistence.*
-import org.hibernate.annotations.GenericGenerator
 import java.time.Instant
 import java.util.UUID
 
@@ -11,8 +10,7 @@ import java.util.UUID
 )
 data class Interpretation(
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid")
     val id: UUID? = null,
     
