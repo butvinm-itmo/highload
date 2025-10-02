@@ -19,7 +19,7 @@ Key features:
 # Build the project
 ./gradlew build
 
-# Run the application
+# Run the application locally
 ./gradlew bootRun
 
 # Run tests
@@ -27,15 +27,47 @@ Key features:
 
 # Run a single test class
 ./gradlew test --tests "com.github.butvinm_itmo.highload.HighloadApplicationTests"
+
+# Clean build artifacts
+./gradlew clean
 ```
+
+### Docker Commands
+```bash
+# Start database and application with Docker Compose
+docker-compose up -d
+
+# Start only the database (for local development)
+docker-compose up -d postgres
+
+# Stop all services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f app
+```
+
+### Database Setup
+The project uses Flyway for database migrations. Migrations run automatically on application startup. Database configuration can be overridden via environment variables:
+- `DB_NAME` - Database name (default: tarot_db)
+- `DB_USER` - Database username (default: tarot_user)
+- `DB_PASSWORD` - Database password
+- `DB_PORT` - Database port (default: 5432)
+- `APP_PORT` - Application port (default: 8080)
 
 ## Architecture
 
 ### Technology Stack
 - **Language:** Kotlin 2.2.10
-- **Framework:** Spring Boot 4.0.0-M3
+- **Framework:** Spring Boot 3.5.6
 - **Build Tool:** Gradle with Kotlin DSL
 - **JVM:** Java 21
+- **Database:** PostgreSQL 15
+- **Migrations:** Flyway
+- **ORM:** Spring Data JPA with Hibernate
 
 ### Database Schema
 Uses UUID-based identifiers for all entities. Main tables:
@@ -71,9 +103,27 @@ Base path: `/api/v0.0.1`
 - `PUT /users/{id}` - Update user
 - `DELETE /users/{id}` - Delete user with all data (transactional)
 
+### Project Structure
+```
+src/main/kotlin/com/github/butvinm_itmo/highload/
+├── entity/          # JPA entities (User, Spread, Card, etc.)
+├── repository/      # Spring Data JPA repositories (to be implemented)
+├── service/         # Business logic layer (to be implemented)
+└── controller/      # REST API controllers (to be implemented)
+```
+
+Entities use JPA annotations with the following patterns:
+- `@Entity` with `@Table(name = "...")` for table mapping
+- `@Id` with `@GeneratedValue(strategy = GenerationType.UUID)` for primary keys
+- `@ManyToOne(fetch = FetchType.LAZY)` for foreign key relationships
+- `@Column` with explicit `columnDefinition` for text fields and UUIDs
+- Unique constraints defined at table level (e.g., interpretation has unique constraint on author_id + spread_id)
+
 ### Transactional Requirements
 
-Critical operations requiring single transaction:
-1. **Spread creation:** Insert spread + generate cards + link cards in spread_card
-2. **Spread deletion:** Delete interpretations + spread_cards + spread
-3. **User deletion:** Delete user's spreads → interpretations on those spreads → spread_cards + delete user's interpretations on others' spreads + user record
+Critical operations requiring single transaction (mark service methods with `@Transactional`):
+1. **Spread creation:** Insert spread + generate random cards + link cards in spread_card
+2. **Spread deletion:** Delete interpretations + spread_cards + spread (cascade configured in DB)
+3. **User deletion:** Delete user's spreads → interpretations on those spreads → spread_cards + delete user's interpretations on others' spreads + user record (cascade configured in DB)
+
+Database schema enforces referential integrity with `ON DELETE CASCADE` for user-related deletions.
