@@ -121,10 +121,32 @@ Base path: `/api/v0.0.1`
 ```
 src/main/kotlin/com/github/butvinmitmo/highload/
 ├── entity/          # JPA entities (User, Spread, Card, etc.)
+├── dto/             # Data Transfer Objects for API layer
 ├── repository/      # Spring Data JPA repositories (to be implemented)
 ├── service/         # Business logic layer (to be implemented)
 └── controller/      # REST API controllers (to be implemented)
 ```
+
+### DTO Layer
+The project uses DTOs to separate the API layer from the database entities:
+
+**Response DTOs:**
+- `UserDto`, `SpreadDto`, `InterpretationDto`, `CardDto`, `SpreadCardDto`
+- `LayoutTypeDto`, `ArcanaTypeDto`
+- Summary DTOs for optimized list views: `SpreadSummaryDto`, `InterpretationSummaryDto`, `CardSummaryDto`
+
+**Request DTOs:**
+- `CreateUserRequest`, `UpdateUserRequest`
+- `CreateSpreadRequest`
+- `CreateInterpretationRequest`, `UpdateInterpretationRequest`
+
+**Pagination DTOs:**
+- `PageRequest`/`PageResponse` for traditional pagination
+- `ScrollRequest`/`ScrollResponse` for infinite scroll
+
+**Error DTOs:**
+- `ErrorResponse` for general errors
+- `ValidationErrorResponse` for field validation errors
 
 Entities use JPA annotations with the following patterns:
 - `@Entity` with `@Table(name = "...")` for table mapping
@@ -151,3 +173,4 @@ Critical operations requiring single transaction (mark service methods with `@Tr
 3. **User deletion:** Delete user's spreads → interpretations on those spreads → spread_cards + delete user's interpretations on others' spreads + user record (cascade configured in DB)
 
 Database schema enforces referential integrity with `ON DELETE CASCADE` for user-related deletions.
+- when using git add specify files explicitly
