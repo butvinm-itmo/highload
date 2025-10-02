@@ -26,10 +26,23 @@ Key features:
 ./gradlew test
 
 # Run a single test class
-./gradlew test --tests "com.github.butvinm_itmo.highload.HighloadApplicationTests"
+./gradlew test --tests "com.github.butvinmitmo.highload.HighloadApplicationTests"
 
 # Clean build artifacts
 ./gradlew clean
+```
+
+### Code Quality
+```bash
+# Run ktlint checks
+./gradlew ktlintCheck
+
+# Auto-format code with ktlint
+./gradlew ktlintFormat
+
+# Run ktlint check for specific source set
+./gradlew ktlintMainSourceSetCheck
+./gradlew ktlintTestSourceSetCheck
 ```
 
 ### Docker Commands
@@ -68,6 +81,7 @@ The project uses Flyway for database migrations. Migrations run automatically on
 - **Database:** PostgreSQL 15
 - **Migrations:** Flyway
 - **ORM:** Spring Data JPA with Hibernate
+- **Code Style:** ktlint 1.5.0 (enforced via Gradle plugin)
 
 ### Database Schema
 Uses UUID-based identifiers for all entities. Main tables:
@@ -105,7 +119,7 @@ Base path: `/api/v0.0.1`
 
 ### Project Structure
 ```
-src/main/kotlin/com/github/butvinm_itmo/highload/
+src/main/kotlin/com/github/butvinmitmo/highload/
 ├── entity/          # JPA entities (User, Spread, Card, etc.)
 ├── repository/      # Spring Data JPA repositories (to be implemented)
 ├── service/         # Business logic layer (to be implemented)
@@ -118,6 +132,16 @@ Entities use JPA annotations with the following patterns:
 - `@ManyToOne(fetch = FetchType.LAZY)` for foreign key relationships
 - `@Column` with explicit `columnDefinition` for text fields and UUIDs
 - Unique constraints defined at table level (e.g., interpretation has unique constraint on author_id + spread_id)
+
+### Code Style Guidelines
+The project uses ktlint for enforcing Kotlin code style. Key rules:
+- No wildcard imports (use explicit imports)
+- Files must end with a newline
+- Proper indentation (4 spaces)
+- Trailing commas in multi-line parameter lists
+- No trailing whitespace
+
+The build will fail if ktlint checks don't pass. Run `./gradlew ktlintFormat` before committing to auto-fix most issues.
 
 ### Transactional Requirements
 
