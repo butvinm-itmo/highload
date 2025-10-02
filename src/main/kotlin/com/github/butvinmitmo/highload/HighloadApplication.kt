@@ -1,4 +1,4 @@
-package com.github.butvinm_itmo.highload
+package com.github.butvinmitmo.highload
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -10,12 +10,10 @@ class HighloadApplication
 
 @RestController
 class BlogController {
-  @GetMapping("/")
-  fun blog(): String {
-    return "blog"
-  }
+    @GetMapping("/")
+    fun blog(): String = "blog"
 }
 
 fun main(args: Array<String>) {
-	runApplication<HighloadApplication>(*args)
+    runApplication<HighloadApplication>(*args)
 }
