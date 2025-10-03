@@ -122,7 +122,7 @@ Base path: `/api/v0.0.1`
 src/main/kotlin/com/github/butvinmitmo/highload/
 ├── entity/          # JPA entities (User, Spread, Card, etc.)
 ├── dto/             # Data Transfer Objects for API layer
-├── repository/      # Spring Data JPA repositories (to be implemented)
+├── repository/      # Spring Data JPA repositories
 ├── service/         # Business logic layer (to be implemented)
 └── controller/      # REST API controllers (to be implemented)
 ```
@@ -147,6 +147,25 @@ The project uses DTOs to separate the API layer from the database entities:
 **Error DTOs:**
 - `ErrorResponse` for general errors
 - `ValidationErrorResponse` for field validation errors
+
+### Repository Layer
+Spring Data JPA repositories provide data access with the following features:
+
+**Core Repositories:**
+- `UserRepository` - User CRUD operations, search by username
+- `SpreadRepository` - Spread operations with cursor-based pagination, search by question
+- `InterpretationRepository` - Interpretation management with unique constraint handling
+- `CardRepository` - Card operations with random selection for spreads
+- `SpreadCardRepository` - Spread-card relationships with statistics queries
+- `LayoutTypeRepository` - Layout type lookups with usage statistics
+- `ArcanaTypeRepository` - Arcana type management with distribution queries
+
+**Key Features:**
+- `@EntityGraph` annotations for optimized fetching and N+1 query prevention
+- Custom JPQL and native queries for complex operations
+- Cursor-based pagination support for infinite scroll
+- Statistical queries for analytics
+- Bulk delete operations for cascading deletions
 
 Entities use JPA annotations with the following patterns:
 - `@Entity` with `@Table(name = "...")` for table mapping
