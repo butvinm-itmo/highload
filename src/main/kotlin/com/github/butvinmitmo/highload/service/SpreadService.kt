@@ -51,13 +51,13 @@ class SpreadService(
         // 4. Generate random cards using CardService
         val cards = cardService.findRandomCards(layoutType.cardsCount)
 
-        // 5. Create spread-card relationships
+        // 5. Create spread-card relationships (position is 1-based per DB constraint)
         cards.forEachIndexed { index, card ->
             val spreadCard =
                 SpreadCard(
                     spread = savedSpread,
                     card = card,
-                    positionInSpread = index,
+                    positionInSpread = index + 1, // DB constraint: position must be > 0
                     isReversed = Random.nextBoolean(),
                 )
             spreadCardRepository.save(spreadCard)

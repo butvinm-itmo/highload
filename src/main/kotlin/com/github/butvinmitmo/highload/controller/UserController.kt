@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -44,7 +45,7 @@ class UserController(
         ],
     )
     fun createUser(
-        @RequestBody request: CreateUserRequest,
+        @Valid @RequestBody request: CreateUserRequest,
     ): UserDto = userService.createUser(request)
 
     @GetMapping
@@ -99,7 +100,7 @@ class UserController(
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
-        @RequestBody request: UpdateUserRequest,
+        @Valid @RequestBody request: UpdateUserRequest,
     ): UserDto = userService.updateUser(id, request)
 
     @DeleteMapping("/{id}")

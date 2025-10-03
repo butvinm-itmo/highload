@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -46,7 +47,7 @@ class InterpretationController(
         @Parameter(description = "Spread ID to add interpretation to", required = true)
         @PathVariable
         spreadId: UUID,
-        @RequestBody request: CreateInterpretationRequest,
+        @Valid @RequestBody request: CreateInterpretationRequest,
     ): InterpretationDto = interpretationService.addInterpretation(spreadId, request)
 
     @PutMapping("/{id}")
@@ -69,7 +70,7 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to update", required = true)
         @PathVariable
         id: UUID,
-        @RequestBody request: UpdateInterpretationRequest,
+        @Valid @RequestBody request: UpdateInterpretationRequest,
     ): InterpretationDto {
         // TODO: Get userId from authentication context
         val userId = UUID.randomUUID() // Placeholder for now
