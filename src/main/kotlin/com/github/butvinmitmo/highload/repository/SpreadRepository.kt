@@ -12,11 +12,13 @@ import java.util.UUID
 
 @Repository
 interface SpreadRepository : JpaRepository<Spread, UUID> {
+    @Query("SELECT s FROM Spread s WHERE s.id = :id")
     @EntityGraph(attributePaths = ["author", "layoutType", "spreadCards.card"])
-    fun findByIdWithCards(id: UUID): Spread?
+    fun findByIdWithCards(@Param("id") id: UUID): Spread?
 
+    @Query("SELECT s FROM Spread s WHERE s.id = :id")
     @EntityGraph(attributePaths = ["author", "layoutType", "spreadCards.card", "interpretations.author"])
-    fun findByIdWithCardsAndInterpretations(id: UUID): Spread?
+    fun findByIdWithCardsAndInterpretations(@Param("id") id: UUID): Spread?
 
     @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC")
     fun findAllOrderByCreatedAtDesc(pageable: Pageable): Page<Spread>
