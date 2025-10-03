@@ -122,7 +122,7 @@ Base path: `/api/v0.0.1`
 src/main/kotlin/com/github/butvinmitmo/highload/
 ├── entity/          # JPA entities (User, Spread, Card, etc.)
 ├── dto/             # Data Transfer Objects for API layer
-├── repository/      # Spring Data JPA repositories
+├── repository/      # Spring Data JPA repositories (to be implemented)
 ├── service/         # Business logic layer (to be implemented)
 └── controller/      # REST API controllers (to be implemented)
 ```
