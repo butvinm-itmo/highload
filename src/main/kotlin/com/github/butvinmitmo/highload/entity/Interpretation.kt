@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.highload.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -32,5 +33,6 @@ data class Interpretation(
     val author: User,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "spread_id", nullable = false)
+    @JsonBackReference
     val spread: Spread,
 )

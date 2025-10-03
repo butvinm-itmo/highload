@@ -10,7 +10,7 @@ import java.time.Instant
 import java.util.UUID
 
 @Entity
-@Table(name = "user")
+@Table(name = "\"user\"")
 data class User(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

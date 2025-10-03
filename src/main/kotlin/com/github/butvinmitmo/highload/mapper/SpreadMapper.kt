@@ -15,11 +15,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class SpreadMapper {
-    fun toDto(
-        spread: Spread,
-        spreadCards: List<SpreadCard> = emptyList(),
-        interpretations: List<Interpretation> = emptyList(),
-    ): SpreadDto =
+    fun toDto(spread: Spread): SpreadDto =
         SpreadDto(
             id = spread.id!!,
             question = spread.question,
@@ -30,7 +26,7 @@ class SpreadMapper {
                     cardsCount = spread.layoutType.cardsCount,
                 ),
             cards =
-                spreadCards.sortedBy { it.positionInSpread }.map { spreadCard ->
+                spread.spreadCards.sortedBy { it.positionInSpread }.map { spreadCard ->
                     SpreadCardDto(
                         id = spreadCard.id!!,
                         card =
@@ -48,7 +44,7 @@ class SpreadMapper {
                     )
                 },
             interpretations =
-                interpretations.map { interpretation ->
+                spread.interpretations.map { interpretation ->
                     InterpretationDto(
                         id = interpretation.id!!,
                         text = interpretation.text,
@@ -71,16 +67,13 @@ class SpreadMapper {
             createdAt = spread.createdAt,
         )
 
-    fun toSummaryDto(
-        spread: Spread,
-        interpretationsCount: Int = 0,
-    ): SpreadSummaryDto =
+    fun toSummaryDto(spread: Spread): SpreadSummaryDto =
         SpreadSummaryDto(
             id = spread.id!!,
             question = spread.question,
             layoutTypeName = spread.layoutType.name,
             cardsCount = spread.layoutType.cardsCount,
-            interpretationsCount = interpretationsCount,
+            interpretationsCount = spread.interpretations.size,
             authorUsername = spread.author.username,
             createdAt = spread.createdAt,
         )

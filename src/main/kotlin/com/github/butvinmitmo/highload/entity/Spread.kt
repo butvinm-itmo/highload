@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.highload.entity
 
+import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -8,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
@@ -29,4 +31,10 @@ data class Spread(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     val author: User,
+    @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)
+    @JsonManagedReference
+    val spreadCards: List<SpreadCard> = emptyList(),
+    @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)
+    @JsonManagedReference
+    val interpretations: List<Interpretation> = emptyList(),
 )

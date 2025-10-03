@@ -33,7 +33,7 @@ class UserServiceTest {
     private lateinit var userRepository: UserRepository
 
     private lateinit var userService: UserService
-    private val userMapper = UserMapper
+    private val userMapper = UserMapper()
 
     private val userId = UUID.randomUUID()
     private val createdAt = Instant.now()

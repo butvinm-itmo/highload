@@ -8,12 +8,6 @@ import org.springframework.web.bind.annotation.RestController
 @SpringBootApplication
 class HighloadApplication
 
-@RestController
-class BlogController {
-    @GetMapping("/")
-    fun blog(): String = "blog"
-}
-
 fun main(args: Array<String>) {
     runApplication<HighloadApplication>(*args)
 }

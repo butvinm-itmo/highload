@@ -67,8 +67,9 @@ class SpreadService(
         }
 
         // 6. Fetch complete spread with cards and return
-        val spreadCards = spreadCardRepository.findBySpreadId(savedSpread.id!!)
-        return spreadMapper.toDto(savedSpread, spreadCards)
+        val completeSpread = spreadRepository.findByIdWithCards(savedSpread.id!!)
+            ?: throw IllegalStateException("Spread not found after save")
+        return spreadMapper.toDto(completeSpread)
     }
 
     fun getSpreads(
@@ -104,14 +105,10 @@ class SpreadService(
     }
 
     fun getSpread(id: UUID): SpreadDto {
-        val spread =
-            spreadRepository.findById(id)
-                .orElseThrow { NotFoundException("Spread not found") }
+        val spread = spreadRepository.findByIdWithCardsAndInterpretations(id)
+            ?: throw NotFoundException("Spread not found")
 
-        val spreadCards = spreadCardRepository.findBySpreadId(id)
-        val interpretations = emptyList<com.github.butvinmitmo.highload.entity.Interpretation>() // Will be fetched when needed
-
-        return spreadMapper.toDto(spread, spreadCards, interpretations)
+        return spreadMapper.toDto(spread)
     }
 
     @Transactional
