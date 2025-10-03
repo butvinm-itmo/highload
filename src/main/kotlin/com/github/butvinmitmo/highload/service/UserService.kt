@@ -28,7 +28,7 @@ class UserService(
         val user =
             User(
                 id = request.id,
-                username = request.username ?: "user_${request.id}",
+                username = request.username,
             )
 
         val saved = userRepository.save(user)

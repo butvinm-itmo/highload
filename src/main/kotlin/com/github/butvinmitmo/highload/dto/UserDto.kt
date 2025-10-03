@@ -11,7 +11,7 @@ data class UserDto(
 
 data class CreateUserRequest(
     val id: UUID,
-    val username: String? = null,
+    val username: String,
 )
 
 data class UpdateUserRequest(

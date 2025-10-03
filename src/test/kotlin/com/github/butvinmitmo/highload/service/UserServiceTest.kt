@@ -75,35 +75,6 @@ class UserServiceTest {
     }
 
     @Test
-    fun `createUser should use default username when not provided`() {
-        // Given
-        val request = CreateUserRequest(
-            id = userId,
-            username = null
-        )
-        val savedUser = User(
-            id = userId,
-            username = "user_$userId",
-            createdAt = createdAt
-        )
-
-        whenever(userRepository.existsById(userId)).thenReturn(false)
-        whenever(userRepository.save(any())).thenReturn(savedUser)
-
-        // When
-        val result = userService.createUser(request)
-
-        // Then
-        assertNotNull(result)
-        assertEquals("user_$userId", result.username)
-
-        // Verify the user was saved with default username
-        val userCaptor = argumentCaptor<User>()
-        verify(userRepository).save(userCaptor.capture())
-        assertEquals("user_$userId", userCaptor.firstValue.username)
-    }
-
-    @Test
     fun `createUser should throw ConflictException when user already exists`() {
         // Given
         val request = CreateUserRequest(
