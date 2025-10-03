@@ -19,24 +19,20 @@ class CardService(
     private val arcanaTypeMapper: ArcanaTypeMapper,
 ) {
     @Transactional(readOnly = true)
-    fun findRandomCards(count: Int): List<Card> {
-        return cardRepository.findRandomCards(count)
-    }
+    fun findRandomCards(count: Int): List<Card> = cardRepository.findRandomCards(count)
 
     @Transactional(readOnly = true)
-    fun getAllCards(): List<CardDto> {
-        return cardRepository.findAll()
+    fun getAllCards(): List<CardDto> =
+        cardRepository
+            .findAll()
             .map { cardMapper.toDto(it) }
-    }
 
     @Transactional(readOnly = true)
-    fun getAllArcanaTypes(): List<ArcanaTypeDto> {
-        return arcanaTypeRepository.findAll()
+    fun getAllArcanaTypes(): List<ArcanaTypeDto> =
+        arcanaTypeRepository
+            .findAll()
             .map { arcanaTypeMapper.toDto(it) }
-    }
 
     @Transactional(readOnly = true)
-    fun getArcanaTypeByName(name: String): ArcanaType? {
-        return arcanaTypeRepository.findByName(name)
-    }
+    fun getArcanaTypeByName(name: String): ArcanaType? = arcanaTypeRepository.findByName(name)
 }

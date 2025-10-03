@@ -6,8 +6,6 @@ import com.github.butvinmitmo.highload.dto.UserDto
 import com.github.butvinmitmo.highload.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -35,7 +33,7 @@ class UserController(
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Create a new user",
-        description = "Creates a new user with the specified ID and username. Returns 409 if user with this ID already exists.",
+        description = "Creates a new user with the specified ID and username. Returns 409 if ID already exists.",
     )
     @ApiResponses(
         value = [

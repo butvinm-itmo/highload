@@ -58,8 +58,9 @@ class SpreadService(
             spreadCardRepository.save(spreadCard)
         }
 
-        val completeSpread = spreadRepository.findByIdWithCards(savedSpread.id!!)
-            ?: throw IllegalStateException("Spread not found after save")
+        val completeSpread =
+            spreadRepository.findByIdWithCards(savedSpread.id!!)
+                ?: throw IllegalStateException("Spread not found after save")
         return spreadMapper.toDto(completeSpread)
     }
 
@@ -96,8 +97,9 @@ class SpreadService(
     }
 
     fun getSpread(id: UUID): SpreadDto {
-        val spread = spreadRepository.findByIdWithCardsAndInterpretations(id)
-            ?: throw NotFoundException("Spread not found")
+        val spread =
+            spreadRepository.findByIdWithCardsAndInterpretations(id)
+                ?: throw NotFoundException("Spread not found")
 
         return spreadMapper.toDto(spread)
     }
@@ -108,7 +110,8 @@ class SpreadService(
         userId: UUID,
     ) {
         val spread =
-            spreadRepository.findById(id)
+            spreadRepository
+                .findById(id)
                 .orElseThrow { NotFoundException("Spread not found") }
 
         if (spread.author.id != userId) {
@@ -119,26 +122,25 @@ class SpreadService(
     }
 
     @Transactional(readOnly = true)
-    fun getLayoutTypeById(id: UUID): LayoutType {
-        return layoutTypeRepository.findById(id)
+    fun getLayoutTypeById(id: UUID): LayoutType =
+        layoutTypeRepository
+            .findById(id)
             .orElseThrow { NotFoundException("Layout type not found") }
-    }
 
     @Transactional(readOnly = true)
-    fun getLayoutTypeByName(name: String): LayoutType {
-        return layoutTypeRepository.findByName(name)
+    fun getLayoutTypeByName(name: String): LayoutType =
+        layoutTypeRepository.findByName(name)
             ?: throw NotFoundException("Layout type not found: $name")
-    }
 
     @Transactional(readOnly = true)
-    fun getAllLayoutTypes(): List<LayoutTypeDto> {
-        return layoutTypeRepository.findAll()
+    fun getAllLayoutTypes(): List<LayoutTypeDto> =
+        layoutTypeRepository
+            .findAll()
             .map { layoutTypeMapper.toDto(it) }
-    }
 
     @Transactional(readOnly = true)
-    fun getSpreadEntity(id: UUID): Spread {
-        return spreadRepository.findById(id)
+    fun getSpreadEntity(id: UUID): Spread =
+        spreadRepository
+            .findById(id)
             .orElseThrow { NotFoundException("Spread not found") }
-    }
 }

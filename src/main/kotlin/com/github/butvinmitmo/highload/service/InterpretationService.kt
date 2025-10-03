@@ -52,7 +52,8 @@ class InterpretationService(
         request: UpdateInterpretationRequest,
     ): InterpretationDto {
         val interpretation =
-            interpretationRepository.findById(id)
+            interpretationRepository
+                .findById(id)
                 .orElseThrow { NotFoundException("Interpretation not found") }
 
         if (interpretation.author.id != userId) {
@@ -72,7 +73,8 @@ class InterpretationService(
         userId: UUID,
     ) {
         val interpretation =
-            interpretationRepository.findById(id)
+            interpretationRepository
+                .findById(id)
                 .orElseThrow { NotFoundException("Interpretation not found") }
 
         if (interpretation.author.id != userId) {

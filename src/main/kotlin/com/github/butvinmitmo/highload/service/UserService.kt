@@ -47,7 +47,8 @@ class UserService(
 
     fun getUser(id: UUID): UserDto {
         val user =
-            userRepository.findById(id)
+            userRepository
+                .findById(id)
                 .orElseThrow { NotFoundException("User not found") }
 
         return userMapper.toDto(user)
@@ -59,7 +60,8 @@ class UserService(
         request: UpdateUserRequest,
     ): UserDto {
         val user =
-            userRepository.findById(id)
+            userRepository
+                .findById(id)
                 .orElseThrow { NotFoundException("User not found") }
 
         request.username?.let { user.username = it }
@@ -78,8 +80,8 @@ class UserService(
     }
 
     @Transactional(readOnly = true)
-    fun getUserEntity(id: UUID): User {
-        return userRepository.findById(id)
+    fun getUserEntity(id: UUID): User =
+        userRepository
+            .findById(id)
             .orElseThrow { NotFoundException("User not found") }
-    }
 }

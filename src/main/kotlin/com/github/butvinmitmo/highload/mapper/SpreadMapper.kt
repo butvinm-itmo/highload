@@ -8,9 +8,7 @@ import com.github.butvinmitmo.highload.dto.SpreadCardDto
 import com.github.butvinmitmo.highload.dto.SpreadDto
 import com.github.butvinmitmo.highload.dto.SpreadSummaryDto
 import com.github.butvinmitmo.highload.dto.UserDto
-import com.github.butvinmitmo.highload.entity.Interpretation
 import com.github.butvinmitmo.highload.entity.Spread
-import com.github.butvinmitmo.highload.entity.SpreadCard
 import org.springframework.stereotype.Component
 
 @Component

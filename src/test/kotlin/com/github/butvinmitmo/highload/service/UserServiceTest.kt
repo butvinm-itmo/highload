@@ -28,7 +28,6 @@ import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 class UserServiceTest {
-
     @Mock
     private lateinit var userRepository: UserRepository
 
@@ -46,15 +45,17 @@ class UserServiceTest {
     @Test
     fun `createUser should create new user successfully`() {
         // Given
-        val request = CreateUserRequest(
-            id = userId,
-            username = "testuser"
-        )
-        val savedUser = User(
-            id = userId,
-            username = "testuser",
-            createdAt = createdAt
-        )
+        val request =
+            CreateUserRequest(
+                id = userId,
+                username = "testuser",
+            )
+        val savedUser =
+            User(
+                id = userId,
+                username = "testuser",
+                createdAt = createdAt,
+            )
 
         whenever(userRepository.existsById(userId)).thenReturn(false)
         whenever(userRepository.save(any())).thenReturn(savedUser)
@@ -77,17 +78,19 @@ class UserServiceTest {
     @Test
     fun `createUser should throw ConflictException when user already exists`() {
         // Given
-        val request = CreateUserRequest(
-            id = userId,
-            username = "testuser"
-        )
+        val request =
+            CreateUserRequest(
+                id = userId,
+                username = "testuser",
+            )
 
         whenever(userRepository.existsById(userId)).thenReturn(true)
 
         // When/Then
-        val exception = assertThrows<ConflictException> {
-            userService.createUser(request)
-        }
+        val exception =
+            assertThrows<ConflictException> {
+                userService.createUser(request)
+            }
         assertEquals("User with this ID already exists", exception.message)
 
         // Verify save was never called
@@ -97,11 +100,12 @@ class UserServiceTest {
     @Test
     fun `getUser should return user when found`() {
         // Given
-        val user = User(
-            id = userId,
-            username = "testuser",
-            createdAt = createdAt
-        )
+        val user =
+            User(
+                id = userId,
+                username = "testuser",
+                createdAt = createdAt,
+            )
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
 
@@ -120,20 +124,22 @@ class UserServiceTest {
         whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
 
         // When/Then
-        val exception = assertThrows<NotFoundException> {
-            userService.getUser(userId)
-        }
+        val exception =
+            assertThrows<NotFoundException> {
+                userService.getUser(userId)
+            }
         assertEquals("User not found", exception.message)
     }
 
     @Test
     fun `updateUser should update username when provided`() {
         // Given
-        val existingUser = User(
-            id = userId,
-            username = "oldname",
-            createdAt = createdAt
-        )
+        val existingUser =
+            User(
+                id = userId,
+                username = "oldname",
+                createdAt = createdAt,
+            )
         val updateRequest = UpdateUserRequest(username = "newname")
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
@@ -160,9 +166,10 @@ class UserServiceTest {
         whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
 
         // When/Then
-        val exception = assertThrows<NotFoundException> {
-            userService.updateUser(userId, updateRequest)
-        }
+        val exception =
+            assertThrows<NotFoundException> {
+                userService.updateUser(userId, updateRequest)
+            }
         assertEquals("User not found", exception.message)
 
         // Verify save was never called
@@ -187,9 +194,10 @@ class UserServiceTest {
         whenever(userRepository.existsById(userId)).thenReturn(false)
 
         // When/Then
-        val exception = assertThrows<NotFoundException> {
-            userService.deleteUser(userId)
-        }
+        val exception =
+            assertThrows<NotFoundException> {
+                userService.deleteUser(userId)
+            }
         assertEquals("User not found", exception.message)
 
         // Verify delete was never called
@@ -199,10 +207,11 @@ class UserServiceTest {
     @Test
     fun `getUsers should return paginated users`() {
         // Given
-        val users = listOf(
-            User(id = UUID.randomUUID(), username = "user1", createdAt = createdAt),
-            User(id = UUID.randomUUID(), username = "user2", createdAt = createdAt)
-        )
+        val users =
+            listOf(
+                User(id = UUID.randomUUID(), username = "user1", createdAt = createdAt),
+                User(id = UUID.randomUUID(), username = "user2", createdAt = createdAt),
+            )
         val pageable = PageRequest.of(0, 2)
         val page = PageImpl(users, pageable, 2)
 

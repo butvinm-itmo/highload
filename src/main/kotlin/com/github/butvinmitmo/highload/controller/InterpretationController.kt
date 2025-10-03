@@ -32,8 +32,7 @@ class InterpretationController(
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Add interpretation to a spread",
-        description = "Creates a new interpretation for a specific spread. " +
-            "Each user can have only one interpretation per spread (unique constraint on author_id + spread_id).",
+        description = "Creates a new interpretation. Each user can have only one interpretation per spread.",
     )
     @ApiResponses(
         value = [

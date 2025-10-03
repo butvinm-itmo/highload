@@ -12,11 +12,12 @@ class InterpretationMapper {
         InterpretationDto(
             id = interpretation.id!!,
             text = interpretation.text,
-            author = UserDto(
-                id = interpretation.author.id!!,
-                username = interpretation.author.username,
-                createdAt = interpretation.author.createdAt,
-            ),
+            author =
+                UserDto(
+                    id = interpretation.author.id!!,
+                    username = interpretation.author.username,
+                    createdAt = interpretation.author.createdAt,
+                ),
             spreadId = interpretation.spread.id!!,
             createdAt = interpretation.createdAt,
         )

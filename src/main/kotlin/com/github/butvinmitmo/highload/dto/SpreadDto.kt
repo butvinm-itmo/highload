@@ -28,10 +28,8 @@ data class SpreadSummaryDto(
 data class CreateSpreadRequest(
     @field:Size(max = 10000, message = "Question must not exceed 10000 characters")
     val question: String?,
-
     @field:NotNull(message = "Layout type ID is required")
     val layoutTypeId: UUID,
-
     @field:NotNull(message = "Author ID is required")
     val authorId: UUID,
 )

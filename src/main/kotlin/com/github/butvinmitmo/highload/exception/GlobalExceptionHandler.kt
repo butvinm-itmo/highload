@@ -14,7 +14,6 @@ import java.time.Instant
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-
     @ExceptionHandler(MethodArgumentNotValidException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleValidationExceptions(
@@ -29,13 +28,14 @@ class GlobalExceptionHandler {
             errors[fieldName] = errorMessage
         }
 
-        val response = ValidationErrorResponse(
-            error = "VALIDATION_ERROR",
-            message = "Validation failed",
-            timestamp = Instant.now(),
-            path = request.getDescription(false).removePrefix("uri="),
-            fieldErrors = errors,
-        )
+        val response =
+            ValidationErrorResponse(
+                error = "VALIDATION_ERROR",
+                message = "Validation failed",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+                fieldErrors = errors,
+            )
 
         return ResponseEntity(response, HttpStatus.BAD_REQUEST)
     }
@@ -46,12 +46,13 @@ class GlobalExceptionHandler {
         ex: NotFoundException,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
-        val response = ErrorResponse(
-            error = "NOT_FOUND",
-            message = ex.message ?: "Resource not found",
-            timestamp = Instant.now(),
-            path = request.getDescription(false).removePrefix("uri="),
-        )
+        val response =
+            ErrorResponse(
+                error = "NOT_FOUND",
+                message = ex.message ?: "Resource not found",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
     }
 
@@ -61,12 +62,13 @@ class GlobalExceptionHandler {
         ex: ConflictException,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
-        val response = ErrorResponse(
-            error = "CONFLICT",
-            message = ex.message ?: "Conflict occurred",
-            timestamp = Instant.now(),
-            path = request.getDescription(false).removePrefix("uri="),
-        )
+        val response =
+            ErrorResponse(
+                error = "CONFLICT",
+                message = ex.message ?: "Conflict occurred",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
         return ResponseEntity(response, HttpStatus.CONFLICT)
     }
 
@@ -76,12 +78,13 @@ class GlobalExceptionHandler {
         ex: ForbiddenException,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
-        val response = ErrorResponse(
-            error = "FORBIDDEN",
-            message = ex.message ?: "Access forbidden",
-            timestamp = Instant.now(),
-            path = request.getDescription(false).removePrefix("uri="),
-        )
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = ex.message ?: "Access forbidden",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
 
@@ -91,12 +94,13 @@ class GlobalExceptionHandler {
         ex: Exception,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
-        val response = ErrorResponse(
-            error = "INTERNAL_SERVER_ERROR",
-            message = "An unexpected error occurred",
-            timestamp = Instant.now(),
-            path = request.getDescription(false).removePrefix("uri="),
-        )
+        val response =
+            ErrorResponse(
+                error = "INTERNAL_SERVER_ERROR",
+                message = "An unexpected error occurred",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
         return ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }

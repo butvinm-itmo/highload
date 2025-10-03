@@ -38,8 +38,7 @@ class SpreadController(
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Create a new spread",
-        description = "Creates a new tarot spread with randomly selected cards based on the layout type. " +
-            "Cards are automatically assigned positions and may be reversed.",
+        description = "Creates a new tarot spread with randomly selected cards. Cards may be reversed.",
     )
     @ApiResponses(
         value = [
@@ -55,15 +54,20 @@ class SpreadController(
     @GetMapping
     @Operation(
         summary = "Get paginated spreads",
-        description = "Retrieves a paginated list of all spreads sorted by creation date (newest first). " +
-            "Returns total count in X-Total-Count header.",
+        description = "Retrieves spreads sorted by creation date. Returns total count in X-Total-Count header.",
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "200",
                 description = "Spreads retrieved successfully",
-                headers = [Header(name = "X-Total-Count", description = "Total number of spreads", schema = Schema(type = "integer"))],
+                headers = [
+                    Header(
+                        name = "X-Total-Count",
+                        description = "Total number of spreads",
+                        schema = Schema(type = "integer"),
+                    ),
+                ],
                 content = [Content(array = ArraySchema(schema = Schema(implementation = SpreadSummaryDto::class)))],
             ),
         ],
@@ -86,8 +90,7 @@ class SpreadController(
     @GetMapping("/scroll")
     @Operation(
         summary = "Get spreads with infinite scroll",
-        description = "Retrieves spreads for infinite scrolling using cursor-based pagination. " +
-            "Provide the ID of the last spread from previous request to get the next batch.",
+        description = "Retrieves spreads using cursor-based pagination. Provide last spread ID for next batch.",
     )
     @ApiResponses(
         value = [
@@ -124,8 +127,7 @@ class SpreadController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Delete a spread",
-        description = "Deletes a spread and all its associated data (cards, interpretations). " +
-            "Only the spread author can delete it.",
+        description = "Deletes a spread and all associated data. Only the author can delete it.",
     )
     @ApiResponses(
         value = [

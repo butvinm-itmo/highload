@@ -9,19 +9,17 @@ import org.springframework.stereotype.Component
 class CardMapper(
     private val arcanaTypeMapper: ArcanaTypeMapper,
 ) {
-    fun toDto(card: Card): CardDto {
-        return CardDto(
+    fun toDto(card: Card): CardDto =
+        CardDto(
             id = card.id!!,
             name = card.name,
             arcanaType = arcanaTypeMapper.toDto(card.arcanaType),
         )
-    }
 
-    fun toSummaryDto(card: Card): CardSummaryDto {
-        return CardSummaryDto(
+    fun toSummaryDto(card: Card): CardSummaryDto =
+        CardSummaryDto(
             id = card.id!!,
             name = card.name,
             arcanaTypeName = card.arcanaType.name,
         )
-    }
 }
