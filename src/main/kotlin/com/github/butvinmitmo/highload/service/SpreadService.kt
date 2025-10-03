@@ -33,13 +33,10 @@ class SpreadService(
 ) {
     @Transactional
     fun createSpread(request: CreateSpreadRequest): SpreadDto {
-        // 1. Validate user exists using UserService
         val user = userService.getUserEntity(request.authorId)
 
-        // 2. Get layout type
         val layoutType = getLayoutTypeById(request.layoutTypeId)
 
-        // 3. Create spread entity
         val spread =
             Spread(
                 question = request.question,
@@ -48,22 +45,19 @@ class SpreadService(
             )
         val savedSpread = spreadRepository.save(spread)
 
-        // 4. Generate random cards using CardService
         val cards = cardService.findRandomCards(layoutType.cardsCount)
 
-        // 5. Create spread-card relationships (position is 1-based per DB constraint)
         cards.forEachIndexed { index, card ->
             val spreadCard =
                 SpreadCard(
                     spread = savedSpread,
                     card = card,
-                    positionInSpread = index + 1, // DB constraint: position must be > 0
+                    positionInSpread = index + 1,
                     isReversed = Random.nextBoolean(),
                 )
             spreadCardRepository.save(spreadCard)
         }
 
-        // 6. Fetch complete spread with cards and return
         val completeSpread = spreadRepository.findByIdWithCards(savedSpread.id!!)
             ?: throw IllegalStateException("Spread not found after save")
         return spreadMapper.toDto(completeSpread)
@@ -121,11 +115,9 @@ class SpreadService(
             throw ForbiddenException("You can only delete your own spreads")
         }
 
-        // Database CASCADE DELETE handles interpretations and spread_cards automatically
         spreadRepository.deleteById(id)
     }
 
-    // LayoutType operations
     @Transactional(readOnly = true)
     fun getLayoutTypeById(id: UUID): LayoutType {
         return layoutTypeRepository.findById(id)
@@ -144,7 +136,6 @@ class SpreadService(
             .map { layoutTypeMapper.toDto(it) }
     }
 
-    // Internal method for other services to get Spread entity
     @Transactional(readOnly = true)
     fun getSpreadEntity(id: UUID): Spread {
         return spreadRepository.findById(id)

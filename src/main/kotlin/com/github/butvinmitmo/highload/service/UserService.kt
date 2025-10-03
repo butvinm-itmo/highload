@@ -20,7 +20,6 @@ class UserService(
 ) {
     @Transactional
     fun createUser(request: CreateUserRequest): UserDto {
-        // Check if user with this ID already exists
         if (userRepository.existsById(request.id)) {
             throw ConflictException("User with this ID already exists")
         }
@@ -75,13 +74,9 @@ class UserService(
             throw NotFoundException("User not found")
         }
 
-        // Database CASCADE DELETE handles all related deletions automatically:
-        // - User's spreads (which cascades to interpretations and spread_cards)
-        // - User's interpretations on other spreads
         userRepository.deleteById(id)
     }
 
-    // Internal method for other services to get User entity
     @Transactional(readOnly = true)
     fun getUserEntity(id: UUID): User {
         return userRepository.findById(id)

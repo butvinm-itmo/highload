@@ -72,8 +72,7 @@ class InterpretationController(
         id: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
     ): InterpretationDto {
-        // TODO: Get userId from authentication context
-        val userId = UUID.randomUUID() // Placeholder for now
+        val userId = UUID.randomUUID()
         return interpretationService.updateInterpretation(spreadId, id, userId, request)
     }
 

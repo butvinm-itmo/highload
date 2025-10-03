@@ -25,18 +25,14 @@ class InterpretationService(
         spreadId: UUID,
         request: CreateInterpretationRequest,
     ): InterpretationDto {
-        // 1. Validate spread exists using SpreadService
         val spread = spreadService.getSpreadEntity(spreadId)
 
-        // 2. Validate user exists using UserService
         val user = userService.getUserEntity(request.authorId)
 
-        // 3. Check if user already has interpretation for this spread
         if (interpretationRepository.existsByAuthorAndSpread(user.id!!, spreadId)) {
             throw ConflictException("You already have an interpretation for this spread")
         }
 
-        // 4. Create interpretation
         val interpretation =
             Interpretation(
                 text = request.text,
@@ -63,7 +59,6 @@ class InterpretationService(
             throw ForbiddenException("You can only edit your own interpretations")
         }
 
-        // Create a new interpretation with updated text
         val updated = interpretation.copy(text = request.text)
         val saved = interpretationRepository.save(updated)
 
