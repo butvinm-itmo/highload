@@ -9,8 +9,6 @@ import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.InterpretationMapper
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
-import com.github.butvinmitmo.highload.repository.SpreadRepository
-import com.github.butvinmitmo.highload.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -18,8 +16,8 @@ import java.util.UUID
 @Service
 class InterpretationService(
     private val interpretationRepository: InterpretationRepository,
-    private val spreadRepository: SpreadRepository,
-    private val userRepository: UserRepository,
+    private val userService: UserService,
+    private val spreadService: SpreadService,
     private val interpretationMapper: InterpretationMapper,
 ) {
     @Transactional
@@ -27,15 +25,11 @@ class InterpretationService(
         spreadId: UUID,
         request: CreateInterpretationRequest,
     ): InterpretationDto {
-        // 1. Validate spread exists
-        val spread =
-            spreadRepository.findById(spreadId)
-                .orElseThrow { NotFoundException("Spread not found") }
+        // 1. Validate spread exists using SpreadService
+        val spread = spreadService.getSpreadEntity(spreadId)
 
-        // 2. Validate user exists
-        val user =
-            userRepository.findById(request.authorId)
-                .orElseThrow { NotFoundException("User not found") }
+        // 2. Validate user exists using UserService
+        val user = userService.getUserEntity(request.authorId)
 
         // 3. Check if user already has interpretation for this spread
         if (interpretationRepository.existsByAuthorAndSpread(user.id!!, spreadId)) {

@@ -80,4 +80,11 @@ class UserService(
         // - User's interpretations on other spreads
         userRepository.deleteById(id)
     }
+
+    // Internal method for other services to get User entity
+    @Transactional(readOnly = true)
+    fun getUserEntity(id: UUID): User {
+        return userRepository.findById(id)
+            .orElseThrow { NotFoundException("User not found") }
+    }
 }
