@@ -17,7 +17,7 @@ data class User(
     @Column(columnDefinition = "uuid")
     val id: UUID? = null,
     @Column(nullable = false, unique = true, length = 128)
-    val username: String,
+    var username: String,
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 )
