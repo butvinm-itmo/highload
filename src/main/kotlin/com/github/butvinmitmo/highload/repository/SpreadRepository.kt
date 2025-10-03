@@ -3,27 +3,40 @@ package com.github.butvinmitmo.highload.repository
 import com.github.butvinmitmo.highload.entity.Spread
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.EntityGraph
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
 import java.util.UUID
 
-interface SpreadRepository {
-    fun findById(id: UUID): Spread?
-
+@Repository
+interface SpreadRepository : JpaRepository<Spread, UUID> {
+    @EntityGraph(attributePaths = ["author", "layoutType", "spreadCards.card"])
     fun findByIdWithCards(id: UUID): Spread?
 
+    @EntityGraph(attributePaths = ["author", "layoutType", "spreadCards.card", "interpretations.author"])
     fun findByIdWithCardsAndInterpretations(id: UUID): Spread?
 
-    fun save(spread: Spread): Spread
-
+    @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC")
     fun findAllOrderByCreatedAtDesc(pageable: Pageable): Page<Spread>
 
+    @Query(
+        """
+        SELECT s FROM Spread s
+        WHERE s.createdAt < (SELECT s2.createdAt FROM Spread s2 WHERE s2.id = :spreadId)
+        OR (s.createdAt = (SELECT s2.createdAt FROM Spread s2 WHERE s2.id = :spreadId) AND s.id < :spreadId)
+        ORDER BY s.createdAt DESC, s.id DESC
+        LIMIT :limit
+    """,
+    )
     fun findSpreadsAfterCursor(
-        spreadId: UUID,
-        limit: Int,
+        @Param("spreadId") spreadId: UUID,
+        @Param("limit") limit: Int,
     ): List<Spread>
 
-    fun findLatestSpreads(limit: Int): List<Spread>
-
-    fun count(): Long
-
-    fun deleteById(id: UUID)
+    @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC LIMIT :limit")
+    fun findLatestSpreads(
+        @Param("limit") limit: Int,
+    ): List<Spread>
 }

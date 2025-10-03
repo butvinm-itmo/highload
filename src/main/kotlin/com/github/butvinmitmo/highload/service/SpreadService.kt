@@ -34,7 +34,7 @@ class SpreadService(
         // 1. Validate user exists
         val user =
             userRepository.findById(request.authorId)
-                ?: throw NotFoundException("User not found")
+                .orElseThrow { NotFoundException("User not found") }
 
         // 2. Get layout type by name (convert UUID to name lookup)
         // For now, we'll use a hardcoded mapping or fetch by name
@@ -106,7 +106,7 @@ class SpreadService(
     fun getSpread(id: UUID): SpreadDto {
         val spread =
             spreadRepository.findById(id)
-                ?: throw NotFoundException("Spread not found")
+                .orElseThrow { NotFoundException("Spread not found") }
 
         val spreadCards = spreadCardRepository.findBySpreadId(id)
         val interpretations = emptyList<com.github.butvinmitmo.highload.entity.Interpretation>() // Will be fetched when needed
@@ -121,7 +121,7 @@ class SpreadService(
     ) {
         val spread =
             spreadRepository.findById(id)
-                ?: throw NotFoundException("Spread not found")
+                .orElseThrow { NotFoundException("Spread not found") }
 
         if (spread.author.id != userId) {
             throw ForbiddenException("You can only delete your own spreads")

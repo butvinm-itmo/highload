@@ -30,12 +30,12 @@ class InterpretationService(
         // 1. Validate spread exists
         val spread =
             spreadRepository.findById(spreadId)
-                ?: throw NotFoundException("Spread not found")
+                .orElseThrow { NotFoundException("Spread not found") }
 
         // 2. Validate user exists
         val user =
             userRepository.findById(request.authorId)
-                ?: throw NotFoundException("User not found")
+                .orElseThrow { NotFoundException("User not found") }
 
         // 3. Check if user already has interpretation for this spread
         if (interpretationRepository.existsByAuthorAndSpread(user.id!!, spreadId)) {
@@ -63,7 +63,7 @@ class InterpretationService(
     ): InterpretationDto {
         val interpretation =
             interpretationRepository.findById(id)
-                ?: throw NotFoundException("Interpretation not found")
+                .orElseThrow { NotFoundException("Interpretation not found") }
 
         if (interpretation.author.id != userId) {
             throw ForbiddenException("You can only edit your own interpretations")
@@ -84,7 +84,7 @@ class InterpretationService(
     ) {
         val interpretation =
             interpretationRepository.findById(id)
-                ?: throw NotFoundException("Interpretation not found")
+                .orElseThrow { NotFoundException("Interpretation not found") }
 
         if (interpretation.author.id != userId) {
             throw ForbiddenException("You can only delete your own interpretations")
