@@ -20,13 +20,12 @@ class UserService(
 ) {
     @Transactional
     fun createUser(request: CreateUserRequest): UserDto {
-        if (userRepository.existsById(request.id)) {
-            throw ConflictException("User with this ID already exists")
+        if (userRepository.findByUsername(request.username) != null) {
+            throw ConflictException("User with this username already exists")
         }
 
         val user =
             User(
-                id = request.id,
                 username = request.username,
             )
 

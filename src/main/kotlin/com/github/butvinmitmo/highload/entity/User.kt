@@ -11,13 +11,14 @@ import java.util.UUID
 
 @Entity
 @Table(name = "\"user\"")
-data class User(
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid")
-    val id: UUID? = null,
+class User(
     @Column(nullable = false, unique = true, length = 128)
     var username: String,
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
-)
+) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid")
+    lateinit var id: UUID
+}
