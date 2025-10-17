@@ -61,8 +61,8 @@ class InterpretationService(
             throw ForbiddenException("You can only edit your own interpretations")
         }
 
-        val updated = interpretation.copy(text = request.text)
-        val saved = interpretationRepository.save(updated)
+        interpretation.text = request.text
+        val saved = interpretationRepository.save(interpretation)
 
         return interpretationMapper.toDto(saved)
     }

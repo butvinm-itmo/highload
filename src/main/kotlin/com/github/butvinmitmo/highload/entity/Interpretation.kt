@@ -26,7 +26,7 @@ data class Interpretation(
     @Column(columnDefinition = "uuid")
     val id: UUID? = null,
     @Column(nullable = false, columnDefinition = "text")
-    val text: String,
+    var text: String,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     val author: User,
