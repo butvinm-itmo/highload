@@ -17,26 +17,29 @@ import java.util.UUID
 
 @Entity
 @Table(name = "spread")
-data class Spread(
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid")
-    val id: UUID? = null,
+class Spread(
     @Column(columnDefinition = "text")
-    val question: String? = null,
+    val question: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "layout_type_id", nullable = false)
     val layoutType: LayoutType,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     val author: User,
-    @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)
-    @JsonManagedReference
-    val spreadCards: List<SpreadCard> = emptyList(),
-    @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)
-    @JsonManagedReference
-    val interpretations: List<Interpretation> = emptyList(),
 ) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid")
+    lateinit var id: UUID
+
+    @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)
+    @JsonManagedReference
+    val spreadCards: MutableList<SpreadCard> = mutableListOf()
+
+    @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)
+    @JsonManagedReference
+    val interpretations: MutableList<Interpretation> = mutableListOf()
+
     @Generated
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     lateinit var createdAt: Instant

@@ -20,11 +20,7 @@ import java.util.UUID
     name = "interpretation",
     uniqueConstraints = [UniqueConstraint(columnNames = ["author_id", "spread_id"])],
 )
-data class Interpretation(
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid")
-    val id: UUID? = null,
+class Interpretation(
     @Column(nullable = false, columnDefinition = "text")
     var text: String,
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,6 +31,11 @@ data class Interpretation(
     @JsonBackReference
     val spread: Spread,
 ) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid")
+    lateinit var id: UUID
+
     @Generated
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     lateinit var createdAt: Instant

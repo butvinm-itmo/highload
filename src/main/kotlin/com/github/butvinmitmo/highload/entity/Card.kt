@@ -11,7 +11,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "card")
-data class Card(
+class Card(
     @Id
     @Column(columnDefinition = "uuid")
     val id: UUID,

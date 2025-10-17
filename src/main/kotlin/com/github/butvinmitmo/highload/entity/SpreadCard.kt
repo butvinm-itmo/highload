@@ -14,11 +14,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "spread_card")
-data class SpreadCard(
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid")
-    val id: UUID? = null,
+class SpreadCard(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "spread_id", nullable = false)
     @JsonBackReference
@@ -29,5 +25,10 @@ data class SpreadCard(
     @Column(name = "position_in_spread", nullable = false)
     val positionInSpread: Int,
     @Column(name = "is_reversed", nullable = false)
-    val isReversed: Boolean = false,
-)
+    val isReversed: Boolean,
+) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid")
+    lateinit var id: UUID
+}

@@ -8,7 +8,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "layout_type")
-data class LayoutType(
+class LayoutType(
     @Id
     @Column(columnDefinition = "uuid")
     val id: UUID,

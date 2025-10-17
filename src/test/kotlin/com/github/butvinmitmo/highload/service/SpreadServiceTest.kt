@@ -118,14 +118,12 @@ class SpreadServiceTest {
         question: String,
         author: User,
         layoutType: LayoutType,
-        spreadCards: List<SpreadCard> = emptyList(),
     ): Spread {
         val spread =
             Spread(
                 question = question,
                 author = author,
                 layoutType = layoutType,
-                spreadCards = spreadCards,
             )
 
         val idField = Spread::class.java.getDeclaredField("id")

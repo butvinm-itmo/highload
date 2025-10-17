@@ -8,7 +8,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "arcana_type")
-data class ArcanaType(
+class ArcanaType(
     @Id
     @Column(columnDefinition = "uuid")
     val id: UUID,
