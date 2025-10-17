@@ -42,22 +42,31 @@ class UserServiceTest {
         userService = UserService(userRepository, userMapper)
     }
 
+    private fun createUser(
+        id: UUID,
+        username: String,
+        createdAt: Instant = this.createdAt,
+    ): User {
+        val user = User(username = username)
+
+        val idField = User::class.java.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(user, id)
+
+        val createdAtField = User::class.java.getDeclaredField("createdAt")
+        createdAtField.isAccessible = true
+        createdAtField.set(user, createdAt)
+
+        return user
+    }
+
     @Test
     fun `createUser should create new user successfully`() {
         // Given
-        val request =
-            CreateUserRequest(
-                id = userId,
-                username = "testuser",
-            )
-        val savedUser =
-            User(
-                id = userId,
-                username = "testuser",
-                createdAt = createdAt,
-            )
+        val request = CreateUserRequest(username = "testuser")
+        val savedUser = createUser(id = userId, username = "testuser")
 
-        whenever(userRepository.existsById(userId)).thenReturn(false)
+        whenever(userRepository.findByUsername("testuser")).thenReturn(null)
         whenever(userRepository.save(any())).thenReturn(savedUser)
 
         // When
@@ -71,27 +80,23 @@ class UserServiceTest {
         // Verify the user was saved with correct data
         val userCaptor = argumentCaptor<User>()
         verify(userRepository).save(userCaptor.capture())
-        assertEquals(userId, userCaptor.firstValue.id)
         assertEquals("testuser", userCaptor.firstValue.username)
     }
 
     @Test
     fun `createUser should throw ConflictException when user already exists`() {
         // Given
-        val request =
-            CreateUserRequest(
-                id = userId,
-                username = "testuser",
-            )
+        val request = CreateUserRequest(username = "testuser")
+        val existingUser = createUser(id = userId, username = "testuser")
 
-        whenever(userRepository.existsById(userId)).thenReturn(true)
+        whenever(userRepository.findByUsername("testuser")).thenReturn(existingUser)
 
         // When/Then
         val exception =
             assertThrows<ConflictException> {
                 userService.createUser(request)
             }
-        assertEquals("User with this ID already exists", exception.message)
+        assertEquals("User with this username already exists", exception.message)
 
         // Verify save was never called
         verify(userRepository, never()).save(any())
@@ -100,12 +105,7 @@ class UserServiceTest {
     @Test
     fun `getUser should return user when found`() {
         // Given
-        val user =
-            User(
-                id = userId,
-                username = "testuser",
-                createdAt = createdAt,
-            )
+        val user = createUser(id = userId, username = "testuser")
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
 
@@ -134,12 +134,7 @@ class UserServiceTest {
     @Test
     fun `updateUser should update username when provided`() {
         // Given
-        val existingUser =
-            User(
-                id = userId,
-                username = "oldname",
-                createdAt = createdAt,
-            )
+        val existingUser = createUser(id = userId, username = "oldname")
         val updateRequest = UpdateUserRequest(username = "newname")
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
@@ -209,8 +204,8 @@ class UserServiceTest {
         // Given
         val users =
             listOf(
-                User(id = UUID.randomUUID(), username = "user1", createdAt = createdAt),
-                User(id = UUID.randomUUID(), username = "user2", createdAt = createdAt),
+                createUser(id = UUID.randomUUID(), username = "user1"),
+                createUser(id = UUID.randomUUID(), username = "user2"),
             )
         val pageable = PageRequest.of(0, 2)
         val page = PageImpl(users, pageable, 2)

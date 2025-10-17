@@ -14,7 +14,7 @@ class InterpretationMapper {
             text = interpretation.text,
             author =
                 UserDto(
-                    id = interpretation.author.id!!,
+                    id = interpretation.author.id,
                     username = interpretation.author.username,
                     createdAt = interpretation.author.createdAt,
                 ),

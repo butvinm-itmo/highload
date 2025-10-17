@@ -33,12 +33,14 @@ class UserController(
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Create a new user",
-        description = "Creates a new user with the specified ID and username. Returns 409 if ID already exists.",
+        description =
+            "Creates a new user with the specified username. " +
+                "ID and timestamp are auto-generated. Returns 409 if username already exists.",
     )
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "201", description = "User created successfully"),
-            ApiResponse(responseCode = "409", description = "User with this ID already exists"),
+            ApiResponse(responseCode = "409", description = "User with this username already exists"),
             ApiResponse(responseCode = "400", description = "Invalid request data"),
         ],
     )

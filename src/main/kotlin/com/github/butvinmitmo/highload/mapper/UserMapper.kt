@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 class UserMapper {
     fun toDto(entity: User): UserDto =
         UserDto(
-            id = entity.id!!,
+            id = entity.id,
             username = entity.username,
             createdAt = entity.createdAt,
         )
