@@ -75,11 +75,11 @@ class UserServiceTest {
         // Then
         assertNotNull(result)
         assertEquals(userId, result.id)
-        assertEquals("testuser", result.username)
 
-        // Verify the user was saved with correct data
+        // Verify the user was saved and flushed
         val userCaptor = argumentCaptor<User>()
         verify(userRepository).save(userCaptor.capture())
+        verify(userRepository).flush()
         assertEquals("testuser", userCaptor.firstValue.username)
     }
 

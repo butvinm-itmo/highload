@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.highload.service
 
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
+import com.github.butvinmitmo.highload.dto.CreateUserResponse
 import com.github.butvinmitmo.highload.dto.UpdateUserRequest
 import com.github.butvinmitmo.highload.dto.UserDto
 import com.github.butvinmitmo.highload.entity.User
@@ -19,7 +20,7 @@ class UserService(
     private val userMapper: UserMapper,
 ) {
     @Transactional
-    fun createUser(request: CreateUserRequest): UserDto {
+    fun createUser(request: CreateUserRequest): CreateUserResponse {
         if (userRepository.findByUsername(request.username) != null) {
             throw ConflictException("User with this username already exists")
         }
@@ -30,7 +31,8 @@ class UserService(
             )
 
         val saved = userRepository.save(user)
-        return userMapper.toDto(saved)
+        userRepository.flush()
+        return CreateUserResponse(id = saved.id)
     }
 
     fun getUsers(

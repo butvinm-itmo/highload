@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.Generated
 import java.time.Instant
 import java.util.UUID
 
@@ -14,11 +15,13 @@ import java.util.UUID
 class User(
     @Column(nullable = false, unique = true, length = 128)
     var username: String,
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant = Instant.now(),
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid")
     lateinit var id: UUID
+
+    @Generated
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    lateinit var createdAt: Instant
 }

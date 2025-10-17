@@ -64,12 +64,11 @@ class UserServiceIntegrationTest {
 
         assertNotNull(result)
         assertNotNull(result.id)
-        assertEquals("testuser", result.username)
-        assertNotNull(result.createdAt)
 
         val saved = userRepository.findById(result.id)
         assert(saved.isPresent)
         assertEquals("testuser", saved.get().username)
+        assertNotNull(saved.get().createdAt)
     }
 
     @Test

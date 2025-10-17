@@ -21,3 +21,7 @@ data class UpdateUserRequest(
     @field:Size(min = 1, max = 128, message = "Username must be between 1 and 128 characters")
     val username: String? = null,
 )
+
+data class CreateUserResponse(
+    val id: UUID,
+)
