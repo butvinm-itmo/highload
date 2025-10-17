@@ -31,7 +31,6 @@ class UserService(
             )
 
         val saved = userRepository.save(user)
-        userRepository.flush()
         return CreateUserResponse(id = saved.id)
     }
 
