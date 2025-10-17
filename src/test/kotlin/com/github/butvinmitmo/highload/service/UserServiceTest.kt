@@ -236,4 +236,71 @@ class UserServiceTest {
         assertNotNull(result)
         assertEquals(0, result.size)
     }
+
+    @Test
+    fun `updateUser should not change username when null provided`() {
+        // Given
+        val existingUser = createUser(id = userId, username = "originalname")
+        val updateRequest = UpdateUserRequest(username = null)
+
+        whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
+        whenever(userRepository.save(any())).thenAnswer { it.arguments[0] as User }
+
+        // When
+        val result = userService.updateUser(userId, updateRequest)
+
+        // Then
+        assertNotNull(result)
+        assertEquals("originalname", result.username)
+
+        // Verify the user was saved without username change
+        val userCaptor = argumentCaptor<User>()
+        verify(userRepository).save(userCaptor.capture())
+        assertEquals("originalname", userCaptor.firstValue.username)
+    }
+
+    @Test
+    fun `updateUser should keep same ID`() {
+        // Given
+        val existingUser = createUser(id = userId, username = "oldname")
+        val updateRequest = UpdateUserRequest(username = "newname")
+
+        whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
+        whenever(userRepository.save(any())).thenAnswer { it.arguments[0] as User }
+
+        // When
+        val result = userService.updateUser(userId, updateRequest)
+
+        // Then
+        assertEquals(userId, result.id)
+    }
+
+    @Test
+    fun `getUserEntity should return user when found`() {
+        // Given
+        val user = createUser(id = userId, username = "testuser")
+
+        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+
+        // When
+        val result = userService.getUserEntity(userId)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(userId, result.id)
+        assertEquals("testuser", result.username)
+    }
+
+    @Test
+    fun `getUserEntity should throw NotFoundException when user not found`() {
+        // Given
+        whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+
+        // When/Then
+        val exception =
+            assertThrows<NotFoundException> {
+                userService.getUserEntity(userId)
+            }
+        assertEquals("User not found", exception.message)
+    }
 }
