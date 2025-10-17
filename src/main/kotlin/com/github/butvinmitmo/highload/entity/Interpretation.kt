@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.Generated
 import java.time.Instant
 import java.util.UUID
 
@@ -26,8 +27,6 @@ data class Interpretation(
     val id: UUID? = null,
     @Column(nullable = false, columnDefinition = "text")
     val text: String,
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant = Instant.now(),
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     val author: User,
@@ -35,4 +34,8 @@ data class Interpretation(
     @JoinColumn(name = "spread_id", nullable = false)
     @JsonBackReference
     val spread: Spread,
-)
+) {
+    @Generated
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    lateinit var createdAt: Instant
+}

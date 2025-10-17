@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.highload.service
 
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
+import com.github.butvinmitmo.highload.dto.CreateSpreadResponse
 import com.github.butvinmitmo.highload.dto.LayoutTypeDto
 import com.github.butvinmitmo.highload.dto.PageResponse
 import com.github.butvinmitmo.highload.dto.SpreadDto
@@ -32,7 +33,7 @@ class SpreadService(
     private val layoutTypeMapper: LayoutTypeMapper,
 ) {
     @Transactional
-    fun createSpread(request: CreateSpreadRequest): SpreadDto {
+    fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
         val user = userService.getUserEntity(request.authorId)
 
         val layoutType = getLayoutTypeById(request.layoutTypeId)
@@ -58,10 +59,7 @@ class SpreadService(
             spreadCardRepository.save(spreadCard)
         }
 
-        val completeSpread =
-            spreadRepository.findByIdWithCards(savedSpread.id!!)
-                ?: throw IllegalStateException("Spread not found after save")
-        return spreadMapper.toDto(completeSpread)
+        return CreateSpreadResponse(id = savedSpread.id!!)
     }
 
     fun getSpreads(

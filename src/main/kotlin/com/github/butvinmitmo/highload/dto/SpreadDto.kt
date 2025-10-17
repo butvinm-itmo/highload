@@ -34,6 +34,10 @@ data class CreateSpreadRequest(
     val authorId: UUID,
 )
 
+data class CreateSpreadResponse(
+    val id: UUID,
+)
+
 enum class SpreadLayoutType(
     val cardsCount: Int,
 ) {

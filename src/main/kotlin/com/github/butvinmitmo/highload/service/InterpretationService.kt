@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.highload.service
 
 import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
+import com.github.butvinmitmo.highload.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.highload.dto.InterpretationDto
 import com.github.butvinmitmo.highload.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.highload.entity.Interpretation
@@ -24,7 +25,7 @@ class InterpretationService(
     fun addInterpretation(
         spreadId: UUID,
         request: CreateInterpretationRequest,
-    ): InterpretationDto {
+    ): CreateInterpretationResponse {
         val spread = spreadService.getSpreadEntity(spreadId)
 
         val user = userService.getUserEntity(request.authorId)
@@ -41,7 +42,7 @@ class InterpretationService(
             )
 
         val saved = interpretationRepository.save(interpretation)
-        return interpretationMapper.toDto(saved)
+        return CreateInterpretationResponse(id = saved.id!!)
     }
 
     @Transactional
