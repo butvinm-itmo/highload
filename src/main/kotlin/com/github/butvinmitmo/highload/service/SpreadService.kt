@@ -62,6 +62,7 @@ class SpreadService(
         return CreateSpreadResponse(id = savedSpread.id)
     }
 
+    @Transactional(readOnly = true)
     fun getSpreads(
         page: Int,
         size: Int,
@@ -80,6 +81,7 @@ class SpreadService(
         )
     }
 
+    @Transactional(readOnly = true)
     fun getSpreadsByScroll(
         after: UUID?,
         size: Int,
@@ -94,6 +96,7 @@ class SpreadService(
         return spreads.map { spreadMapper.toSummaryDto(it) }
     }
 
+    @Transactional(readOnly = true)
     fun getSpread(id: UUID): SpreadDto {
         val spread =
             spreadRepository.findByIdWithCardsAndInterpretations(id)
