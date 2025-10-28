@@ -30,7 +30,7 @@ class InterpretationService(
 
         val user = userService.getUserEntity(request.authorId)
 
-        if (interpretationRepository.existsByAuthorAndSpread(user.id!!, spreadId)) {
+        if (interpretationRepository.existsByAuthorAndSpread(user.id, spreadId)) {
             throw ConflictException("You already have an interpretation for this spread")
         }
 
@@ -42,7 +42,7 @@ class InterpretationService(
             )
 
         val saved = interpretationRepository.save(interpretation)
-        return CreateInterpretationResponse(id = saved.id!!)
+        return CreateInterpretationResponse(id = saved.id)
     }
 
     @Transactional

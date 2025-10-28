@@ -80,7 +80,11 @@ class InterpretationServiceTest {
         id: UUID,
         name: String,
         cardsCount: Int,
-    ): LayoutType = LayoutType(id = id, name = name, cardsCount = cardsCount)
+    ): LayoutType {
+        val layoutType = LayoutType(name = name, cardsCount = cardsCount)
+        layoutType.id = id
+        return layoutType
+    }
 
     private fun createSpread(
         id: UUID,

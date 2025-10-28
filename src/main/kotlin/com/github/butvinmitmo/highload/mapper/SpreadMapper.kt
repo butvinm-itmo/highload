@@ -15,25 +15,25 @@ import org.springframework.stereotype.Component
 class SpreadMapper {
     fun toDto(spread: Spread): SpreadDto =
         SpreadDto(
-            id = spread.id!!,
+            id = spread.id,
             question = spread.question,
             layoutType =
                 LayoutTypeDto(
-                    id = spread.layoutType.id!!,
+                    id = spread.layoutType.id,
                     name = spread.layoutType.name,
                     cardsCount = spread.layoutType.cardsCount,
                 ),
             cards =
                 spread.spreadCards.sortedBy { it.positionInSpread }.map { spreadCard ->
                     SpreadCardDto(
-                        id = spreadCard.id!!,
+                        id = spreadCard.id,
                         card =
                             CardDto(
-                                id = spreadCard.card.id!!,
+                                id = spreadCard.card.id,
                                 name = spreadCard.card.name,
                                 arcanaType =
                                     ArcanaTypeDto(
-                                        id = spreadCard.card.arcanaType.id!!,
+                                        id = spreadCard.card.arcanaType.id,
                                         name = spreadCard.card.arcanaType.name,
                                     ),
                             ),
@@ -44,7 +44,7 @@ class SpreadMapper {
             interpretations =
                 spread.interpretations.map { interpretation ->
                     InterpretationDto(
-                        id = interpretation.id!!,
+                        id = interpretation.id,
                         text = interpretation.text,
                         author =
                             UserDto(
@@ -52,7 +52,7 @@ class SpreadMapper {
                                 username = interpretation.author.username,
                                 createdAt = interpretation.author.createdAt,
                             ),
-                        spreadId = interpretation.spread.id!!,
+                        spreadId = interpretation.spread.id,
                         createdAt = interpretation.createdAt,
                     )
                 },
@@ -67,7 +67,7 @@ class SpreadMapper {
 
     fun toSummaryDto(spread: Spread): SpreadSummaryDto =
         SpreadSummaryDto(
-            id = spread.id!!,
+            id = spread.id,
             question = spread.question,
             layoutTypeName = spread.layoutType.name,
             cardsCount = spread.layoutType.cardsCount,

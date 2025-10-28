@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 class ArcanaTypeMapper {
     fun toDto(arcanaType: ArcanaType): ArcanaTypeDto =
         ArcanaTypeDto(
-            id = arcanaType.id!!,
+            id = arcanaType.id,
             name = arcanaType.name,
         )
 }

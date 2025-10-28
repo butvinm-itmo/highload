@@ -11,14 +11,14 @@ class CardMapper(
 ) {
     fun toDto(card: Card): CardDto =
         CardDto(
-            id = card.id!!,
+            id = card.id,
             name = card.name,
             arcanaType = arcanaTypeMapper.toDto(card.arcanaType),
         )
 
     fun toSummaryDto(card: Card): CardSummaryDto =
         CardSummaryDto(
-            id = card.id!!,
+            id = card.id,
             name = card.name,
             arcanaTypeName = card.arcanaType.name,
         )

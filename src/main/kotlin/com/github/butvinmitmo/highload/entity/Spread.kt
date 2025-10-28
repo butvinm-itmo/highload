@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
@@ -28,8 +26,8 @@ class Spread(
     val author: User,
 ) {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid")
+    @Generated
+    @Column(columnDefinition = "uuid", insertable = false, nullable = false)
     lateinit var id: UUID
 
     @OneToMany(mappedBy = "spread", fetch = FetchType.LAZY)

@@ -43,13 +43,21 @@ class CardServiceTest {
     private fun createArcanaType(
         id: UUID,
         name: String,
-    ): ArcanaType = ArcanaType(id = id, name = name)
+    ): ArcanaType {
+        val arcanaType = ArcanaType(name = name)
+        arcanaType.id = id
+        return arcanaType
+    }
 
     private fun createCard(
         id: UUID,
         name: String,
         arcanaType: ArcanaType,
-    ): Card = Card(id = id, name = name, arcanaType = arcanaType)
+    ): Card {
+        val card = Card(name = name, arcanaType = arcanaType)
+        card.id = id
+        return card
+    }
 
     @Test
     fun `findRandomCards should return requested number of random cards`() {

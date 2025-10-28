@@ -59,7 +59,7 @@ class SpreadService(
             spreadCardRepository.save(spreadCard)
         }
 
-        return CreateSpreadResponse(id = savedSpread.id!!)
+        return CreateSpreadResponse(id = savedSpread.id)
     }
 
     fun getSpreads(

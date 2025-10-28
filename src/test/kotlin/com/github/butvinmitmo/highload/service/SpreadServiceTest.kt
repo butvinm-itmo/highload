@@ -98,19 +98,29 @@ class SpreadServiceTest {
         id: UUID,
         name: String,
         cardsCount: Int,
-    ): LayoutType = LayoutType(id = id, name = name, cardsCount = cardsCount)
+    ): LayoutType {
+        val layoutType = LayoutType(name = name, cardsCount = cardsCount)
+        layoutType.id = id
+        return layoutType
+    }
 
     private fun createArcanaType(
         id: UUID,
         name: String,
-    ): ArcanaType = ArcanaType(id = id, name = name)
+    ): ArcanaType {
+        val arcanaType = ArcanaType(name = name)
+        arcanaType.id = id
+        return arcanaType
+    }
 
     private fun createCard(
         id: UUID,
         name: String = "Test Card",
     ): Card {
         val arcanaType = createArcanaType(UUID.randomUUID(), "MAJOR")
-        return Card(id = id, name = name, arcanaType = arcanaType)
+        val card = Card(name = name, arcanaType = arcanaType)
+        card.id = id
+        return card
     }
 
     private fun createSpread(
