@@ -3,7 +3,6 @@ package com.github.butvinmitmo.highload.repository
 import com.github.butvinmitmo.highload.entity.Spread
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -12,14 +11,30 @@ import java.util.UUID
 
 @Repository
 interface SpreadRepository : JpaRepository<Spread, UUID> {
-    @Query("SELECT s FROM Spread s WHERE s.id = :id")
-    @EntityGraph(attributePaths = ["author", "layoutType", "spreadCards.card"])
+    @Query(
+        """
+        SELECT DISTINCT s FROM Spread s
+        LEFT JOIN FETCH s.author
+        LEFT JOIN FETCH s.layoutType
+        LEFT JOIN FETCH s.spreadCards sc
+        LEFT JOIN FETCH sc.card
+        WHERE s.id = :id
+        """,
+    )
     fun findByIdWithCards(
         @Param("id") id: UUID,
     ): Spread?
 
-    @Query("SELECT s FROM Spread s WHERE s.id = :id")
-    @EntityGraph(attributePaths = ["author", "layoutType", "spreadCards.card", "interpretations.author"])
+    @Query(
+        """
+        SELECT DISTINCT s FROM Spread s
+        LEFT JOIN FETCH s.author
+        LEFT JOIN FETCH s.layoutType
+        LEFT JOIN FETCH s.spreadCards sc
+        LEFT JOIN FETCH sc.card
+        WHERE s.id = :id
+        """,
+    )
     fun findByIdWithCardsAndInterpretations(
         @Param("id") id: UUID,
     ): Spread?

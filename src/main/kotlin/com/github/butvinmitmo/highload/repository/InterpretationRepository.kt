@@ -14,4 +14,16 @@ interface InterpretationRepository : JpaRepository<Interpretation, UUID> {
         @Param("authorId") authorId: UUID,
         @Param("spreadId") spreadId: UUID,
     ): Boolean
+
+    @Query(
+        """
+        SELECT DISTINCT i FROM Interpretation i
+        LEFT JOIN FETCH i.author
+        WHERE i.spread.id = :spreadId
+        ORDER BY i.createdAt ASC
+        """,
+    )
+    fun findBySpreadIdWithAuthor(
+        @Param("spreadId") spreadId: UUID,
+    ): List<Interpretation>
 }

@@ -8,6 +8,7 @@ import com.github.butvinmitmo.highload.dto.SpreadCardDto
 import com.github.butvinmitmo.highload.dto.SpreadDto
 import com.github.butvinmitmo.highload.dto.SpreadSummaryDto
 import com.github.butvinmitmo.highload.dto.UserDto
+import com.github.butvinmitmo.highload.entity.Interpretation
 import com.github.butvinmitmo.highload.entity.Spread
 import org.springframework.stereotype.Component
 
@@ -43,6 +44,61 @@ class SpreadMapper {
                 },
             interpretations =
                 spread.interpretations.map { interpretation ->
+                    InterpretationDto(
+                        id = interpretation.id,
+                        text = interpretation.text,
+                        author =
+                            UserDto(
+                                id = interpretation.author.id,
+                                username = interpretation.author.username,
+                                createdAt = interpretation.author.createdAt,
+                            ),
+                        spreadId = interpretation.spread.id,
+                        createdAt = interpretation.createdAt,
+                    )
+                },
+            author =
+                UserDto(
+                    id = spread.author.id,
+                    username = spread.author.username,
+                    createdAt = spread.author.createdAt,
+                ),
+            createdAt = spread.createdAt,
+        )
+
+    fun toDto(
+        spread: Spread,
+        interpretations: List<Interpretation>,
+    ): SpreadDto =
+        SpreadDto(
+            id = spread.id,
+            question = spread.question,
+            layoutType =
+                LayoutTypeDto(
+                    id = spread.layoutType.id,
+                    name = spread.layoutType.name,
+                    cardsCount = spread.layoutType.cardsCount,
+                ),
+            cards =
+                spread.spreadCards.sortedBy { it.positionInSpread }.map { spreadCard ->
+                    SpreadCardDto(
+                        id = spreadCard.id,
+                        card =
+                            CardDto(
+                                id = spreadCard.card.id,
+                                name = spreadCard.card.name,
+                                arcanaType =
+                                    ArcanaTypeDto(
+                                        id = spreadCard.card.arcanaType.id,
+                                        name = spreadCard.card.arcanaType.name,
+                                    ),
+                            ),
+                        positionInSpread = spreadCard.positionInSpread,
+                        isReversed = spreadCard.isReversed,
+                    )
+                },
+            interpretations =
+                interpretations.map { interpretation ->
                     InterpretationDto(
                         id = interpretation.id,
                         text = interpretation.text,

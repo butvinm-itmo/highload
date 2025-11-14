@@ -11,6 +11,7 @@ import com.github.butvinmitmo.highload.entity.SpreadCard
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.SpreadMapper
+import com.github.butvinmitmo.highload.repository.InterpretationRepository
 import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
 import com.github.butvinmitmo.highload.repository.SpreadRepository
@@ -25,6 +26,7 @@ class SpreadService(
     private val spreadRepository: SpreadRepository,
     private val spreadCardRepository: SpreadCardRepository,
     private val layoutTypeRepository: LayoutTypeRepository,
+    private val interpretationRepository: InterpretationRepository,
     private val userService: UserService,
     private val cardService: CardService,
     private val spreadMapper: SpreadMapper,
@@ -91,12 +93,17 @@ class SpreadService(
         return spreads.map { spreadMapper.toSummaryDto(it) }
     }
 
+    @Transactional
     fun getSpread(id: UUID): SpreadDto {
+        // Fetch spread with cards in one query
         val spread =
-            spreadRepository.findByIdWithCardsAndInterpretations(id)
+            spreadRepository.findByIdWithCards(id)
                 ?: throw NotFoundException("Spread not found")
 
-        return spreadMapper.toDto(spread)
+        // Fetch interpretations with authors in a separate query
+        val interpretations = interpretationRepository.findBySpreadIdWithAuthor(spread.id)
+
+        return spreadMapper.toDto(spread, interpretations)
     }
 
     @Transactional

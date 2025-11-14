@@ -10,6 +10,7 @@ import com.github.butvinmitmo.highload.entity.User
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.SpreadMapper
+import com.github.butvinmitmo.highload.repository.InterpretationRepository
 import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
 import com.github.butvinmitmo.highload.repository.SpreadRepository
@@ -45,6 +46,9 @@ class SpreadServiceTest {
     private lateinit var layoutTypeRepository: LayoutTypeRepository
 
     @Mock
+    private lateinit var interpretationRepository: InterpretationRepository
+
+    @Mock
     private lateinit var userService: UserService
 
     @Mock
@@ -68,6 +72,7 @@ class SpreadServiceTest {
                 spreadRepository,
                 spreadCardRepository,
                 layoutTypeRepository,
+                interpretationRepository,
                 userService,
                 cardService,
                 spreadMapper,
@@ -315,7 +320,8 @@ class SpreadServiceTest {
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val spread = createSpread(spreadId, "What will happen?", user, layoutType)
 
-        whenever(spreadRepository.findByIdWithCardsAndInterpretations(spreadId)).thenReturn(spread)
+        whenever(spreadRepository.findByIdWithCards(spreadId)).thenReturn(spread)
+        whenever(interpretationRepository.findBySpreadIdWithAuthor(spreadId)).thenReturn(emptyList())
 
         // When
         val result = spreadService.getSpread(spreadId)
@@ -328,7 +334,7 @@ class SpreadServiceTest {
     @Test
     fun `getSpread should throw NotFoundException when spread not found`() {
         // Given
-        whenever(spreadRepository.findByIdWithCardsAndInterpretations(spreadId)).thenReturn(null)
+        whenever(spreadRepository.findByIdWithCards(spreadId)).thenReturn(null)
 
         // When/Then
         val exception =

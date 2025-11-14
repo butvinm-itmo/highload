@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.highload.integration
 
+import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
 import com.github.butvinmitmo.highload.exception.ForbiddenException
@@ -9,6 +10,7 @@ import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
 import com.github.butvinmitmo.highload.repository.SpreadRepository
 import com.github.butvinmitmo.highload.repository.UserRepository
+import com.github.butvinmitmo.highload.service.InterpretationService
 import com.github.butvinmitmo.highload.service.SpreadService
 import com.github.butvinmitmo.highload.service.UserService
 import org.junit.jupiter.api.AfterEach
@@ -54,6 +56,9 @@ class SpreadServiceIntegrationTest {
 
     @Autowired
     private lateinit var userService: UserService
+
+    @Autowired
+    private lateinit var interpretationService: InterpretationService
 
     @Autowired
     private lateinit var spreadRepository: SpreadRepository
@@ -216,6 +221,134 @@ class SpreadServiceIntegrationTest {
         val result = spreadRepository.findById(nonExistentId)
 
         assertFalse(result.isPresent)
+    }
+
+    @Test
+    fun `should get spread DTO without interpretations`() {
+        // Given - create a spread without interpretations
+        val createRequest =
+            CreateSpreadRequest(
+                question = "Will I succeed?",
+                layoutTypeId = layoutTypeId,
+                authorId = userId,
+            )
+
+        val created = spreadService.createSpread(createRequest)
+
+        // When - fetch the spread using the service method
+        val result = spreadService.getSpread(created.id)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(created.id, result.id)
+        assertEquals("Will I succeed?", result.question)
+        assertNotNull(result.cards)
+        assertEquals(1, result.cards.size)
+        assertNotNull(result.interpretations)
+        assertEquals(0, result.interpretations.size)
+        assertEquals(userId, result.author.id)
+        assertEquals(layoutTypeId, result.layoutType.id)
+    }
+
+    @Test
+    fun `should get spread DTO with single interpretation`() {
+        // Given - create a spread
+        val spreadRequest =
+            CreateSpreadRequest(
+                question = "What does the future hold?",
+                layoutTypeId = layoutTypeId,
+                authorId = userId,
+            )
+
+        val createdSpread = spreadService.createSpread(spreadRequest)
+
+        // Add an interpretation
+        val interpretationRequest =
+            CreateInterpretationRequest(
+                text = "The cards suggest positive changes ahead",
+                authorId = userId,
+            )
+
+        interpretationService.addInterpretation(createdSpread.id, interpretationRequest)
+
+        // When - fetch the spread
+        val result = spreadService.getSpread(createdSpread.id)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(createdSpread.id, result.id)
+        assertEquals("What does the future hold?", result.question)
+        assertNotNull(result.cards)
+        assertEquals(1, result.cards.size)
+        assertNotNull(result.interpretations)
+        assertEquals(1, result.interpretations.size)
+        assertEquals("The cards suggest positive changes ahead", result.interpretations[0].text)
+        assertEquals(userId, result.interpretations[0].author.id)
+    }
+
+    @Test
+    fun `should get spread DTO with multiple interpretations`() {
+        // Given - create a second user
+        val user2Id =
+            userService.createUser(
+                CreateUserRequest(username = "reader2"),
+            ).id
+
+        // Create a spread
+        val spreadRequest =
+            CreateSpreadRequest(
+                question = "Career advice?",
+                layoutTypeId = layoutTypeId,
+                authorId = userId,
+            )
+
+        val createdSpread = spreadService.createSpread(spreadRequest)
+
+        // Add multiple interpretations from different users
+        interpretationService.addInterpretation(
+            createdSpread.id,
+            CreateInterpretationRequest(
+                text = "First interpretation from user1",
+                authorId = userId,
+            ),
+        )
+
+        interpretationService.addInterpretation(
+            createdSpread.id,
+            CreateInterpretationRequest(
+                text = "Second interpretation from user2",
+                authorId = user2Id,
+            ),
+        )
+
+        // When - fetch the spread
+        val result = spreadService.getSpread(createdSpread.id)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(createdSpread.id, result.id)
+        assertEquals("Career advice?", result.question)
+        assertNotNull(result.cards)
+        assertEquals(1, result.cards.size)
+        assertNotNull(result.interpretations)
+        assertEquals(2, result.interpretations.size)
+
+        // Verify both interpretations are present
+        val interpretationTexts = result.interpretations.map { it.text }
+        assertTrue(interpretationTexts.contains("First interpretation from user1"))
+        assertTrue(interpretationTexts.contains("Second interpretation from user2"))
+    }
+
+    @Test
+    fun `should throw NotFoundException when getting non-existent spread via service`() {
+        val nonExistentId = UUID.randomUUID()
+
+        val exception =
+            assertThrows<NotFoundException> {
+                spreadService.getSpread(nonExistentId)
+            }
+
+        assertEquals("Spread not found", exception.message)
     }
 
     @Test
