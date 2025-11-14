@@ -2,7 +2,6 @@ package com.github.butvinmitmo.highload.service
 
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.dto.CreateSpreadResponse
-import com.github.butvinmitmo.highload.dto.LayoutTypeDto
 import com.github.butvinmitmo.highload.dto.PageResponse
 import com.github.butvinmitmo.highload.dto.SpreadDto
 import com.github.butvinmitmo.highload.dto.SpreadSummaryDto
@@ -11,7 +10,6 @@ import com.github.butvinmitmo.highload.entity.Spread
 import com.github.butvinmitmo.highload.entity.SpreadCard
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
-import com.github.butvinmitmo.highload.mapper.LayoutTypeMapper
 import com.github.butvinmitmo.highload.mapper.SpreadMapper
 import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
@@ -30,7 +28,6 @@ class SpreadService(
     private val userService: UserService,
     private val cardService: CardService,
     private val spreadMapper: SpreadMapper,
-    private val layoutTypeMapper: LayoutTypeMapper,
 ) {
     @Transactional
     fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
@@ -127,17 +124,6 @@ class SpreadService(
         layoutTypeRepository
             .findById(id)
             .orElseThrow { NotFoundException("Layout type not found") }
-
-    @Transactional(readOnly = true)
-    fun getLayoutTypeByName(name: String): LayoutType =
-        layoutTypeRepository.findByName(name)
-            ?: throw NotFoundException("Layout type not found: $name")
-
-    @Transactional(readOnly = true)
-    fun getAllLayoutTypes(): List<LayoutTypeDto> =
-        layoutTypeRepository
-            .findAll()
-            .map { layoutTypeMapper.toDto(it) }
 
     @Transactional(readOnly = true)
     fun getSpreadEntity(id: UUID): Spread =

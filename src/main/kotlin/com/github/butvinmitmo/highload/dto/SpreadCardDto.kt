@@ -8,10 +8,3 @@ data class SpreadCardDto(
     val positionInSpread: Int,
     val isReversed: Boolean,
 )
-
-data class SpreadCardSummaryDto(
-    val cardName: String,
-    val arcanaType: String,
-    val position: Int,
-    val isReversed: Boolean,
-)

@@ -6,8 +6,3 @@ data class ArcanaTypeDto(
     val id: UUID,
     val name: String,
 )
-
-enum class ArcanaType {
-    MAJOR,
-    MINOR,
-}

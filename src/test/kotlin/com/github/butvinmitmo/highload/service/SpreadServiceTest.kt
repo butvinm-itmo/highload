@@ -9,7 +9,6 @@ import com.github.butvinmitmo.highload.entity.SpreadCard
 import com.github.butvinmitmo.highload.entity.User
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
-import com.github.butvinmitmo.highload.mapper.LayoutTypeMapper
 import com.github.butvinmitmo.highload.mapper.SpreadMapper
 import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
@@ -53,7 +52,6 @@ class SpreadServiceTest {
 
     private lateinit var spreadService: SpreadService
     private val spreadMapper = SpreadMapper()
-    private val layoutTypeMapper = LayoutTypeMapper()
 
     private val userId = UUID.randomUUID()
     private val spreadId = UUID.randomUUID()
@@ -73,7 +71,6 @@ class SpreadServiceTest {
                 userService,
                 cardService,
                 spreadMapper,
-                layoutTypeMapper,
             )
     }
 
@@ -421,55 +418,6 @@ class SpreadServiceTest {
                 spreadService.getLayoutTypeById(layoutTypeId)
             }
         assertEquals("Layout type not found", exception.message)
-    }
-
-    @Test
-    fun `getLayoutTypeByName should return layout type when found`() {
-        // Given
-        val layoutType = createLayoutType(layoutTypeId, "THREE_CARDS", 3)
-
-        whenever(layoutTypeRepository.findByName("THREE_CARDS")).thenReturn(layoutType)
-
-        // When
-        val result = spreadService.getLayoutTypeByName("THREE_CARDS")
-
-        // Then
-        assertNotNull(result)
-        assertEquals("THREE_CARDS", result.name)
-        assertEquals(3, result.cardsCount)
-    }
-
-    @Test
-    fun `getLayoutTypeByName should throw NotFoundException when not found`() {
-        // Given
-        whenever(layoutTypeRepository.findByName("INVALID")).thenReturn(null)
-
-        // When/Then
-        val exception =
-            assertThrows<NotFoundException> {
-                spreadService.getLayoutTypeByName("INVALID")
-            }
-        assertEquals("Layout type not found: INVALID", exception.message)
-    }
-
-    @Test
-    fun `getAllLayoutTypes should return all layout types`() {
-        // Given
-        val layoutTypes =
-            listOf(
-                createLayoutType(UUID.randomUUID(), "ONE_CARD", 1),
-                createLayoutType(UUID.randomUUID(), "THREE_CARDS", 3),
-                createLayoutType(UUID.randomUUID(), "CROSS", 5),
-            )
-
-        whenever(layoutTypeRepository.findAll()).thenReturn(layoutTypes)
-
-        // When
-        val result = spreadService.getAllLayoutTypes()
-
-        // Then
-        assertNotNull(result)
-        assertEquals(3, result.size)
     }
 
     @Test

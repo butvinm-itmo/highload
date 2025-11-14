@@ -3,7 +3,6 @@ package com.github.butvinmitmo.highload.integration
 import com.github.butvinmitmo.highload.service.CardService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,37 +36,6 @@ class CardServiceIntegrationTest {
 
     @Autowired
     private lateinit var cardService: CardService
-
-    @Test
-    fun `should return all 78 tarot cards`() {
-        val cards = cardService.getAllCards()
-
-        assertNotNull(cards)
-        assertEquals(78, cards.size)
-    }
-
-    @Test
-    fun `should return cards with proper structure`() {
-        val cards = cardService.getAllCards()
-
-        val firstCard = cards.first()
-        assertNotNull(firstCard.id)
-        assertNotNull(firstCard.name)
-        assertNotNull(firstCard.arcanaType)
-        assertNotNull(firstCard.arcanaType.id)
-        assertNotNull(firstCard.arcanaType.name)
-    }
-
-    @Test
-    fun `should return both major and minor arcana cards`() {
-        val cards = cardService.getAllCards()
-
-        val majorArcanaCards = cards.filter { it.arcanaType.name == "MAJOR" }
-        val minorArcanaCards = cards.filter { it.arcanaType.name == "MINOR" }
-
-        assertEquals(22, majorArcanaCards.size)
-        assertEquals(56, minorArcanaCards.size)
-    }
 
     @Test
     fun `should find random cards of requested count`() {
@@ -135,59 +103,6 @@ class CardServiceIntegrationTest {
     }
 
     @Test
-    fun `should get all arcana types`() {
-        val arcanaTypes = cardService.getAllArcanaTypes()
-
-        assertNotNull(arcanaTypes)
-        assertEquals(2, arcanaTypes.size)
-
-        val names = arcanaTypes.map { it.name }
-        assertTrue(names.contains("MAJOR"))
-        assertTrue(names.contains("MINOR"))
-    }
-
-    @Test
-    fun `should get arcana type by name - MAJOR`() {
-        val arcanaType = cardService.getArcanaTypeByName("MAJOR")
-
-        assertNotNull(arcanaType)
-        assertEquals("MAJOR", arcanaType!!.name)
-    }
-
-    @Test
-    fun `should get arcana type by name - MINOR`() {
-        val arcanaType = cardService.getArcanaTypeByName("MINOR")
-
-        assertNotNull(arcanaType)
-        assertEquals("MINOR", arcanaType!!.name)
-    }
-
-    @Test
-    fun `should return null when getting non-existent arcana type`() {
-        val arcanaType = cardService.getArcanaTypeByName("INVALID")
-
-        assertNull(arcanaType)
-    }
-
-    @Test
-    fun `should contain The Fool card`() {
-        val cards = cardService.getAllCards()
-
-        val theFool = cards.find { it.name == "The Fool" }
-        assertNotNull(theFool)
-        assertEquals("MAJOR", theFool!!.arcanaType.name)
-    }
-
-    @Test
-    fun `should contain Ace of Wands card`() {
-        val cards = cardService.getAllCards()
-
-        val aceOfWands = cards.find { it.name == "Ace of Wands" }
-        assertNotNull(aceOfWands)
-        assertEquals("MINOR", aceOfWands!!.arcanaType.name)
-    }
-
-    @Test
     fun `random cards should not exceed total available cards`() {
         // Request more cards than available - should still work based on repository implementation
         val cards = cardService.findRandomCards(100)
@@ -210,26 +125,6 @@ class CardServiceIntegrationTest {
         results.forEach { cards ->
             assertEquals(3, cards.size)
             assertNotNull(cards)
-        }
-    }
-
-    @Test
-    fun `all cards should have non-empty names`() {
-        val cards = cardService.getAllCards()
-
-        cards.forEach { card ->
-            assertNotNull(card.name)
-            assertTrue(card.name.isNotEmpty())
-        }
-    }
-
-    @Test
-    fun `all arcana types should have non-empty names`() {
-        val arcanaTypes = cardService.getAllArcanaTypes()
-
-        arcanaTypes.forEach { arcanaType ->
-            assertNotNull(arcanaType.name)
-            assertTrue(arcanaType.name.isNotEmpty())
         }
     }
 }

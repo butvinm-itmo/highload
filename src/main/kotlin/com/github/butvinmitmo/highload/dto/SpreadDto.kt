@@ -37,11 +37,3 @@ data class CreateSpreadRequest(
 data class CreateSpreadResponse(
     val id: UUID,
 )
-
-enum class SpreadLayoutType(
-    val cardsCount: Int,
-) {
-    ONE_CARD(1),
-    THREE_CARDS(3),
-    CROSS(5),
-}

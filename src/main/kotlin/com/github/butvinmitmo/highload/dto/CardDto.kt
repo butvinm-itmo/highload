@@ -7,9 +7,3 @@ data class CardDto(
     val name: String,
     val arcanaType: ArcanaTypeDto,
 )
-
-data class CardSummaryDto(
-    val id: UUID,
-    val name: String,
-    val arcanaTypeName: String,
-)

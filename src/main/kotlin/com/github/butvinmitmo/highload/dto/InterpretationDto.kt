@@ -14,13 +14,6 @@ data class InterpretationDto(
     val spreadId: UUID,
 )
 
-data class InterpretationSummaryDto(
-    val id: UUID,
-    val text: String,
-    val createdAt: Instant,
-    val authorUsername: String,
-)
-
 data class CreateInterpretationRequest(
     @field:NotBlank(message = "Interpretation text is required")
     @field:Size(min = 1, max = 50000, message = "Interpretation text must be between 1 and 50000 characters")

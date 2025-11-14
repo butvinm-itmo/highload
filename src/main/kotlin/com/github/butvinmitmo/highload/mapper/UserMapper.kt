@@ -12,6 +12,4 @@ class UserMapper {
             username = entity.username,
             createdAt = entity.createdAt,
         )
-
-    fun toDto(entities: List<User>): List<UserDto> = entities.map { toDto(it) }
 }

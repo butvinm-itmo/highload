@@ -332,19 +332,6 @@ class SpreadServiceIntegrationTest {
     }
 
     @Test
-    fun `should get all layout types`() {
-        val layoutTypes = spreadService.getAllLayoutTypes()
-
-        assertNotNull(layoutTypes)
-        assertEquals(3, layoutTypes.size)
-
-        val names = layoutTypes.map { it.name }
-        assertTrue(names.contains("ONE_CARD"))
-        assertTrue(names.contains("THREE_CARDS"))
-        assertTrue(names.contains("CROSS"))
-    }
-
-    @Test
     fun `should get layout type by id`() {
         val layoutType = spreadService.getLayoutTypeById(layoutTypeId)
 
@@ -362,24 +349,6 @@ class SpreadServiceIntegrationTest {
                 spreadService.getLayoutTypeById(nonExistentId)
             }
         assertEquals("Layout type not found", exception.message)
-    }
-
-    @Test
-    fun `should get layout type by name`() {
-        val layoutType = spreadService.getLayoutTypeByName("THREE_CARDS")
-
-        assertNotNull(layoutType)
-        assertEquals("THREE_CARDS", layoutType.name)
-        assertEquals(3, layoutType.cardsCount)
-    }
-
-    @Test
-    fun `should throw NotFoundException when getting non-existent layout type by name`() {
-        val exception =
-            assertThrows<NotFoundException> {
-                spreadService.getLayoutTypeByName("INVALID")
-            }
-        assertEquals("Layout type not found: INVALID", exception.message)
     }
 
     @Test
