@@ -15,6 +15,13 @@
 # Run tests
 ./gradlew test
 
+# Run tests with coverage
+./gradlew test jacocoTestReport
+
+# View coverage report
+# HTML report: build/reports/jacoco/test/html/index.html
+# XML report: build/reports/jacoco/test/jacocoTestReport.xml
+
 # Clean build artifacts
 ./gradlew clean
 
