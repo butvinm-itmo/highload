@@ -5,6 +5,7 @@ plugins {
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
+    jacoco
 }
 
 group = "com.github.butvinmitmo"
@@ -54,4 +55,36 @@ tasks.withType<Test> {
 
 ktlint {
     version.set("1.5.0")
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.withType<JacocoReport> {
+    dependsOn(tasks.test)
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    // Only include production code in coverage
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/HighloadApplication.class",
+                        "**/HighloadApplicationKt.class",
+                    )
+                }
+            },
+        ),
+    )
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
 }
