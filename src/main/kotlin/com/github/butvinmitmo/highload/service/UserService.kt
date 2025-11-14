@@ -34,7 +34,6 @@ class UserService(
         return CreateUserResponse(id = saved.id)
     }
 
-    @Transactional(readOnly = true)
     fun getUsers(
         page: Int,
         size: Int,
@@ -46,7 +45,6 @@ class UserService(
             .map { userMapper.toDto(it) }
     }
 
-    @Transactional(readOnly = true)
     fun getUser(id: UUID): UserDto {
         val user =
             userRepository
@@ -81,7 +79,6 @@ class UserService(
         userRepository.deleteById(id)
     }
 
-    @Transactional(readOnly = true)
     fun getUserEntity(id: UUID): User =
         userRepository
             .findById(id)

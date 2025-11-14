@@ -59,7 +59,6 @@ class SpreadService(
         return CreateSpreadResponse(id = savedSpread.id)
     }
 
-    @Transactional(readOnly = true)
     fun getSpreads(
         page: Int,
         size: Int,
@@ -78,7 +77,6 @@ class SpreadService(
         )
     }
 
-    @Transactional(readOnly = true)
     fun getSpreadsByScroll(
         after: UUID?,
         size: Int,
@@ -93,7 +91,6 @@ class SpreadService(
         return spreads.map { spreadMapper.toSummaryDto(it) }
     }
 
-    @Transactional(readOnly = true)
     fun getSpread(id: UUID): SpreadDto {
         val spread =
             spreadRepository.findByIdWithCardsAndInterpretations(id)
@@ -119,13 +116,11 @@ class SpreadService(
         spreadRepository.deleteById(id)
     }
 
-    @Transactional(readOnly = true)
     fun getLayoutTypeById(id: UUID): LayoutType =
         layoutTypeRepository
             .findById(id)
             .orElseThrow { NotFoundException("Layout type not found") }
 
-    @Transactional(readOnly = true)
     fun getSpreadEntity(id: UUID): Spread =
         spreadRepository
             .findById(id)
