@@ -402,4 +402,130 @@ class InterpretationServiceIntegrationTest {
         val allInterpretations = interpretationRepository.findAll()
         assertEquals(2, allInterpretations.size)
     }
+
+    @Test
+    fun `should get interpretation by id successfully`() {
+        val createRequest =
+            CreateInterpretationRequest(
+                text = "Test interpretation",
+                authorId = userId,
+            )
+        val created = interpretationService.addInterpretation(spreadId, createRequest)
+
+        val result = interpretationService.getInterpretation(spreadId, created.id)
+
+        assertNotNull(result)
+        assertEquals(created.id, result.id)
+        assertEquals("Test interpretation", result.text)
+        assertEquals(userId, result.author.id)
+        assertEquals(spreadId, result.spreadId)
+    }
+
+    @Test
+    fun `should throw NotFoundException when getting non-existent interpretation`() {
+        val nonExistentId = UUID.randomUUID()
+
+        val exception =
+            assertThrows<NotFoundException> {
+                interpretationService.getInterpretation(spreadId, nonExistentId)
+            }
+        assertEquals("Interpretation not found", exception.message)
+    }
+
+    @Test
+    fun `should throw NotFoundException when getting interpretation from wrong spread`() {
+        val createRequest =
+            CreateInterpretationRequest(
+                text = "Test interpretation",
+                authorId = userId,
+            )
+        val created = interpretationService.addInterpretation(spreadId, createRequest)
+
+        val differentSpreadId =
+            spreadService
+                .createSpread(
+                    CreateSpreadRequest(
+                        question = "Different question?",
+                        layoutTypeId = layoutTypeId,
+                        authorId = userId,
+                    ),
+                ).id
+
+        val exception =
+            assertThrows<NotFoundException> {
+                interpretationService.getInterpretation(differentSpreadId, created.id)
+            }
+        assertEquals("Interpretation not found in this spread", exception.message)
+    }
+
+    @Test
+    fun `should get all interpretations for a spread`() {
+        val user2 = userService.createUser(CreateUserRequest(username = "user2"))
+
+        val request1 =
+            CreateInterpretationRequest(
+                text = "First interpretation",
+                authorId = userId,
+            )
+        interpretationService.addInterpretation(spreadId, request1)
+
+        val request2 =
+            CreateInterpretationRequest(
+                text = "Second interpretation",
+                authorId = user2.id,
+            )
+        interpretationService.addInterpretation(spreadId, request2)
+
+        val result = interpretationService.getInterpretations(spreadId)
+
+        assertNotNull(result)
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.text == "First interpretation" })
+        assertTrue(result.any { it.text == "Second interpretation" })
+    }
+
+    @Test
+    fun `should return empty list when spread has no interpretations`() {
+        val result = interpretationService.getInterpretations(spreadId)
+
+        assertNotNull(result)
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `should return interpretations ordered by creation date descending`() {
+        val request1 =
+            CreateInterpretationRequest(
+                text = "First interpretation",
+                authorId = userId,
+            )
+        interpretationService.addInterpretation(spreadId, request1)
+
+        Thread.sleep(10)
+
+        val user2 = userService.createUser(CreateUserRequest(username = "user2"))
+        val request2 =
+            CreateInterpretationRequest(
+                text = "Second interpretation",
+                authorId = user2.id,
+            )
+        interpretationService.addInterpretation(spreadId, request2)
+
+        val result = interpretationService.getInterpretations(spreadId)
+
+        assertEquals(2, result.size)
+        assertEquals("Second interpretation", result[0].text)
+        assertEquals("First interpretation", result[1].text)
+    }
+
+    @Test
+    fun `should throw NotFoundException when getting interpretations for non-existent spread`() {
+        val nonExistentSpreadId = UUID.randomUUID()
+
+        val exception =
+            assertThrows<NotFoundException> {
+                interpretationService.getInterpretations(nonExistentSpreadId)
+            }
+        assertEquals("Spread not found", exception.message)
+    }
 }

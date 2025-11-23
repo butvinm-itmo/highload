@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -29,6 +30,43 @@ import java.util.UUID
 class InterpretationController(
     private val interpretationService: InterpretationService,
 ) {
+    @GetMapping
+    @Operation(
+        summary = "Get all interpretations for a spread",
+        description = "Retrieves all interpretations for the specified spread, ordered by creation date (newest first)",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Interpretations retrieved successfully"),
+            ApiResponse(responseCode = "404", description = "Spread not found"),
+        ],
+    )
+    fun getInterpretations(
+        @Parameter(description = "Spread ID to get interpretations for", required = true)
+        @PathVariable
+        spreadId: UUID,
+    ): List<InterpretationDto> = interpretationService.getInterpretations(spreadId)
+
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Get interpretation details",
+        description = "Retrieves a specific interpretation by its ID",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Interpretation found"),
+            ApiResponse(responseCode = "404", description = "Interpretation or spread not found"),
+        ],
+    )
+    fun getInterpretation(
+        @Parameter(description = "Spread ID containing the interpretation", required = true)
+        @PathVariable
+        spreadId: UUID,
+        @Parameter(description = "Interpretation ID", required = true)
+        @PathVariable
+        id: UUID,
+    ): InterpretationDto = interpretationService.getInterpretation(spreadId, id)
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(

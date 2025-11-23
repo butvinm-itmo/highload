@@ -84,4 +84,29 @@ class InterpretationService(
 
         interpretationRepository.deleteById(id)
     }
+
+    @Transactional(readOnly = true)
+    fun getInterpretation(
+        spreadId: UUID,
+        id: UUID,
+    ): InterpretationDto {
+        val interpretation =
+            interpretationRepository
+                .findById(id)
+                .orElseThrow { NotFoundException("Interpretation not found") }
+
+        if (interpretation.spread.id != spreadId) {
+            throw NotFoundException("Interpretation not found in this spread")
+        }
+
+        return interpretationMapper.toDto(interpretation)
+    }
+
+    @Transactional(readOnly = true)
+    fun getInterpretations(spreadId: UUID): List<InterpretationDto> {
+        spreadService.getSpreadEntity(spreadId)
+        return interpretationRepository
+            .findBySpreadIdOrderByCreatedAtDesc(spreadId)
+            .map { interpretationMapper.toDto(it) }
+    }
 }

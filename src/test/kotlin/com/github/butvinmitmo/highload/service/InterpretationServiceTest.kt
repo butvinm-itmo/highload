@@ -371,4 +371,113 @@ class InterpretationServiceTest {
         // Verify delete was never called
         verify(interpretationRepository, never()).deleteById(any())
     }
+
+    @Test
+    fun `getInterpretation should return interpretation successfully`() {
+        // Given
+        val user = createUser(userId, "testuser")
+        val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
+        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val interpretation = createInterpretation(interpretationId, "Test text", user, spread)
+
+        whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
+
+        // When
+        val result = interpretationService.getInterpretation(spreadId, interpretationId)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(interpretationId, result.id)
+        assertEquals("Test text", result.text)
+        assertEquals(userId, result.author.id)
+    }
+
+    @Test
+    fun `getInterpretation should throw NotFoundException when interpretation not found`() {
+        // Given
+        whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.empty())
+
+        // When/Then
+        val exception =
+            assertThrows<NotFoundException> {
+                interpretationService.getInterpretation(spreadId, interpretationId)
+            }
+        assertEquals("Interpretation not found", exception.message)
+    }
+
+    @Test
+    fun `getInterpretation should throw NotFoundException when interpretation belongs to different spread`() {
+        // Given
+        val user = createUser(userId, "testuser")
+        val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
+        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val interpretation = createInterpretation(interpretationId, "Test text", user, spread)
+
+        val differentSpreadId = UUID.randomUUID()
+
+        whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
+
+        // When/Then
+        val exception =
+            assertThrows<NotFoundException> {
+                interpretationService.getInterpretation(differentSpreadId, interpretationId)
+            }
+        assertEquals("Interpretation not found in this spread", exception.message)
+    }
+
+    @Test
+    fun `getInterpretations should return all interpretations for spread`() {
+        // Given
+        val user1 = createUser(userId, "user1")
+        val user2 = createUser(UUID.randomUUID(), "user2")
+        val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
+        val spread = createSpread(spreadId, "What will happen?", user1, layoutType)
+
+        val interpretation1 = createInterpretation(UUID.randomUUID(), "First interpretation", user1, spread)
+        val interpretation2 = createInterpretation(UUID.randomUUID(), "Second interpretation", user2, spread)
+
+        whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
+        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId))
+            .thenReturn(listOf(interpretation2, interpretation1))
+
+        // When
+        val result = interpretationService.getInterpretations(spreadId)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(2, result.size)
+        assertEquals("Second interpretation", result[0].text)
+        assertEquals("First interpretation", result[1].text)
+    }
+
+    @Test
+    fun `getInterpretations should return empty list when no interpretations exist`() {
+        // Given
+        val user = createUser(userId, "testuser")
+        val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
+        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+
+        whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
+        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId)).thenReturn(emptyList())
+
+        // When
+        val result = interpretationService.getInterpretations(spreadId)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `getInterpretations should throw NotFoundException when spread not found`() {
+        // Given
+        whenever(spreadService.getSpreadEntity(spreadId)).thenThrow(NotFoundException("Spread not found"))
+
+        // When/Then
+        val exception =
+            assertThrows<NotFoundException> {
+                interpretationService.getInterpretations(spreadId)
+            }
+        assertEquals("Spread not found", exception.message)
+    }
 }
