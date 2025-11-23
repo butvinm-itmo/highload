@@ -290,9 +290,10 @@ class SpreadServiceIntegrationTest {
     fun `should get spread DTO with multiple interpretations`() {
         // Given - create a second user
         val user2Id =
-            userService.createUser(
-                CreateUserRequest(username = "reader2"),
-            ).id
+            userService
+                .createUser(
+                    CreateUserRequest(username = "reader2"),
+                ).id
 
         // Create a spread
         val spreadRequest =

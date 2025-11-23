@@ -95,12 +95,10 @@ class SpreadService(
 
     @Transactional
     fun getSpread(id: UUID): SpreadDto {
-        // Fetch spread with cards in one query
         val spread =
             spreadRepository.findByIdWithCards(id)
                 ?: throw NotFoundException("Spread not found")
 
-        // Fetch interpretations with authors in a separate query
         val interpretations = interpretationRepository.findBySpreadIdWithAuthor(spread.id)
 
         return spreadMapper.toDto(spread, interpretations)
