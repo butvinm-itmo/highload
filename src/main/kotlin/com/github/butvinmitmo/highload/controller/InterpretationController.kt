@@ -73,10 +73,7 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
-    ): InterpretationDto {
-        val userId = UUID.randomUUID()
-        return interpretationService.updateInterpretation(spreadId, id, userId, request)
-    }
+    ): InterpretationDto = interpretationService.updateInterpretation(spreadId, id, request.authorId, request)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

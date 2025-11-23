@@ -30,4 +30,6 @@ data class UpdateInterpretationRequest(
     @field:NotBlank(message = "Interpretation text is required")
     @field:Size(min = 1, max = 50000, message = "Interpretation text must be between 1 and 50000 characters")
     val text: String,
+    @field:NotNull(message = "Author ID is required")
+    val authorId: UUID,
 )

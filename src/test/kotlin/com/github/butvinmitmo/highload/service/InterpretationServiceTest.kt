@@ -254,7 +254,7 @@ class InterpretationServiceTest {
         val spread = createSpread(spreadId, "What will happen?", user, layoutType)
         val interpretation = createInterpretation(interpretationId, "Old text", user, spread)
 
-        val request = UpdateInterpretationRequest(text = "New text")
+        val request = UpdateInterpretationRequest(text = "New text", authorId = userId)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
         whenever(interpretationRepository.save(any())).thenAnswer { invocation ->
@@ -278,7 +278,7 @@ class InterpretationServiceTest {
     @Test
     fun `updateInterpretation should throw NotFoundException when interpretation not found`() {
         // Given
-        val request = UpdateInterpretationRequest(text = "New text")
+        val request = UpdateInterpretationRequest(text = "New text", authorId = userId)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.empty())
 
@@ -302,7 +302,7 @@ class InterpretationServiceTest {
         val spread = createSpread(spreadId, "What will happen?", author, layoutType)
         val interpretation = createInterpretation(interpretationId, "Old text", author, spread)
 
-        val request = UpdateInterpretationRequest(text = "New text")
+        val request = UpdateInterpretationRequest(text = "New text", authorId = otherUserId)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
 

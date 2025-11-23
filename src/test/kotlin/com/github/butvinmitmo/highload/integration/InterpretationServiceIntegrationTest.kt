@@ -220,7 +220,7 @@ class InterpretationServiceIntegrationTest {
             )
         val created = interpretationService.addInterpretation(spreadId, createRequest)
 
-        val updateRequest = UpdateInterpretationRequest(text = "Updated text")
+        val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
         val result = interpretationService.updateInterpretation(spreadId, created.id, userId, updateRequest)
 
         assertNotNull(result)
@@ -235,7 +235,7 @@ class InterpretationServiceIntegrationTest {
     @Test
     fun `should throw NotFoundException when updating non-existent interpretation`() {
         val nonExistentId = UUID.randomUUID()
-        val updateRequest = UpdateInterpretationRequest(text = "Updated text")
+        val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
 
         val exception =
             assertThrows<NotFoundException> {
@@ -254,7 +254,7 @@ class InterpretationServiceIntegrationTest {
         val created = interpretationService.addInterpretation(spreadId, createRequest)
 
         val otherUser = userService.createUser(CreateUserRequest(username = "otheruser"))
-        val updateRequest = UpdateInterpretationRequest(text = "Hacked text")
+        val updateRequest = UpdateInterpretationRequest(text = "Hacked text", authorId = otherUser.id)
 
         val exception =
             assertThrows<ForbiddenException> {
@@ -340,7 +340,7 @@ class InterpretationServiceIntegrationTest {
         val created = interpretationService.addInterpretation(spreadId, createRequest)
 
         val longText = "A".repeat(1000)
-        val updateRequest = UpdateInterpretationRequest(text = longText)
+        val updateRequest = UpdateInterpretationRequest(text = longText, authorId = userId)
         val result = interpretationService.updateInterpretation(spreadId, created.id, userId, updateRequest)
 
         assertEquals(longText, result.text)
@@ -364,7 +364,7 @@ class InterpretationServiceIntegrationTest {
 
         Thread.sleep(10) // Ensure time passes
 
-        val updateRequest = UpdateInterpretationRequest(text = "Updated text")
+        val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
         interpretationService.updateInterpretation(spreadId, created.id, userId, updateRequest)
 
         val updated = interpretationRepository.findById(created.id).get()
