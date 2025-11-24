@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.service
+package com.github.butvinmitmo.highload.unit.service
 
 import com.github.butvinmitmo.highload.TestEntityFactory
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
@@ -15,6 +15,9 @@ import com.github.butvinmitmo.highload.repository.InterpretationRepository
 import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
 import com.github.butvinmitmo.highload.repository.SpreadRepository
+import com.github.butvinmitmo.highload.service.CardService
+import com.github.butvinmitmo.highload.service.SpreadService
+import com.github.butvinmitmo.highload.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach

@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.e2e
+package com.github.butvinmitmo.highload.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.http.MediaType
@@ -8,7 +8,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.UUID
 
-// Extension functions for MockMvc to reduce boilerplate in e2e tests.
+// Extension functions for MockMvc to reduce boilerplate in controller integration tests.
 
 /**
  * Performs a POST request with JSON body.

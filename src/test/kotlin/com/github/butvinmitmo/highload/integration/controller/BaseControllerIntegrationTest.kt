@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.e2e
+package com.github.butvinmitmo.highload.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
@@ -19,10 +19,13 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.UUID
 
 /**
- * Base class for E2E API tests using MockMvc and TestContainers.
+ * Base class for controller integration tests using MockMvc and TestContainers.
+ *
+ * Tests the full stack: Controller → Service → Repository → Database
+ * Uses MockMvc to simulate HTTP requests (not real HTTP).
  *
  * Features:
- * - Shared PostgreSQL container across all test classes
+ * - Shared PostgreSQL container across all controller tests
  * - MockMvc for simulating HTTP requests
  * - Jackson ObjectMapper for JSON serialization
  * - Layout type UUIDs for creating spreads
@@ -34,7 +37,7 @@ import java.util.UUID
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @Testcontainers
-abstract class BaseE2ETest {
+abstract class BaseControllerIntegrationTest {
     @Autowired
     protected lateinit var mockMvc: MockMvc
 

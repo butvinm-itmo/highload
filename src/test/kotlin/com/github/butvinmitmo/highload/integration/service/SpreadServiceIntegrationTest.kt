@@ -1,10 +1,11 @@
-package com.github.butvinmitmo.highload.integration
+package com.github.butvinmitmo.highload.integration.service
 
 import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
+import com.github.butvinmitmo.highload.integration.BaseIntegrationTest
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
 import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository

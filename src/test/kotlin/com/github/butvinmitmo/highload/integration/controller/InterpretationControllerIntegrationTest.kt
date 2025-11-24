@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.e2e
+package com.github.butvinmitmo.highload.integration.controller
 
 import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
-class InterpretationControllerE2ETest : BaseE2ETest() {
+class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() {
     private val spreadsUrl = "/api/v0.0.1/spreads"
     private val usersUrl = "/api/v0.0.1/users"
 

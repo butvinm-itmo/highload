@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.service
+package com.github.butvinmitmo.highload.unit.service
 
 import com.github.butvinmitmo.highload.TestEntityFactory
 import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
@@ -12,6 +12,9 @@ import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.InterpretationMapper
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
+import com.github.butvinmitmo.highload.service.InterpretationService
+import com.github.butvinmitmo.highload.service.SpreadService
+import com.github.butvinmitmo.highload.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach

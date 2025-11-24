@@ -12,8 +12,14 @@
 # Build the project
 ./gradlew build
 
-# Run tests
+# Run all tests
 ./gradlew test
+
+# Run unit tests only
+./gradlew test --tests "*Test" --exclude-task "*E2E*"
+
+# Run E2E tests only
+./gradlew test --tests "com.github.butvinmitmo.highload.e2e.*"
 
 # Run tests with coverage
 ./gradlew test jacocoTestReport
@@ -21,6 +27,9 @@
 # View coverage report
 # HTML report: build/reports/jacoco/test/html/index.html
 # XML report: build/reports/jacoco/test/jacocoTestReport.xml
+
+# View test results
+# HTML report: build/reports/tests/test/index.html
 
 # Clean build artifacts
 ./gradlew clean

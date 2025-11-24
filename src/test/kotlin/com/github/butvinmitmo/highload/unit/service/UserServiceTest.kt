@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.service
+package com.github.butvinmitmo.highload.unit.service
 
 import com.github.butvinmitmo.highload.TestEntityFactory
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
@@ -8,6 +8,7 @@ import com.github.butvinmitmo.highload.exception.ConflictException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.UserMapper
 import com.github.butvinmitmo.highload.repository.UserRepository
+import com.github.butvinmitmo.highload.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach

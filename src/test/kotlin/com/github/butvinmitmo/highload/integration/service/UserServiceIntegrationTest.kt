@@ -1,9 +1,10 @@
-package com.github.butvinmitmo.highload.integration
+package com.github.butvinmitmo.highload.integration.service
 
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
 import com.github.butvinmitmo.highload.dto.UpdateUserRequest
 import com.github.butvinmitmo.highload.exception.ConflictException
 import com.github.butvinmitmo.highload.exception.NotFoundException
+import com.github.butvinmitmo.highload.integration.BaseIntegrationTest
 import com.github.butvinmitmo.highload.repository.UserRepository
 import com.github.butvinmitmo.highload.service.UserService
 import org.junit.jupiter.api.AfterEach

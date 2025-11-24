@@ -1,5 +1,6 @@
-package com.github.butvinmitmo.highload.integration
+package com.github.butvinmitmo.highload.integration.service
 
+import com.github.butvinmitmo.highload.integration.BaseIntegrationTest
 import com.github.butvinmitmo.highload.service.CardService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

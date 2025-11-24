@@ -1,8 +1,9 @@
-package com.github.butvinmitmo.highload.service
+package com.github.butvinmitmo.highload.unit.service
 
 import com.github.butvinmitmo.highload.entity.ArcanaType
 import com.github.butvinmitmo.highload.entity.Card
 import com.github.butvinmitmo.highload.repository.CardRepository
+import com.github.butvinmitmo.highload.service.CardService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach

@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.e2e
+package com.github.butvinmitmo.highload.integration.controller
 
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
@@ -9,7 +9,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
-class SpreadControllerE2ETest : BaseE2ETest() {
+class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
     private val baseUrl = "/api/v0.0.1/spreads"
     private val usersUrl = "/api/v0.0.1/users"
 

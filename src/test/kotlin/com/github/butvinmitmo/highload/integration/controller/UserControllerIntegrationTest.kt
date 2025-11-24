@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.highload.e2e
+package com.github.butvinmitmo.highload.integration.controller
 
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
 import com.github.butvinmitmo.highload.dto.UpdateUserRequest
@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
-class UserControllerE2ETest : BaseE2ETest() {
+class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
     private val baseUrl = "/api/v0.0.1/users"
 
     @Test
