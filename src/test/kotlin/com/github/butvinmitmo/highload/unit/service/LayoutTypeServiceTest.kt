@@ -69,13 +69,13 @@ class LayoutTypeServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(3, result.size)
-        assertEquals("ONE_CARD", result[0].name)
-        assertEquals(1, result[0].cardsCount)
-        assertEquals("THREE_CARDS", result[1].name)
-        assertEquals(3, result[1].cardsCount)
-        assertEquals("CROSS", result[2].name)
-        assertEquals(5, result[2].cardsCount)
+        assertEquals(3, result.content.size)
+        assertEquals("ONE_CARD", result.content[0].name)
+        assertEquals(1, result.content[0].cardsCount)
+        assertEquals("THREE_CARDS", result.content[1].name)
+        assertEquals(3, result.content[1].cardsCount)
+        assertEquals("CROSS", result.content[2].name)
+        assertEquals(5, result.content[2].cardsCount)
     }
 
     @Test
@@ -89,7 +89,7 @@ class LayoutTypeServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(0, result.size)
+        assertEquals(0, result.content.size)
     }
 
     @Test
@@ -112,9 +112,9 @@ class LayoutTypeServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(2, result.size)
-        assertEquals("ONE_CARD", result[0].name)
-        assertEquals("THREE_CARDS", result[1].name)
+        assertEquals(2, result.content.size)
+        assertEquals("ONE_CARD", result.content[0].name)
+        assertEquals("THREE_CARDS", result.content[1].name)
     }
 
     @Test
@@ -132,9 +132,9 @@ class LayoutTypeServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(1, result.size)
-        assertEquals("CROSS", result[0].name)
-        assertEquals(5, result[0].cardsCount)
+        assertEquals(1, result.content.size)
+        assertEquals("CROSS", result.content[0].name)
+        assertEquals(5, result.content[0].cardsCount)
     }
 
     @Test
@@ -152,8 +152,8 @@ class LayoutTypeServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(1, result.size)
-        assertEquals("ONE_CARD", result[0].name)
-        assertEquals(1, result[0].cardsCount)
+        assertEquals(1, result.content.size)
+        assertEquals("ONE_CARD", result.content[0].name)
+        assertEquals(1, result.content[0].cardsCount)
     }
 }

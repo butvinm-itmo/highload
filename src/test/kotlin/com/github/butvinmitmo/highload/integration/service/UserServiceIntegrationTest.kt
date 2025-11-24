@@ -136,13 +136,13 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
         userService.createUser(CreateUserRequest(username = "user3"))
 
         val page0 = userService.getUsers(0, 2)
-        assertEquals(2, page0.size)
+        assertEquals(2, page0.content.size)
 
         val page1 = userService.getUsers(1, 2)
-        assertEquals(2, page1.size)
+        assertEquals(2, page1.content.size)
 
         val allUsers = userService.getUsers(0, 10)
-        assertEquals(4, allUsers.size)
+        assertEquals(4, allUsers.content.size)
     }
 
     @Test
@@ -150,8 +150,8 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
         val result = userService.getUsers(0, 10)
 
         assertNotNull(result)
-        assertEquals(1, result.size)
-        assertEquals("admin", result[0].username)
+        assertEquals(1, result.content.size)
+        assertEquals("admin", result.content[0].username)
     }
 
     @Test

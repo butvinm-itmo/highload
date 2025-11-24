@@ -2,6 +2,7 @@ package com.github.butvinmitmo.highload.service
 
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
 import com.github.butvinmitmo.highload.dto.CreateUserResponse
+import com.github.butvinmitmo.highload.dto.PageResponse
 import com.github.butvinmitmo.highload.dto.UpdateUserRequest
 import com.github.butvinmitmo.highload.dto.UserDto
 import com.github.butvinmitmo.highload.entity.User
@@ -37,12 +38,18 @@ class UserService(
     fun getUsers(
         page: Int,
         size: Int,
-    ): List<UserDto> {
+    ): PageResponse<UserDto> {
         val pageable = PageRequest.of(page, size)
-        return userRepository
-            .findAll(pageable)
-            .content
-            .map { userMapper.toDto(it) }
+        val usersPage = userRepository.findAll(pageable)
+        return PageResponse(
+            content = usersPage.content.map { userMapper.toDto(it) },
+            page = usersPage.number,
+            size = usersPage.size,
+            totalElements = usersPage.totalElements,
+            totalPages = usersPage.totalPages,
+            isFirst = usersPage.isFirst,
+            isLast = usersPage.isLast,
+        )
     }
 
     fun getUser(id: UUID): UserDto {

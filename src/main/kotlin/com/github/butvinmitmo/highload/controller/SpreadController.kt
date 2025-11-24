@@ -16,8 +16,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -32,6 +35,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/v0.0.1/spreads")
 @Tag(name = "Spreads", description = "Tarot spread management and viewing")
+@Validated
 class SpreadController(
     private val spreadService: SpreadService,
 ) {
@@ -78,9 +82,12 @@ class SpreadController(
     fun getSpreads(
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
+        @Min(0)
         page: Int,
-        @Parameter(description = "Page size", example = "20")
+        @Parameter(description = "Page size (max 50)", example = "20")
         @RequestParam(defaultValue = "20")
+        @Min(1)
+        @Max(50)
         size: Int,
     ): ResponseEntity<List<SpreadSummaryDto>> {
         val response = spreadService.getSpreads(page, size)
@@ -104,8 +111,10 @@ class SpreadController(
         @Parameter(description = "ID of the last spread from previous request (cursor)", required = false)
         @RequestParam(required = false)
         after: UUID?,
-        @Parameter(description = "Number of spreads to retrieve", example = "20")
+        @Parameter(description = "Number of spreads to retrieve (max 50)", example = "20")
         @RequestParam(defaultValue = "20")
+        @Min(1)
+        @Max(50)
         size: Int,
     ): List<SpreadSummaryDto> = spreadService.getSpreadsByScroll(after, size)
 

@@ -200,9 +200,9 @@ class UserServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(2, result.size)
-        assertEquals("user1", result[0].username)
-        assertEquals("user2", result[1].username)
+        assertEquals(2, result.content.size)
+        assertEquals("user1", result.content[0].username)
+        assertEquals("user2", result.content[1].username)
     }
 
     @Test
@@ -218,7 +218,7 @@ class UserServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(0, result.size)
+        assertEquals(0, result.content.size)
     }
 
     @Test

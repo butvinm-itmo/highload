@@ -439,20 +439,20 @@ class InterpretationServiceIntegrationTest : BaseIntegrationTest() {
             )
         interpretationService.addInterpretation(spreadId, request2)
 
-        val result = interpretationService.getInterpretations(spreadId)
+        val result = interpretationService.getInterpretations(spreadId, 0, 20)
 
         assertNotNull(result)
-        assertEquals(2, result.size)
-        assertTrue(result.any { it.text == "First interpretation" })
-        assertTrue(result.any { it.text == "Second interpretation" })
+        assertEquals(2, result.content.size)
+        assertTrue(result.content.any { it.text == "First interpretation" })
+        assertTrue(result.content.any { it.text == "Second interpretation" })
     }
 
     @Test
     fun `should return empty list when spread has no interpretations`() {
-        val result = interpretationService.getInterpretations(spreadId)
+        val result = interpretationService.getInterpretations(spreadId, 0, 20)
 
         assertNotNull(result)
-        assertEquals(0, result.size)
+        assertEquals(0, result.content.size)
     }
 
     @Test
@@ -477,20 +477,20 @@ class InterpretationServiceIntegrationTest : BaseIntegrationTest() {
                 CreateInterpretationRequest(text = "Third interpretation", authorId = user3.id),
             )
 
-        val result = interpretationService.getInterpretations(spreadId)
+        val result = interpretationService.getInterpretations(spreadId, 0, 20)
 
-        assertEquals(3, result.size)
+        assertEquals(3, result.content.size)
 
         // Verify ordering: each interpretation's createdAt should be >= the next interpretation's createdAt
-        for (i in 0 until result.size - 1) {
+        for (i in 0 until result.content.size - 1) {
             assertTrue(
-                result[i].createdAt >= result[i + 1].createdAt,
+                result.content[i].createdAt >= result.content[i + 1].createdAt,
                 "Interpretations should be ordered by createdAt descending",
             )
         }
 
         // Verify all created interpretations are present
-        val resultIds = result.map { it.id }.toSet()
+        val resultIds = result.content.map { it.id }.toSet()
         val createdIds = setOf(interp1.id, interp2.id, interp3.id)
         assertEquals(createdIds, resultIds, "All created interpretations should be retrieved")
     }
@@ -501,7 +501,7 @@ class InterpretationServiceIntegrationTest : BaseIntegrationTest() {
 
         val exception =
             assertThrows<NotFoundException> {
-                interpretationService.getInterpretations(nonExistentSpreadId)
+                interpretationService.getInterpretations(nonExistentSpreadId, 0, 20)
             }
         assertEquals("Spread not found", exception.message)
     }

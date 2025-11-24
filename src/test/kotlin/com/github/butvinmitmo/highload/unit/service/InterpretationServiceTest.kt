@@ -423,17 +423,20 @@ class InterpretationServiceTest {
             )
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
-        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId))
-            .thenReturn(listOf(interpretation2, interpretation1))
+        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(any(), any()))
+            .thenReturn(
+                org.springframework.data.domain
+                    .PageImpl(listOf(interpretation2, interpretation1)),
+            )
 
         // When
-        val result = interpretationService.getInterpretations(spreadId)
+        val result = interpretationService.getInterpretations(spreadId, 0, 20)
 
         // Then
         assertNotNull(result)
-        assertEquals(2, result.size)
-        assertEquals("Second interpretation", result[0].text)
-        assertEquals("First interpretation", result[1].text)
+        assertEquals(2, result.content.size)
+        assertEquals("Second interpretation", result.content[0].text)
+        assertEquals("First interpretation", result.content[1].text)
     }
 
     @Test
@@ -444,14 +447,18 @@ class InterpretationServiceTest {
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
-        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId)).thenReturn(emptyList())
+        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(any(), any()))
+            .thenReturn(
+                org.springframework.data.domain
+                    .PageImpl(emptyList()),
+            )
 
         // When
-        val result = interpretationService.getInterpretations(spreadId)
+        val result = interpretationService.getInterpretations(spreadId, 0, 20)
 
         // Then
         assertNotNull(result)
-        assertEquals(0, result.size)
+        assertEquals(0, result.content.size)
     }
 
     @Test
@@ -462,7 +469,7 @@ class InterpretationServiceTest {
         // When/Then
         val exception =
             assertThrows<NotFoundException> {
-                interpretationService.getInterpretations(spreadId)
+                interpretationService.getInterpretations(spreadId, 0, 20)
             }
         assertEquals("Spread not found", exception.message)
     }

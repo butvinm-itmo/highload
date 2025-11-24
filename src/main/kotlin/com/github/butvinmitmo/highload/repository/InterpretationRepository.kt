@@ -1,6 +1,8 @@
 package com.github.butvinmitmo.highload.repository
 
 import com.github.butvinmitmo.highload.entity.Interpretation
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -17,13 +19,23 @@ interface InterpretationRepository : JpaRepository<Interpretation, UUID> {
 
     @Query(
         """
-        SELECT DISTINCT i FROM Interpretation i
-        LEFT JOIN FETCH i.author
+        SELECT i FROM Interpretation i
         WHERE i.spread.id = :spreadId
         ORDER BY i.createdAt DESC
         """,
     )
     fun findBySpreadIdOrderByCreatedAtDesc(
         @Param("spreadId") spreadId: UUID,
-    ): List<Interpretation>
+        pageable: Pageable,
+    ): Page<Interpretation>
+
+    @Query(
+        value = """
+        SELECT COUNT(i) FROM Interpretation i
+        WHERE i.spread.id = :spreadId
+        """,
+    )
+    fun countBySpreadId(
+        @Param("spreadId") spreadId: UUID,
+    ): Long
 }

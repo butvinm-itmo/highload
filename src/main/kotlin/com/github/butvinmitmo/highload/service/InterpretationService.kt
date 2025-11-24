@@ -3,6 +3,7 @@ package com.github.butvinmitmo.highload.service
 import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.highload.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.highload.dto.InterpretationDto
+import com.github.butvinmitmo.highload.dto.PageResponse
 import com.github.butvinmitmo.highload.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.highload.entity.Interpretation
 import com.github.butvinmitmo.highload.exception.ConflictException
@@ -10,6 +11,7 @@ import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.InterpretationMapper
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -103,10 +105,22 @@ class InterpretationService(
     }
 
     @Transactional(readOnly = true)
-    fun getInterpretations(spreadId: UUID): List<InterpretationDto> {
+    fun getInterpretations(
+        spreadId: UUID,
+        page: Int,
+        size: Int,
+    ): PageResponse<InterpretationDto> {
         spreadService.getSpreadEntity(spreadId)
-        return interpretationRepository
-            .findBySpreadIdOrderByCreatedAtDesc(spreadId)
-            .map { interpretationMapper.toDto(it) }
+        val pageable = PageRequest.of(page, size)
+        val interpretationsPage = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, pageable)
+        return PageResponse(
+            content = interpretationsPage.content.map { interpretationMapper.toDto(it) },
+            page = interpretationsPage.number,
+            size = interpretationsPage.size,
+            totalElements = interpretationsPage.totalElements,
+            totalPages = interpretationsPage.totalPages,
+            isFirst = interpretationsPage.isFirst,
+            isLast = interpretationsPage.isLast,
+        )
     }
 }

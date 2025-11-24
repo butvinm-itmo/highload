@@ -163,10 +163,10 @@ class CardServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(3, result.size)
-        assertEquals("The Fool", result[0].name)
-        assertEquals("The Magician", result[1].name)
-        assertEquals("Ace of Wands", result[2].name)
+        assertEquals(3, result.content.size)
+        assertEquals("The Fool", result.content[0].name)
+        assertEquals("The Magician", result.content[1].name)
+        assertEquals("Ace of Wands", result.content[2].name)
     }
 
     @Test
@@ -180,7 +180,7 @@ class CardServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(0, result.size)
+        assertEquals(0, result.content.size)
     }
 
     @Test
@@ -200,7 +200,7 @@ class CardServiceTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(1, result.size)
-        assertEquals("The Fool", result[0].name)
+        assertEquals(1, result.content.size)
+        assertEquals("The Fool", result.content[0].name)
     }
 }
