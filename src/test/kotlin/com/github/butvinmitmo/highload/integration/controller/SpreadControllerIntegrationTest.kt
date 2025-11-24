@@ -117,44 +117,43 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
     }
 
     @Test
-    fun `should support scroll pagination with cursor`() {
+    fun `should support scroll pagination with X-After header`() {
         val userId =
             mockMvc
-                .postJson(usersUrl, CreateUserRequest("scrolluser"), objectMapper)
+                .postJson(usersUrl, CreateUserRequest("scrolluser_xafter"), objectMapper)
                 .getIdFromBody(objectMapper)
 
-        // Create spreads
-        val spreadIds = mutableListOf<UUID>()
-        for (i in 1..5) {
+        for (i in 1..3) {
             val request =
                 CreateSpreadRequest(
                     question = "Scroll Question $i",
                     layoutTypeId = oneCardLayoutId,
                     authorId = userId,
                 )
-            val id = mockMvc.postJson(baseUrl, request, objectMapper).getIdFromBody(objectMapper)
-            spreadIds.add(id)
+            mockMvc.postJson(baseUrl, request, objectMapper)
         }
 
-        // Get first page
         val firstPage =
             mockMvc
                 .perform(get("$baseUrl/scroll").param("size", "2"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$").isArray)
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").exists())
                 .andReturn()
 
-        // Extract cursor (last spread ID)
-        val content = objectMapper.readTree(firstPage.response.contentAsString)
-        val lastSpreadId = content.last().get("id").asText()
+        val firstPageCursor = firstPage.response.getHeader("X-After")
+        assert(firstPageCursor != null) { "X-After header should be present on first page" }
 
-        // Get next page using cursor
-        mockMvc
-            .perform(get("$baseUrl/scroll").param("after", lastSpreadId).param("size", "2"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$").isArray)
+        val secondPage =
+            mockMvc
+                .perform(get("$baseUrl/scroll").param("after", firstPageCursor).param("size", "2"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$").isArray)
+                .andExpect(jsonPath("$.length()").value(1))
+                .andReturn()
+
+        val secondPageCursor = secondPage.response.getHeader("X-After")
+        assert(secondPageCursor == null) { "X-After header should NOT be present on last page" }
     }
 
     @Test

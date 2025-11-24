@@ -100,11 +100,24 @@ class SpreadController(
     @GetMapping("/scroll")
     @Operation(
         summary = "Get spreads with infinite scroll",
-        description = "Retrieves spreads using cursor-based pagination. Provide last spread ID for next batch.",
+        description =
+            "Retrieves spreads using cursor-based pagination. " +
+                "Returns X-After header with cursor for next page if more items exist.",
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Spreads retrieved successfully"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Spreads retrieved successfully",
+                headers = [
+                    Header(
+                        name = "X-After",
+                        description = "Cursor for next page (only present if more items exist)",
+                        schema = Schema(type = "string", format = "uuid"),
+                    ),
+                ],
+                content = [Content(array = ArraySchema(schema = Schema(implementation = SpreadSummaryDto::class)))],
+            ),
         ],
     )
     fun getSpreadsByScroll(
@@ -116,7 +129,16 @@ class SpreadController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): List<SpreadSummaryDto> = spreadService.getSpreadsByScroll(after, size)
+    ): ResponseEntity<List<SpreadSummaryDto>> {
+        val result = spreadService.getSpreadsByScroll(after, size)
+        val response = ResponseEntity.ok()
+
+        return if (result.nextCursor != null) {
+            response.header("X-After", result.nextCursor.toString()).body(result.items)
+        } else {
+            response.body(result.items)
+        }
+    }
 
     @GetMapping("/{id}")
     @Operation(

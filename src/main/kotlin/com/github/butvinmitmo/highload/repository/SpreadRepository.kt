@@ -42,7 +42,7 @@ interface SpreadRepository : JpaRepository<Spread, UUID> {
         @Param("limit") limit: Int,
     ): List<Spread>
 
-    @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC LIMIT :limit")
+    @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC, s.id DESC LIMIT :limit")
     fun findLatestSpreads(
         @Param("limit") limit: Int,
     ): List<Spread>

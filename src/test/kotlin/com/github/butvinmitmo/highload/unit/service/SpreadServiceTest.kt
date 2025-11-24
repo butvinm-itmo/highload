@@ -233,7 +233,6 @@ class SpreadServiceTest {
 
     @Test
     fun `getSpreadsByScroll should return spreads when after is null`() {
-        // Given
         val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
 
@@ -243,19 +242,17 @@ class SpreadServiceTest {
                 TestEntityFactory.createSpread(UUID.randomUUID(), "Question 2", user, layoutType, createdAt),
             )
 
-        whenever(spreadRepository.findLatestSpreads(2)).thenReturn(spreads)
+        whenever(spreadRepository.findLatestSpreads(3)).thenReturn(spreads)
 
-        // When
         val result = spreadService.getSpreadsByScroll(null, 2)
 
-        // Then
         assertNotNull(result)
-        assertEquals(2, result.size)
+        assertEquals(2, result.items.size)
+        assertEquals(null, result.nextCursor)
     }
 
     @Test
     fun `getSpreadsByScroll should return spreads after cursor`() {
-        // Given
         val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val cursorId = UUID.randomUUID()
@@ -265,14 +262,35 @@ class SpreadServiceTest {
                 TestEntityFactory.createSpread(UUID.randomUUID(), "Question 1", user, layoutType, createdAt),
             )
 
-        whenever(spreadRepository.findSpreadsAfterCursor(cursorId, 2)).thenReturn(spreads)
+        whenever(spreadRepository.findSpreadsAfterCursor(cursorId, 3)).thenReturn(spreads)
 
-        // When
         val result = spreadService.getSpreadsByScroll(cursorId, 2)
 
-        // Then
         assertNotNull(result)
-        assertEquals(1, result.size)
+        assertEquals(1, result.items.size)
+        assertEquals(null, result.nextCursor)
+    }
+
+    @Test
+    fun `getSpreadsByScroll should return nextCursor when more items exist`() {
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
+        val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
+        val secondId = UUID.randomUUID()
+
+        val spreads =
+            listOf(
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 1", user, layoutType, createdAt),
+                TestEntityFactory.createSpread(secondId, "Question 2", user, layoutType, createdAt),
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 3", user, layoutType, createdAt),
+            )
+
+        whenever(spreadRepository.findLatestSpreads(3)).thenReturn(spreads)
+
+        val result = spreadService.getSpreadsByScroll(null, 2)
+
+        assertNotNull(result)
+        assertEquals(2, result.items.size)
+        assertEquals(secondId, result.nextCursor)
     }
 
     @Test

@@ -553,11 +553,50 @@ class SpreadServiceIntegrationTest : BaseIntegrationTest() {
     }
 
     @Test
-    fun `should return empty list for scroll when no spreads exist`() {
-        val spreads = spreadService.getSpreadsByScroll(null, 10)
+    fun `should return empty result for scroll when no spreads exist`() {
+        val result = spreadService.getSpreadsByScroll(null, 10)
 
-        assertNotNull(spreads)
-        assertEquals(0, spreads.size)
+        assertNotNull(result)
+        assertEquals(0, result.items.size)
+        assertEquals(null, result.nextCursor)
+    }
+
+    @Test
+    fun `should return ScrollResponse with nextCursor when more items exist`() {
+        (1..5).forEach { i ->
+            spreadService.createSpread(
+                CreateSpreadRequest(
+                    question = "Question $i",
+                    layoutTypeId = layoutTypeId,
+                    authorId = userId,
+                ),
+            )
+        }
+
+        val result = spreadService.getSpreadsByScroll(null, 2)
+
+        assertNotNull(result)
+        assertEquals(2, result.items.size)
+        assertNotNull(result.nextCursor, "nextCursor should be present when more items exist")
+    }
+
+    @Test
+    fun `should return ScrollResponse without nextCursor when no more items exist`() {
+        (1..2).forEach { i ->
+            spreadService.createSpread(
+                CreateSpreadRequest(
+                    question = "Question $i",
+                    layoutTypeId = layoutTypeId,
+                    authorId = userId,
+                ),
+            )
+        }
+
+        val result = spreadService.getSpreadsByScroll(null, 5)
+
+        assertNotNull(result)
+        assertEquals(2, result.items.size)
+        assertEquals(null, result.nextCursor, "nextCursor should be null when no more items exist")
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.github.butvinmitmo.highload.service
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.dto.CreateSpreadResponse
 import com.github.butvinmitmo.highload.dto.PageResponse
+import com.github.butvinmitmo.highload.dto.ScrollResponse
 import com.github.butvinmitmo.highload.dto.SpreadDto
 import com.github.butvinmitmo.highload.dto.SpreadSummaryDto
 import com.github.butvinmitmo.highload.entity.LayoutType
@@ -79,18 +80,26 @@ class SpreadService(
         )
     }
 
+    @Transactional(readOnly = true)
     fun getSpreadsByScroll(
         after: UUID?,
         size: Int,
-    ): List<SpreadSummaryDto> {
+    ): ScrollResponse<SpreadSummaryDto> {
         val spreads =
             if (after != null) {
-                spreadRepository.findSpreadsAfterCursor(after, size)
+                spreadRepository.findSpreadsAfterCursor(after, size + 1)
             } else {
-                spreadRepository.findLatestSpreads(size)
+                spreadRepository.findLatestSpreads(size + 1)
             }
 
-        return spreads.map { spreadMapper.toSummaryDto(it) }
+        val hasMore = spreads.size > size
+        val itemsToReturn = if (hasMore) spreads.take(size) else spreads
+        val nextCursor = if (hasMore) itemsToReturn.last().id else null
+
+        return ScrollResponse(
+            items = itemsToReturn.map { spreadMapper.toSummaryDto(it) },
+            nextCursor = nextCursor,
+        )
     }
 
     @Transactional
