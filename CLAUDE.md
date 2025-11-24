@@ -120,11 +120,21 @@ Base path: `/api/v0.0.1`
 ### Project Structure
 ```
 src/main/kotlin/com/github/butvinmitmo/highload/
+├── controller/      # REST API controllers
+├── service/         # Business logic layer
+├── repository/      # Spring Data JPA repositories
 ├── entity/          # JPA entities (User, Spread, Card, etc.)
 ├── dto/             # Data Transfer Objects for API layer
-├── repository/      # Spring Data JPA repositories (to be implemented)
-├── service/         # Business logic layer (to be implemented)
-└── controller/      # REST API controllers (to be implemented)
+├── mapper/          # Entity ↔ DTO mappers
+├── exception/       # Custom exceptions
+└── config/          # Spring configuration
+
+src/test/kotlin/com/github/butvinmitmo/highload/
+├── integration/
+│   ├── controller/  # Controller integration tests (MockMvc + real DB)
+│   └── service/     # Service integration tests (real DB, no HTTP layer)
+└── unit/
+    └── service/     # Service unit tests (mocked dependencies)
 ```
 
 ### DTO Layer
@@ -192,4 +202,108 @@ Critical operations requiring single transaction (mark service methods with `@Tr
 3. **User deletion:** Delete user's spreads → interpretations on those spreads → spread_cards + delete user's interpretations on others' spreads + user record (cascade configured in DB)
 
 Database schema enforces referential integrity with `ON DELETE CASCADE` for user-related deletions.
-- when using git add specify files explicitly
+
+## Testing
+
+### Test Structure
+Tests are organized hierarchically to mirror the production code structure:
+
+```
+src/test/kotlin/com/github/butvinmitmo/highload/
+├── TestEntityFactory.kt              # Shared test utilities for entity creation
+├── integration/
+│   ├── BaseIntegrationTest.kt        # Shared base for all integration tests
+│   ├── controller/
+│   │   ├── BaseControllerIntegrationTest.kt  # Base for controller tests (MockMvc)
+│   │   ├── UserControllerIntegrationTest.kt
+│   │   ├── SpreadControllerIntegrationTest.kt
+│   │   ├── InterpretationControllerIntegrationTest.kt
+│   │   └── MockMvcExtensions.kt      # Helper functions for MockMvc
+│   └── service/
+│       ├── UserServiceIntegrationTest.kt
+│       ├── SpreadServiceIntegrationTest.kt
+│       ├── InterpretationServiceIntegrationTest.kt
+│       └── CardServiceIntegrationTest.kt
+└── unit/
+    └── service/
+        ├── UserServiceTest.kt
+        ├── SpreadServiceTest.kt
+        ├── InterpretationServiceTest.kt
+        └── CardServiceTest.kt
+```
+
+### Test Types
+
+**Unit Tests** (`unit/service/`)
+- Test service layer in isolation
+- Mock all dependencies (repositories, other services)
+- Use TestEntityFactory for creating test entities
+- Fast execution, no database required
+
+**Service Integration Tests** (`integration/service/`)
+- Test service layer with real database
+- Use TestContainers for PostgreSQL
+- Extend BaseIntegrationTest for shared container
+- Automatic database cleanup after each test
+
+**Controller Integration Tests** (`integration/controller/`)
+- Test full stack: Controller → Service → Repository → Database
+- Use MockMvc to simulate HTTP requests (not real HTTP)
+- Use TestContainers for PostgreSQL
+- Extend BaseControllerIntegrationTest for shared setup
+- Note: These are NOT true end-to-end tests (no real HTTP server)
+
+### Running Tests
+
+```bash
+# Run all tests
+./gradlew test
+
+# Run unit tests only
+./gradlew test --tests "com.github.butvinmitmo.highload.unit.*"
+
+# Run integration tests only
+./gradlew test --tests "com.github.butvinmitmo.highload.integration.*"
+
+# Run controller integration tests only
+./gradlew test --tests "com.github.butvinmitmo.highload.integration.controller.*"
+
+# Run service integration tests only
+./gradlew test --tests "com.github.butvinmitmo.highload.integration.service.*"
+
+# Run specific test class
+./gradlew test --tests "com.github.butvinmitmo.highload.unit.service.UserServiceTest"
+```
+
+### Test Infrastructure
+
+**TestEntityFactory** - Centralized entity creation for unit tests using reflection to set generated fields (id, createdAt)
+
+**BaseIntegrationTest** - Provides:
+- Shared PostgreSQL TestContainer (single instance for all service integration tests)
+- Automatic database cleanup after each test
+- UUID-based seed data filtering
+
+**BaseControllerIntegrationTest** - Provides:
+- Shared PostgreSQL TestContainer (single instance for all controller tests)
+- MockMvc for simulated HTTP requests
+- Jackson ObjectMapper for JSON serialization
+- Layout type UUIDs for test data setup
+- Automatic database cleanup after each test
+
+**MockMvcExtensions** - Helper functions:
+- `postJson()`, `putJson()`, `deleteJson()` - Simplified HTTP request methods
+- `getIdFromBody()`, `getLocationId()` - UUID extraction from responses
+
+### Test Best Practices
+
+1. **Use TestEntityFactory for unit tests** - Avoids duplicated reflection code
+2. **Extend appropriate base class** - BaseIntegrationTest or BaseControllerIntegrationTest
+3. **Cleanup is automatic** - No need to manually clean database in integration tests
+4. **Shared containers** - Tests share PostgreSQL containers for performance
+5. **Descriptive test names** - Use backtick syntax with clear descriptions
+6. **No assertion messages** - Test names and code should be self-documenting
+7. **Use JUnit 5 assertions** - Consistent assertion style across all tests
+
+### Git Workflow
+- When using git add, specify files explicitly (avoid `git add .`)
