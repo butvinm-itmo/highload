@@ -22,34 +22,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.UUID
 
-@SpringBootTest
-@Testcontainers
-class SpreadServiceIntegrationTest {
-    companion object {
-        @Container
-        val postgres: PostgreSQLContainer<*> =
-            PostgreSQLContainer("postgres:15-alpine")
-                .withDatabaseName("tarot_db_test")
-                .withUsername("test_user")
-                .withPassword("test_password")
-
-        @JvmStatic
-        @DynamicPropertySource
-        fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
-            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
-        }
-    }
+class SpreadServiceIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var spreadService: SpreadService
@@ -85,18 +60,6 @@ class SpreadServiceIntegrationTest {
 
         val layoutType = layoutTypeRepository.findByName("ONE_CARD")
         layoutTypeId = layoutType?.id ?: throw IllegalStateException("ONE_CARD layout not found")
-    }
-
-    @AfterEach
-    fun cleanup() {
-        interpretationRepository.deleteAll()
-        spreadCardRepository.deleteAll()
-        spreadRepository.deleteAll()
-        userRepository.findAll().forEach { user ->
-            if (user.username != "admin") {
-                userRepository.delete(user)
-            }
-        }
     }
 
     @Test

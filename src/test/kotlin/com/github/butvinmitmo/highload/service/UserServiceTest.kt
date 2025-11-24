@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.highload.service
 
+import com.github.butvinmitmo.highload.TestEntityFactory
 import com.github.butvinmitmo.highload.dto.CreateUserRequest
 import com.github.butvinmitmo.highload.dto.UpdateUserRequest
 import com.github.butvinmitmo.highload.entity.User
@@ -42,29 +43,11 @@ class UserServiceTest {
         userService = UserService(userRepository, userMapper)
     }
 
-    private fun createUser(
-        id: UUID,
-        username: String,
-        createdAt: Instant = this.createdAt,
-    ): User {
-        val user = User(username = username)
-
-        val idField = User::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(user, id)
-
-        val createdAtField = User::class.java.getDeclaredField("createdAt")
-        createdAtField.isAccessible = true
-        createdAtField.set(user, createdAt)
-
-        return user
-    }
-
     @Test
     fun `createUser should create new user successfully`() {
         // Given
         val request = CreateUserRequest(username = "testuser")
-        val savedUser = createUser(id = userId, username = "testuser")
+        val savedUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findByUsername("testuser")).thenReturn(null)
         whenever(userRepository.save(any())).thenReturn(savedUser)
@@ -86,7 +69,7 @@ class UserServiceTest {
     fun `createUser should throw ConflictException when user already exists`() {
         // Given
         val request = CreateUserRequest(username = "testuser")
-        val existingUser = createUser(id = userId, username = "testuser")
+        val existingUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findByUsername("testuser")).thenReturn(existingUser)
 
@@ -104,7 +87,7 @@ class UserServiceTest {
     @Test
     fun `getUser should return user when found`() {
         // Given
-        val user = createUser(id = userId, username = "testuser")
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
 
@@ -133,7 +116,7 @@ class UserServiceTest {
     @Test
     fun `updateUser should update username when provided`() {
         // Given
-        val existingUser = createUser(id = userId, username = "oldname")
+        val existingUser = TestEntityFactory.createUser(id = userId, username = "oldname", createdAt = createdAt)
         val updateRequest = UpdateUserRequest(username = "newname")
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
@@ -203,8 +186,8 @@ class UserServiceTest {
         // Given
         val users =
             listOf(
-                createUser(id = UUID.randomUUID(), username = "user1"),
-                createUser(id = UUID.randomUUID(), username = "user2"),
+                TestEntityFactory.createUser(id = UUID.randomUUID(), username = "user1", createdAt = createdAt),
+                TestEntityFactory.createUser(id = UUID.randomUUID(), username = "user2", createdAt = createdAt),
             )
         val pageable = PageRequest.of(0, 2)
         val page = PageImpl(users, pageable, 2)
@@ -240,7 +223,7 @@ class UserServiceTest {
     @Test
     fun `updateUser should not change username when null provided`() {
         // Given
-        val existingUser = createUser(id = userId, username = "originalname")
+        val existingUser = TestEntityFactory.createUser(id = userId, username = "originalname", createdAt = createdAt)
         val updateRequest = UpdateUserRequest(username = null)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
@@ -262,7 +245,7 @@ class UserServiceTest {
     @Test
     fun `updateUser should keep same ID`() {
         // Given
-        val existingUser = createUser(id = userId, username = "oldname")
+        val existingUser = TestEntityFactory.createUser(id = userId, username = "oldname", createdAt = createdAt)
         val updateRequest = UpdateUserRequest(username = "newname")
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
@@ -278,7 +261,7 @@ class UserServiceTest {
     @Test
     fun `getUserEntity should return user when found`() {
         // Given
-        val user = createUser(id = userId, username = "testuser")
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
 

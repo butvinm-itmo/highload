@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.highload.service
 
+import com.github.butvinmitmo.highload.TestEntityFactory
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.entity.ArcanaType
 import com.github.butvinmitmo.highload.entity.Card
@@ -79,23 +80,6 @@ class SpreadServiceTest {
             )
     }
 
-    private fun createUser(
-        id: UUID,
-        username: String,
-    ): User {
-        val user = User(username = username)
-
-        val idField = User::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(user, id)
-
-        val createdAtField = User::class.java.getDeclaredField("createdAt")
-        createdAtField.isAccessible = true
-        createdAtField.set(user, Instant.now())
-
-        return user
-    }
-
     private fun createLayoutType(
         id: UUID,
         name: String,
@@ -125,34 +109,10 @@ class SpreadServiceTest {
         return card
     }
 
-    private fun createSpread(
-        id: UUID,
-        question: String,
-        author: User,
-        layoutType: LayoutType,
-    ): Spread {
-        val spread =
-            Spread(
-                question = question,
-                author = author,
-                layoutType = layoutType,
-            )
-
-        val idField = Spread::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(spread, id)
-
-        val createdAtField = Spread::class.java.getDeclaredField("createdAt")
-        createdAtField.isAccessible = true
-        createdAtField.set(spread, createdAt)
-
-        return spread
-    }
-
     @Test
     fun `createSpread should create spread successfully`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "THREE_CARDS", 3)
         val cards =
             listOf(
@@ -168,7 +128,7 @@ class SpreadServiceTest {
                 authorId = userId,
             )
 
-        val savedSpread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val savedSpread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(userService.getUserEntity(userId)).thenReturn(user)
         whenever(layoutTypeRepository.findById(layoutTypeId)).thenReturn(Optional.of(layoutType))
@@ -220,7 +180,7 @@ class SpreadServiceTest {
     @Test
     fun `createSpread should throw NotFoundException when layout type not found`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val request =
             CreateSpreadRequest(
                 question = "What will happen?",
@@ -245,13 +205,13 @@ class SpreadServiceTest {
     @Test
     fun `getSpreads should return paginated spreads`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
 
         val spreads =
             listOf(
-                createSpread(UUID.randomUUID(), "Question 1", user, layoutType),
-                createSpread(UUID.randomUUID(), "Question 2", user, layoutType),
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 1", user, layoutType, createdAt),
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 2", user, layoutType, createdAt),
             )
 
         val pageable = PageRequest.of(0, 2)
@@ -272,13 +232,13 @@ class SpreadServiceTest {
     @Test
     fun `getSpreadsByScroll should return spreads when after is null`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
 
         val spreads =
             listOf(
-                createSpread(UUID.randomUUID(), "Question 1", user, layoutType),
-                createSpread(UUID.randomUUID(), "Question 2", user, layoutType),
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 1", user, layoutType, createdAt),
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 2", user, layoutType, createdAt),
             )
 
         whenever(spreadRepository.findLatestSpreads(2)).thenReturn(spreads)
@@ -294,13 +254,13 @@ class SpreadServiceTest {
     @Test
     fun `getSpreadsByScroll should return spreads after cursor`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val cursorId = UUID.randomUUID()
 
         val spreads =
             listOf(
-                createSpread(UUID.randomUUID(), "Question 1", user, layoutType),
+                TestEntityFactory.createSpread(UUID.randomUUID(), "Question 1", user, layoutType, createdAt),
             )
 
         whenever(spreadRepository.findSpreadsAfterCursor(cursorId, 2)).thenReturn(spreads)
@@ -316,9 +276,9 @@ class SpreadServiceTest {
     @Test
     fun `getSpread should return spread when found`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(spreadRepository.findByIdWithCards(spreadId)).thenReturn(spread)
         whenever(interpretationRepository.findBySpreadIdWithAuthor(spreadId)).thenReturn(emptyList())
@@ -347,9 +307,9 @@ class SpreadServiceTest {
     @Test
     fun `deleteSpread should delete spread when user is author`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
 
@@ -363,10 +323,10 @@ class SpreadServiceTest {
     @Test
     fun `deleteSpread should throw ForbiddenException when user is not author`() {
         // Given
-        val author = createUser(userId, "author")
+        val author = TestEntityFactory.createUser(userId, "author", createdAt)
         val otherUserId = UUID.randomUUID()
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", author, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", author, layoutType, createdAt)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
 
@@ -429,9 +389,9 @@ class SpreadServiceTest {
     @Test
     fun `getSpreadEntity should return spread when found`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
 

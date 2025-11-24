@@ -1,49 +1,33 @@
-package com.github.butvinmitmo.highload.e2e
+package com.github.butvinmitmo.highload.integration
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
-import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
 import com.github.butvinmitmo.highload.repository.SpreadRepository
 import com.github.butvinmitmo.highload.repository.UserRepository
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.MockMvc
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.UUID
 
 /**
- * Base class for E2E API tests using MockMvc and TestContainers.
+ * Base class for integration tests using TestContainers.
  *
  * Features:
- * - Shared PostgreSQL container across all test classes
- * - MockMvc for simulating HTTP requests
- * - Jackson ObjectMapper for JSON serialization
- * - Layout type UUIDs for creating spreads
+ * - Shared PostgreSQL container across all integration test classes
+ * - Automatic Spring Boot context configuration
+ * - Database connection properties configured via DynamicPropertySource
  * - Automatic database cleanup after each test to prevent data pollution
  *
- * Note: @Transactional is NOT used to avoid rollback interference with multi-step tests.
- * Test data is persisted across requests within the same test method, but cleaned up afterwards.
+ * All integration tests should extend this class to share the same container instance,
+ * improving test execution speed.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
+@SpringBootTest
 @Testcontainers
-abstract class BaseE2ETest {
-    @Autowired
-    protected lateinit var mockMvc: MockMvc
-
-    @Autowired
-    protected lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    protected lateinit var layoutTypeRepository: LayoutTypeRepository
-
+abstract class BaseIntegrationTest {
     @Autowired
     private lateinit var interpretationRepository: InterpretationRepository
 
@@ -56,23 +40,6 @@ abstract class BaseE2ETest {
     @Autowired
     private lateinit var userRepository: UserRepository
 
-    protected lateinit var oneCardLayoutId: UUID
-    protected lateinit var threeCardsLayoutId: UUID
-    protected lateinit var crossLayoutId: UUID
-
-    @BeforeEach
-    fun setupLayoutTypes() {
-        oneCardLayoutId =
-            layoutTypeRepository.findByName("ONE_CARD")?.id
-                ?: throw IllegalStateException("ONE_CARD layout not found")
-        threeCardsLayoutId =
-            layoutTypeRepository.findByName("THREE_CARDS")?.id
-                ?: throw IllegalStateException("THREE_CARDS layout not found")
-        crossLayoutId =
-            layoutTypeRepository.findByName("CROSS")?.id
-                ?: throw IllegalStateException("CROSS layout not found")
-    }
-
     @AfterEach
     fun cleanupDatabase() {
         // Delete in cascade order: interpretations → spread_cards → spreads → users (excluding seed data)
@@ -80,7 +47,7 @@ abstract class BaseE2ETest {
         spreadCardRepository.deleteAll()
         spreadRepository.deleteAll()
 
-        // Delete all users except the seed admin user
+        // Delete all users except the seed admin user (UUID-based filtering)
         val seedUserId = UUID.fromString("00000000-0000-0000-0000-000000000001")
         userRepository
             .findAll()

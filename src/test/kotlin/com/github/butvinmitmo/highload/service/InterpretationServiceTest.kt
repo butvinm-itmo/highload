@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.highload.service
 
+import com.github.butvinmitmo.highload.TestEntityFactory
 import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.highload.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.highload.entity.Interpretation
@@ -59,23 +60,6 @@ class InterpretationServiceTest {
             )
     }
 
-    private fun createUser(
-        id: UUID,
-        username: String,
-    ): User {
-        val user = User(username = username)
-
-        val idField = User::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(user, id)
-
-        val createdAtField = User::class.java.getDeclaredField("createdAt")
-        createdAtField.isAccessible = true
-        createdAtField.set(user, Instant.now())
-
-        return user
-    }
-
     private fun createLayoutType(
         id: UUID,
         name: String,
@@ -86,60 +70,12 @@ class InterpretationServiceTest {
         return layoutType
     }
 
-    private fun createSpread(
-        id: UUID,
-        question: String,
-        author: User,
-        layoutType: LayoutType,
-    ): Spread {
-        val spread =
-            Spread(
-                question = question,
-                author = author,
-                layoutType = layoutType,
-            )
-
-        val idField = Spread::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(spread, id)
-
-        val createdAtField = Spread::class.java.getDeclaredField("createdAt")
-        createdAtField.isAccessible = true
-        createdAtField.set(spread, createdAt)
-
-        return spread
-    }
-
-    private fun createInterpretation(
-        id: UUID,
-        text: String,
-        author: User,
-        spread: Spread,
-    ): Interpretation {
-        val interpretation =
-            Interpretation(
-                text = text,
-                author = author,
-                spread = spread,
-            )
-
-        val idField = Interpretation::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(interpretation, id)
-
-        val createdAtField = Interpretation::class.java.getDeclaredField("createdAt")
-        createdAtField.isAccessible = true
-        createdAtField.set(interpretation, createdAt)
-
-        return interpretation
-    }
-
     @Test
     fun `addInterpretation should create interpretation successfully`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         val request =
             CreateInterpretationRequest(
@@ -147,7 +83,7 @@ class InterpretationServiceTest {
                 authorId = userId,
             )
 
-        val savedInterpretation = createInterpretation(interpretationId, "This card means...", user, spread)
+        val savedInterpretation = TestEntityFactory.createInterpretation(interpretationId, "This card means...", user, spread, createdAt)
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
         whenever(userService.getUserEntity(userId)).thenReturn(user)
@@ -194,9 +130,9 @@ class InterpretationServiceTest {
     @Test
     fun `addInterpretation should throw NotFoundException when user not found`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         val request =
             CreateInterpretationRequest(
@@ -221,9 +157,9 @@ class InterpretationServiceTest {
     @Test
     fun `addInterpretation should throw ConflictException when user already has interpretation`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         val request =
             CreateInterpretationRequest(
@@ -249,10 +185,10 @@ class InterpretationServiceTest {
     @Test
     fun `updateInterpretation should update interpretation successfully`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
-        val interpretation = createInterpretation(interpretationId, "Old text", user, spread)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
+        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Old text", user, spread, createdAt)
 
         val request = UpdateInterpretationRequest(text = "New text", authorId = userId)
 
@@ -296,11 +232,11 @@ class InterpretationServiceTest {
     @Test
     fun `updateInterpretation should throw ForbiddenException when user is not author`() {
         // Given
-        val author = createUser(userId, "author")
+        val author = TestEntityFactory.createUser(userId, "author", createdAt)
         val otherUserId = UUID.randomUUID()
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", author, layoutType)
-        val interpretation = createInterpretation(interpretationId, "Old text", author, spread)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", author, layoutType, createdAt)
+        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Old text", author, spread, createdAt)
 
         val request = UpdateInterpretationRequest(text = "New text", authorId = otherUserId)
 
@@ -320,10 +256,10 @@ class InterpretationServiceTest {
     @Test
     fun `deleteInterpretation should delete interpretation successfully`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
-        val interpretation = createInterpretation(interpretationId, "Text", user, spread)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
+        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Text", user, spread, createdAt)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
 
@@ -353,11 +289,11 @@ class InterpretationServiceTest {
     @Test
     fun `deleteInterpretation should throw ForbiddenException when user is not author`() {
         // Given
-        val author = createUser(userId, "author")
+        val author = TestEntityFactory.createUser(userId, "author", createdAt)
         val otherUserId = UUID.randomUUID()
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", author, layoutType)
-        val interpretation = createInterpretation(interpretationId, "Text", author, spread)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", author, layoutType, createdAt)
+        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Text", author, spread, createdAt)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
 
@@ -375,10 +311,10 @@ class InterpretationServiceTest {
     @Test
     fun `getInterpretation should return interpretation successfully`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
-        val interpretation = createInterpretation(interpretationId, "Test text", user, spread)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
+        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Test text", user, spread, createdAt)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
 
@@ -408,10 +344,10 @@ class InterpretationServiceTest {
     @Test
     fun `getInterpretation should throw NotFoundException when interpretation belongs to different spread`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
-        val interpretation = createInterpretation(interpretationId, "Test text", user, spread)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
+        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Test text", user, spread, createdAt)
 
         val differentSpreadId = UUID.randomUUID()
 
@@ -428,13 +364,13 @@ class InterpretationServiceTest {
     @Test
     fun `getInterpretations should return all interpretations for spread`() {
         // Given
-        val user1 = createUser(userId, "user1")
-        val user2 = createUser(UUID.randomUUID(), "user2")
+        val user1 = TestEntityFactory.createUser(userId, "user1", createdAt)
+        val user2 = TestEntityFactory.createUser(UUID.randomUUID(), "user2", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user1, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user1, layoutType, createdAt)
 
-        val interpretation1 = createInterpretation(UUID.randomUUID(), "First interpretation", user1, spread)
-        val interpretation2 = createInterpretation(UUID.randomUUID(), "Second interpretation", user2, spread)
+        val interpretation1 = TestEntityFactory.createInterpretation(UUID.randomUUID(), "First interpretation", user1, spread, createdAt)
+        val interpretation2 = TestEntityFactory.createInterpretation(UUID.randomUUID(), "Second interpretation", user2, spread, createdAt)
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
         whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId))
@@ -453,9 +389,9 @@ class InterpretationServiceTest {
     @Test
     fun `getInterpretations should return empty list when no interpretations exist`() {
         // Given
-        val user = createUser(userId, "testuser")
+        val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
-        val spread = createSpread(spreadId, "What will happen?", user, layoutType)
+        val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
         whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId)).thenReturn(emptyList())
