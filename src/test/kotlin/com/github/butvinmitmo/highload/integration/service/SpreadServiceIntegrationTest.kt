@@ -577,7 +577,7 @@ class SpreadServiceIntegrationTest : BaseIntegrationTest() {
 
         assertNotNull(result)
         assertEquals(2, result.items.size)
-        assertNotNull(result.nextCursor, "nextCursor should be present when more items exist")
+        assertNotNull(result.nextCursor)
     }
 
     @Test
@@ -596,7 +596,7 @@ class SpreadServiceIntegrationTest : BaseIntegrationTest() {
 
         assertNotNull(result)
         assertEquals(2, result.items.size)
-        assertEquals(null, result.nextCursor, "nextCursor should be null when no more items exist")
+        assertEquals(null, result.nextCursor)
     }
 
     @Test

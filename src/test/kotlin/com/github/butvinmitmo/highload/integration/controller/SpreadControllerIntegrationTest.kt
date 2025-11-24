@@ -142,7 +142,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .andReturn()
 
         val firstPageCursor = firstPage.response.getHeader("X-After")
-        assert(firstPageCursor != null) { "X-After header should be present on first page" }
+        assert(firstPageCursor != null)
 
         val secondPage =
             mockMvc
@@ -153,7 +153,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .andReturn()
 
         val secondPageCursor = secondPage.response.getHeader("X-After")
-        assert(secondPageCursor == null) { "X-After header should NOT be present on last page" }
+        assert(secondPageCursor == null)
     }
 
     @Test
