@@ -20,18 +20,6 @@ interface InterpretationRepository : JpaRepository<Interpretation, UUID> {
         SELECT DISTINCT i FROM Interpretation i
         LEFT JOIN FETCH i.author
         WHERE i.spread.id = :spreadId
-        ORDER BY i.createdAt ASC
-        """,
-    )
-    fun findBySpreadIdWithAuthor(
-        @Param("spreadId") spreadId: UUID,
-    ): List<Interpretation>
-
-    @Query(
-        """
-        SELECT DISTINCT i FROM Interpretation i
-        LEFT JOIN FETCH i.author
-        WHERE i.spread.id = :spreadId
         ORDER BY i.createdAt DESC
         """,
     )

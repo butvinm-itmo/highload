@@ -25,20 +25,6 @@ interface SpreadRepository : JpaRepository<Spread, UUID> {
         @Param("id") id: UUID,
     ): Spread?
 
-    @Query(
-        """
-        SELECT DISTINCT s FROM Spread s
-        LEFT JOIN FETCH s.author
-        LEFT JOIN FETCH s.layoutType
-        LEFT JOIN FETCH s.spreadCards sc
-        LEFT JOIN FETCH sc.card
-        WHERE s.id = :id
-        """,
-    )
-    fun findByIdWithCardsAndInterpretations(
-        @Param("id") id: UUID,
-    ): Spread?
-
     @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC")
     fun findAllOrderByCreatedAtDesc(pageable: Pageable): Page<Spread>
 

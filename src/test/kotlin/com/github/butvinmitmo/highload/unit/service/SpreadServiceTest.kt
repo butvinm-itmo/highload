@@ -283,7 +283,7 @@ class SpreadServiceTest {
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
 
         whenever(spreadRepository.findByIdWithCards(spreadId)).thenReturn(spread)
-        whenever(interpretationRepository.findBySpreadIdWithAuthor(spreadId)).thenReturn(emptyList())
+        whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId)).thenReturn(emptyList())
 
         // When
         val result = spreadService.getSpread(spreadId)

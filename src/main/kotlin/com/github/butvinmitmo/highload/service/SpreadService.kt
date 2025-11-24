@@ -99,7 +99,7 @@ class SpreadService(
             spreadRepository.findByIdWithCards(id)
                 ?: throw NotFoundException("Spread not found")
 
-        val interpretations = interpretationRepository.findBySpreadIdWithAuthor(spread.id)
+        val interpretations = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spread.id)
 
         return spreadMapper.toDto(spread, interpretations)
     }
