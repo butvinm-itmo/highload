@@ -16,7 +16,6 @@ import com.github.butvinmitmo.highload.repository.UserRepository
 import com.github.butvinmitmo.highload.service.InterpretationService
 import com.github.butvinmitmo.highload.service.SpreadService
 import com.github.butvinmitmo.highload.service.UserService
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -27,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.UUID
 
 class InterpretationServiceIntegrationTest : BaseIntegrationTest() {
-
     @Autowired
     private lateinit var interpretationService: InterpretationService
 

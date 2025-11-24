@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 
 class CardServiceIntegrationTest : BaseIntegrationTest() {
-
     @Autowired
     private lateinit var cardService: CardService
 

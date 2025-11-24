@@ -7,7 +7,6 @@ import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.integration.BaseIntegrationTest
 import com.github.butvinmitmo.highload.repository.UserRepository
 import com.github.butvinmitmo.highload.service.UserService
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.UUID
 
 class UserServiceIntegrationTest : BaseIntegrationTest() {
-
     @Autowired
     private lateinit var userService: UserService
 

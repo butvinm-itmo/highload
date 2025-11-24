@@ -7,7 +7,6 @@ import com.github.butvinmitmo.highload.entity.Card
 import com.github.butvinmitmo.highload.entity.LayoutType
 import com.github.butvinmitmo.highload.entity.Spread
 import com.github.butvinmitmo.highload.entity.SpreadCard
-import com.github.butvinmitmo.highload.entity.User
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
 import com.github.butvinmitmo.highload.mapper.SpreadMapper

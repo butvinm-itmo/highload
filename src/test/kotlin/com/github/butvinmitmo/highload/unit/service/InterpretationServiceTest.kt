@@ -5,8 +5,6 @@ import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.highload.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.highload.entity.Interpretation
 import com.github.butvinmitmo.highload.entity.LayoutType
-import com.github.butvinmitmo.highload.entity.Spread
-import com.github.butvinmitmo.highload.entity.User
 import com.github.butvinmitmo.highload.exception.ConflictException
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
@@ -86,7 +84,14 @@ class InterpretationServiceTest {
                 authorId = userId,
             )
 
-        val savedInterpretation = TestEntityFactory.createInterpretation(interpretationId, "This card means...", user, spread, createdAt)
+        val savedInterpretation =
+            TestEntityFactory.createInterpretation(
+                interpretationId,
+                "This card means...",
+                user,
+                spread,
+                createdAt,
+            )
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
         whenever(userService.getUserEntity(userId)).thenReturn(user)
@@ -191,7 +196,14 @@ class InterpretationServiceTest {
         val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
-        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Old text", user, spread, createdAt)
+        val interpretation =
+            TestEntityFactory.createInterpretation(
+                interpretationId,
+                "Old text",
+                user,
+                spread,
+                createdAt,
+            )
 
         val request = UpdateInterpretationRequest(text = "New text", authorId = userId)
 
@@ -239,7 +251,14 @@ class InterpretationServiceTest {
         val otherUserId = UUID.randomUUID()
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", author, layoutType, createdAt)
-        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Old text", author, spread, createdAt)
+        val interpretation =
+            TestEntityFactory.createInterpretation(
+                interpretationId,
+                "Old text",
+                author,
+                spread,
+                createdAt,
+            )
 
         val request = UpdateInterpretationRequest(text = "New text", authorId = otherUserId)
 
@@ -317,7 +336,14 @@ class InterpretationServiceTest {
         val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
-        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Test text", user, spread, createdAt)
+        val interpretation =
+            TestEntityFactory.createInterpretation(
+                interpretationId,
+                "Test text",
+                user,
+                spread,
+                createdAt,
+            )
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Optional.of(interpretation))
 
@@ -350,7 +376,14 @@ class InterpretationServiceTest {
         val user = TestEntityFactory.createUser(userId, "testuser", createdAt)
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user, layoutType, createdAt)
-        val interpretation = TestEntityFactory.createInterpretation(interpretationId, "Test text", user, spread, createdAt)
+        val interpretation =
+            TestEntityFactory.createInterpretation(
+                interpretationId,
+                "Test text",
+                user,
+                spread,
+                createdAt,
+            )
 
         val differentSpreadId = UUID.randomUUID()
 
@@ -372,8 +405,22 @@ class InterpretationServiceTest {
         val layoutType = createLayoutType(layoutTypeId, "ONE_CARD", 1)
         val spread = TestEntityFactory.createSpread(spreadId, "What will happen?", user1, layoutType, createdAt)
 
-        val interpretation1 = TestEntityFactory.createInterpretation(UUID.randomUUID(), "First interpretation", user1, spread, createdAt)
-        val interpretation2 = TestEntityFactory.createInterpretation(UUID.randomUUID(), "Second interpretation", user2, spread, createdAt)
+        val interpretation1 =
+            TestEntityFactory.createInterpretation(
+                UUID.randomUUID(),
+                "First interpretation",
+                user1,
+                spread,
+                createdAt,
+            )
+        val interpretation2 =
+            TestEntityFactory.createInterpretation(
+                UUID.randomUUID(),
+                "Second interpretation",
+                user2,
+                spread,
+                createdAt,
+            )
 
         whenever(spreadService.getSpreadEntity(spreadId)).thenReturn(spread)
         whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId))
