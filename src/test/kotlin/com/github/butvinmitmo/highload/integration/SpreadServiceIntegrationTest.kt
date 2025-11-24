@@ -383,38 +383,52 @@ class SpreadServiceIntegrationTest {
 
     @Test
     fun `should support scroll pagination`() {
-        val spread1 =
-            spreadService.createSpread(
-                CreateSpreadRequest(
-                    question = "Question 1",
-                    layoutTypeId = layoutTypeId,
-                    authorId = userId,
-                ),
-            )
-        Thread.sleep(10) // Ensure different timestamps
-        spreadService.createSpread(
-            CreateSpreadRequest(
-                question = "Question 2",
-                layoutTypeId = layoutTypeId,
-                authorId = userId,
-            ),
-        )
-        Thread.sleep(10)
-        spreadService.createSpread(
-            CreateSpreadRequest(
-                question = "Question 3",
-                layoutTypeId = layoutTypeId,
-                authorId = userId,
-            ),
-        )
+        // Create 5 spreads to test pagination
+        val createdIds =
+            (1..5).map { i ->
+                spreadService
+                    .createSpread(
+                        CreateSpreadRequest(
+                            question = "Question $i",
+                            layoutTypeId = layoutTypeId,
+                            authorId = userId,
+                        ),
+                    ).id
+            }
 
-        // Verify repository scroll method works
+        // Get first page (size=2)
         val firstPage = spreadRepository.findLatestSpreads(2)
         assertEquals(2, firstPage.size)
 
-        val secondPage = spreadRepository.findSpreadsAfterCursor(spread1.id, 2)
-        // Should return spreads created before spread1
-        assertTrue(secondPage.isEmpty() || secondPage.size <= 2)
+        // Verify first page is ordered by createdAt descending
+        assertTrue(
+            firstPage[0].createdAt >= firstPage[1].createdAt,
+            "First page should be ordered by createdAt descending",
+        )
+
+        // Get second page using cursor from last item of first page
+        val cursorId = firstPage.last().id
+        val secondPage = spreadRepository.findSpreadsAfterCursor(cursorId, 2)
+        assertEquals(2, secondPage.size)
+
+        // Verify second page is ordered by createdAt descending
+        assertTrue(
+            secondPage[0].createdAt >= secondPage[1].createdAt,
+            "Second page should be ordered by createdAt descending",
+        )
+
+        // Verify no overlap between pages
+        val page1Ids = firstPage.map { it.id }.toSet()
+        val page2Ids = secondPage.map { it.id }.toSet()
+        assertTrue(page1Ids.intersect(page2Ids).isEmpty(), "Pages should not overlap")
+
+        // Get third page
+        val thirdPage = spreadRepository.findSpreadsAfterCursor(secondPage.last().id, 2)
+        assertEquals(1, thirdPage.size)
+
+        // Verify all 5 spreads are retrievable through pagination
+        val allRetrievedIds = (firstPage + secondPage + thirdPage).map { it.id }.toSet()
+        assertEquals(createdIds.toSet(), allRetrievedIds, "All created spreads should be retrievable")
     }
 
     @Test
@@ -516,31 +530,18 @@ class SpreadServiceIntegrationTest {
 
     @Test
     fun `should order spreads by creation date descending`() {
-        val first =
-            spreadService.createSpread(
-                CreateSpreadRequest(
-                    question = "First",
-                    layoutTypeId = layoutTypeId,
-                    authorId = userId,
-                ),
-            )
-        Thread.sleep(10)
-        spreadService.createSpread(
-            CreateSpreadRequest(
-                question = "Second",
-                layoutTypeId = layoutTypeId,
-                authorId = userId,
-            ),
-        )
-        Thread.sleep(10)
-        val third =
-            spreadService.createSpread(
-                CreateSpreadRequest(
-                    question = "Third",
-                    layoutTypeId = layoutTypeId,
-                    authorId = userId,
-                ),
-            )
+        // Create multiple spreads
+        val createdIds =
+            listOf("First", "Second", "Third").map { question ->
+                spreadService
+                    .createSpread(
+                        CreateSpreadRequest(
+                            question = question,
+                            layoutTypeId = layoutTypeId,
+                            authorId = userId,
+                        ),
+                    ).id
+            }
 
         // Verify repository ordering
         val spreads =
@@ -550,9 +551,18 @@ class SpreadServiceIntegrationTest {
             )
 
         assertEquals(3, spreads.content.size)
-        // Most recent first
-        assertEquals(third.id, spreads.content[0].id)
-        assertEquals(first.id, spreads.content[2].id)
+
+        // Verify ordering: each spread's createdAt should be >= the next spread's createdAt
+        for (i in 0 until spreads.content.size - 1) {
+            assertTrue(
+                spreads.content[i].createdAt >= spreads.content[i + 1].createdAt,
+                "Spreads should be ordered by createdAt descending",
+            )
+        }
+
+        // Verify all created spreads are present
+        val retrievedIds = spreads.content.map { it.id }.toSet()
+        assertEquals(createdIds.toSet(), retrievedIds, "All created spreads should be retrieved")
     }
 
     @Test

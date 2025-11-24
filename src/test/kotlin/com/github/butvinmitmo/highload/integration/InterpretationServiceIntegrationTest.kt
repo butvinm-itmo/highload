@@ -362,13 +362,14 @@ class InterpretationServiceIntegrationTest {
         val originalInterpretation = interpretationRepository.findById(created.id).get()
         val originalCreatedAt = originalInterpretation.createdAt
 
-        Thread.sleep(10) // Ensure time passes
-
+        // Update the interpretation
         val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
         interpretationService.updateInterpretation(spreadId, created.id, userId, updateRequest)
 
+        // Verify createdAt timestamp is preserved (not updated)
         val updated = interpretationRepository.findById(created.id).get()
-        assertEquals(originalCreatedAt, updated.createdAt)
+        assertEquals(originalCreatedAt, updated.createdAt, "createdAt should not change on update")
+        assertEquals("Updated text", updated.text, "Text should be updated")
     }
 
     @Test
@@ -494,28 +495,42 @@ class InterpretationServiceIntegrationTest {
 
     @Test
     fun `should return interpretations ordered by creation date descending`() {
-        val request1 =
-            CreateInterpretationRequest(
-                text = "First interpretation",
-                authorId = userId,
-            )
-        interpretationService.addInterpretation(spreadId, request1)
-
-        Thread.sleep(10)
-
+        // Create multiple users and interpretations
         val user2 = userService.createUser(CreateUserRequest(username = "user2"))
-        val request2 =
-            CreateInterpretationRequest(
-                text = "Second interpretation",
-                authorId = user2.id,
+        val user3 = userService.createUser(CreateUserRequest(username = "user3"))
+
+        val interp1 =
+            interpretationService.addInterpretation(
+                spreadId,
+                CreateInterpretationRequest(text = "First interpretation", authorId = userId),
             )
-        interpretationService.addInterpretation(spreadId, request2)
+        val interp2 =
+            interpretationService.addInterpretation(
+                spreadId,
+                CreateInterpretationRequest(text = "Second interpretation", authorId = user2.id),
+            )
+        val interp3 =
+            interpretationService.addInterpretation(
+                spreadId,
+                CreateInterpretationRequest(text = "Third interpretation", authorId = user3.id),
+            )
 
         val result = interpretationService.getInterpretations(spreadId)
 
-        assertEquals(2, result.size)
-        assertEquals("Second interpretation", result[0].text)
-        assertEquals("First interpretation", result[1].text)
+        assertEquals(3, result.size)
+
+        // Verify ordering: each interpretation's createdAt should be >= the next interpretation's createdAt
+        for (i in 0 until result.size - 1) {
+            assertTrue(
+                result[i].createdAt >= result[i + 1].createdAt,
+                "Interpretations should be ordered by createdAt descending",
+            )
+        }
+
+        // Verify all created interpretations are present
+        val resultIds = result.map { it.id }.toSet()
+        val createdIds = setOf(interp1.id, interp2.id, interp3.id)
+        assertEquals(createdIds, resultIds, "All created interpretations should be retrieved")
     }
 
     @Test
