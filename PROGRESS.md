@@ -129,6 +129,57 @@
 - Lazy-loaded collections (`@OneToMany`) need to be handled carefully - pass counts as parameters to mappers to avoid `LazyInitializationException`
 
 ### Next steps:
-- Add Dockerfiles for each service
-- Update docker-compose.yml for microservices
-- Full integration testing
+- ✅ Add Dockerfiles for each service
+- ✅ Update docker-compose.yml for microservices
+- ✅ Full integration testing
+
+---
+
+## Step 6: Dockerfiles and Docker Compose ✅
+
+**Completed:** 2025-11-28
+
+### What was done:
+- Created Dockerfiles for all three microservices:
+  - `user-service/Dockerfile` - Multi-stage build with Gradle and JRE
+  - `tarot-service/Dockerfile` - Multi-stage build with Gradle and JRE
+  - `divination-service/Dockerfile` - Multi-stage build with Gradle and JRE
+- Each Dockerfile:
+  - Uses `gradle:8-jdk21` for build stage
+  - Uses `eclipse-temurin:21-jre` for runtime
+  - Installs `curl` for healthcheck support
+  - Builds only the specific service from root context (to access shared-dto)
+- Updated `docker-compose.yml` for microservices architecture:
+  - PostgreSQL with healthcheck
+  - user-service (port 8081) with actuator healthcheck
+  - tarot-service (port 8082) with actuator healthcheck
+  - divination-service (port 8083) depends on both user-service and tarot-service
+  - Proper service URLs configured via environment variables
+- Added Spring Boot Actuator dependency to all services for health endpoints
+- Configured separate Flyway schema history tables for each service:
+  - `flyway_schema_history_user` for user-service
+  - `flyway_schema_history_tarot` for tarot-service
+  - `flyway_schema_history_divination` for divination-service
+
+### Key learnings:
+- Services need separate Flyway history tables when sharing a database but having independent migrations
+- `baseline-on-migrate: true` with `baseline-version: 0` is needed when multiple services run migrations on a shared database concurrently
+- Docker healthchecks with `service_healthy` condition ensure proper startup order
+- Dockerfiles should be built from root context (`context: .`) when they depend on multi-project modules like shared-dto
+
+### Verification:
+- All services start successfully with `docker-compose up -d`
+- Inter-service communication works:
+  - divination-service → user-service (Feign client)
+  - divination-service → tarot-service (Feign client)
+- API endpoints tested:
+  - `GET /api/v0.0.1/users` returns admin user
+  - `GET /api/v0.0.1/cards` returns 78 tarot cards
+  - `POST /api/v0.0.1/spreads` creates spread with data from all services
+
+### Migration Complete! 🎉
+
+The monolith has been successfully split into 3 microservices:
+- **user-service** (port 8081): User management
+- **tarot-service** (port 8082): Cards & LayoutTypes reference data
+- **divination-service** (port 8083): Spreads & Interpretations with Feign clients
