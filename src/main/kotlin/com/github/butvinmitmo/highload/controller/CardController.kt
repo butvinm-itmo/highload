@@ -1,7 +1,7 @@
 package com.github.butvinmitmo.highload.controller
 
 import com.github.butvinmitmo.highload.dto.CardDto
-import com.github.butvinmitmo.highload.service.CardService
+import com.github.butvinmitmo.highload.service.TarotService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "Cards", description = "Tarot card catalog operations")
 @Validated
 class CardController(
-    private val cardService: CardService,
+    private val tarotService: TarotService,
 ) {
     @GetMapping
     @Operation(
@@ -44,7 +44,7 @@ class CardController(
         @Max(50)
         size: Int,
     ): ResponseEntity<List<CardDto>> {
-        val response = cardService.getCards(page, size)
+        val response = tarotService.getCards(page, size)
         return ResponseEntity
             .ok()
             .header("X-Total-Count", response.totalElements.toString())

@@ -1,7 +1,7 @@
 package com.github.butvinmitmo.highload.controller
 
 import com.github.butvinmitmo.highload.dto.LayoutTypeDto
-import com.github.butvinmitmo.highload.service.LayoutTypeService
+import com.github.butvinmitmo.highload.service.TarotService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "Layout Types", description = "Tarot spread layout type operations")
 @Validated
 class LayoutTypeController(
-    private val layoutTypeService: LayoutTypeService,
+    private val tarotService: TarotService,
 ) {
     @GetMapping
     @Operation(
@@ -44,7 +44,7 @@ class LayoutTypeController(
         @Max(50)
         size: Int,
     ): ResponseEntity<List<LayoutTypeDto>> {
-        val response = layoutTypeService.getLayoutTypes(page, size)
+        val response = tarotService.getLayoutTypes(page, size)
         return ResponseEntity
             .ok()
             .header("X-Total-Count", response.totalElements.toString())

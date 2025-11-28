@@ -1,19 +1,24 @@
 package com.github.butvinmitmo.highload.service
 
+import com.github.butvinmitmo.highload.dto.CreateInterpretationRequest
+import com.github.butvinmitmo.highload.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.highload.dto.CreateSpreadRequest
 import com.github.butvinmitmo.highload.dto.CreateSpreadResponse
+import com.github.butvinmitmo.highload.dto.InterpretationDto
 import com.github.butvinmitmo.highload.dto.PageResponse
 import com.github.butvinmitmo.highload.dto.ScrollResponse
 import com.github.butvinmitmo.highload.dto.SpreadDto
 import com.github.butvinmitmo.highload.dto.SpreadSummaryDto
-import com.github.butvinmitmo.highload.entity.LayoutType
+import com.github.butvinmitmo.highload.dto.UpdateInterpretationRequest
+import com.github.butvinmitmo.highload.entity.Interpretation
 import com.github.butvinmitmo.highload.entity.Spread
 import com.github.butvinmitmo.highload.entity.SpreadCard
+import com.github.butvinmitmo.highload.exception.ConflictException
 import com.github.butvinmitmo.highload.exception.ForbiddenException
 import com.github.butvinmitmo.highload.exception.NotFoundException
+import com.github.butvinmitmo.highload.mapper.InterpretationMapper
 import com.github.butvinmitmo.highload.mapper.SpreadMapper
 import com.github.butvinmitmo.highload.repository.InterpretationRepository
-import com.github.butvinmitmo.highload.repository.LayoutTypeRepository
 import com.github.butvinmitmo.highload.repository.SpreadCardRepository
 import com.github.butvinmitmo.highload.repository.SpreadRepository
 import org.springframework.data.domain.PageRequest
@@ -23,20 +28,21 @@ import java.util.UUID
 import kotlin.random.Random
 
 @Service
-class SpreadService(
+class DivinationService(
     private val spreadRepository: SpreadRepository,
     private val spreadCardRepository: SpreadCardRepository,
-    private val layoutTypeRepository: LayoutTypeRepository,
     private val interpretationRepository: InterpretationRepository,
     private val userService: UserService,
-    private val cardService: CardService,
+    private val tarotService: TarotService,
     private val spreadMapper: SpreadMapper,
+    private val interpretationMapper: InterpretationMapper,
 ) {
+    // ==================== Spread Operations ====================
+
     @Transactional
     fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
         val user = userService.getUserEntity(request.authorId)
-
-        val layoutType = getLayoutTypeById(request.layoutTypeId)
+        val layoutType = tarotService.getLayoutTypeById(request.layoutTypeId)
 
         val spread =
             Spread(
@@ -46,7 +52,7 @@ class SpreadService(
             )
         val savedSpread = spreadRepository.save(spread)
 
-        val cards = cardService.findRandomCards(layoutType.cardsCount)
+        val cards = tarotService.getRandomCards(layoutType.cardsCount)
 
         cards.forEachIndexed { index, card ->
             val spreadCard =
@@ -135,13 +141,110 @@ class SpreadService(
         spreadRepository.deleteById(id)
     }
 
-    fun getLayoutTypeById(id: UUID): LayoutType =
-        layoutTypeRepository
-            .findById(id)
-            .orElseThrow { NotFoundException("Layout type not found") }
-
     fun getSpreadEntity(id: UUID): Spread =
         spreadRepository
             .findById(id)
             .orElseThrow { NotFoundException("Spread not found") }
+
+    // ==================== Interpretation Operations ====================
+
+    @Transactional
+    fun addInterpretation(
+        spreadId: UUID,
+        request: CreateInterpretationRequest,
+    ): CreateInterpretationResponse {
+        val spread = getSpreadEntity(spreadId)
+        val user = userService.getUserEntity(request.authorId)
+
+        if (interpretationRepository.existsByAuthorAndSpread(user.id, spreadId)) {
+            throw ConflictException("You already have an interpretation for this spread")
+        }
+
+        val interpretation =
+            Interpretation(
+                text = request.text,
+                author = user,
+                spread = spread,
+            )
+
+        val saved = interpretationRepository.save(interpretation)
+        return CreateInterpretationResponse(id = saved.id)
+    }
+
+    @Transactional
+    fun updateInterpretation(
+        spreadId: UUID,
+        id: UUID,
+        userId: UUID,
+        request: UpdateInterpretationRequest,
+    ): InterpretationDto {
+        val interpretation =
+            interpretationRepository
+                .findById(id)
+                .orElseThrow { NotFoundException("Interpretation not found") }
+
+        if (interpretation.author.id != userId) {
+            throw ForbiddenException("You can only edit your own interpretations")
+        }
+
+        interpretation.text = request.text
+        val saved = interpretationRepository.save(interpretation)
+
+        return interpretationMapper.toDto(saved)
+    }
+
+    @Transactional
+    fun deleteInterpretation(
+        spreadId: UUID,
+        id: UUID,
+        userId: UUID,
+    ) {
+        val interpretation =
+            interpretationRepository
+                .findById(id)
+                .orElseThrow { NotFoundException("Interpretation not found") }
+
+        if (interpretation.author.id != userId) {
+            throw ForbiddenException("You can only delete your own interpretations")
+        }
+
+        interpretationRepository.deleteById(id)
+    }
+
+    @Transactional(readOnly = true)
+    fun getInterpretation(
+        spreadId: UUID,
+        id: UUID,
+    ): InterpretationDto {
+        val interpretation =
+            interpretationRepository
+                .findById(id)
+                .orElseThrow { NotFoundException("Interpretation not found") }
+
+        if (interpretation.spread.id != spreadId) {
+            throw NotFoundException("Interpretation not found in this spread")
+        }
+
+        return interpretationMapper.toDto(interpretation)
+    }
+
+    @Transactional(readOnly = true)
+    fun getInterpretations(
+        spreadId: UUID,
+        page: Int,
+        size: Int,
+    ): PageResponse<InterpretationDto> {
+        getSpreadEntity(spreadId)
+        val pageable = PageRequest.of(page, size)
+        val interpretationsPage = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, pageable)
+        return PageResponse(
+            content = interpretationsPage.content.map { interpretationMapper.toDto(it) },
+            page = interpretationsPage.number,
+            size = interpretationsPage.size,
+            totalElements = interpretationsPage.totalElements,
+            totalPages = interpretationsPage.totalPages,
+            isFirst = interpretationsPage.isFirst,
+            isLast = interpretationsPage.isLast,
+        )
+    }
 }

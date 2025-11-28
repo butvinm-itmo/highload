@@ -5,7 +5,7 @@ import com.github.butvinmitmo.highload.dto.CreateSpreadResponse
 import com.github.butvinmitmo.highload.dto.DeleteRequest
 import com.github.butvinmitmo.highload.dto.SpreadDto
 import com.github.butvinmitmo.highload.dto.SpreadSummaryDto
-import com.github.butvinmitmo.highload.service.SpreadService
+import com.github.butvinmitmo.highload.service.DivinationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -37,7 +37,7 @@ import java.util.UUID
 @Tag(name = "Spreads", description = "Tarot spread management and viewing")
 @Validated
 class SpreadController(
-    private val spreadService: SpreadService,
+    private val divinationService: DivinationService,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -56,7 +56,7 @@ class SpreadController(
     )
     fun createSpread(
         @Valid @RequestBody request: CreateSpreadRequest,
-    ): CreateSpreadResponse = spreadService.createSpread(request)
+    ): CreateSpreadResponse = divinationService.createSpread(request)
 
     @GetMapping
     @Operation(
@@ -90,7 +90,7 @@ class SpreadController(
         @Max(50)
         size: Int,
     ): ResponseEntity<List<SpreadSummaryDto>> {
-        val response = spreadService.getSpreads(page, size)
+        val response = divinationService.getSpreads(page, size)
         return ResponseEntity
             .ok()
             .header("X-Total-Count", response.totalElements.toString())
@@ -130,7 +130,7 @@ class SpreadController(
         @Max(50)
         size: Int,
     ): ResponseEntity<List<SpreadSummaryDto>> {
-        val result = spreadService.getSpreadsByScroll(after, size)
+        val result = divinationService.getSpreadsByScroll(after, size)
         val response = ResponseEntity.ok()
 
         return if (result.nextCursor != null) {
@@ -155,7 +155,7 @@ class SpreadController(
         @Parameter(description = "Spread ID", required = true)
         @PathVariable
         id: UUID,
-    ): SpreadDto = spreadService.getSpread(id)
+    ): SpreadDto = divinationService.getSpread(id)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -176,6 +176,6 @@ class SpreadController(
         id: UUID,
         @RequestBody request: DeleteRequest,
     ) {
-        spreadService.deleteSpread(id, request.userId)
+        divinationService.deleteSpread(id, request.userId)
     }
 }

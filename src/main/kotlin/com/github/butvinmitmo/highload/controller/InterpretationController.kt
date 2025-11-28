@@ -5,7 +5,7 @@ import com.github.butvinmitmo.highload.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.highload.dto.DeleteRequest
 import com.github.butvinmitmo.highload.dto.InterpretationDto
 import com.github.butvinmitmo.highload.dto.UpdateInterpretationRequest
-import com.github.butvinmitmo.highload.service.InterpretationService
+import com.github.butvinmitmo.highload.service.DivinationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -34,7 +34,7 @@ import java.util.UUID
 @Tag(name = "Interpretations", description = "Manage interpretations for tarot spreads")
 @Validated
 class InterpretationController(
-    private val interpretationService: InterpretationService,
+    private val divinationService: DivinationService,
 ) {
     @GetMapping
     @Operation(
@@ -62,7 +62,7 @@ class InterpretationController(
         @Max(50)
         size: Int,
     ): ResponseEntity<List<InterpretationDto>> {
-        val response = interpretationService.getInterpretations(spreadId, page, size)
+        val response = divinationService.getInterpretations(spreadId, page, size)
         return ResponseEntity
             .ok()
             .header("X-Total-Count", response.totalElements.toString())
@@ -87,7 +87,7 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID", required = true)
         @PathVariable
         id: UUID,
-    ): InterpretationDto = interpretationService.getInterpretation(spreadId, id)
+    ): InterpretationDto = divinationService.getInterpretation(spreadId, id)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -110,7 +110,7 @@ class InterpretationController(
         @PathVariable
         spreadId: UUID,
         @Valid @RequestBody request: CreateInterpretationRequest,
-    ): CreateInterpretationResponse = interpretationService.addInterpretation(spreadId, request)
+    ): CreateInterpretationResponse = divinationService.addInterpretation(spreadId, request)
 
     @PutMapping("/{id}")
     @Operation(
@@ -133,7 +133,7 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
-    ): InterpretationDto = interpretationService.updateInterpretation(spreadId, id, request.authorId, request)
+    ): InterpretationDto = divinationService.updateInterpretation(spreadId, id, request.authorId, request)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -157,6 +157,6 @@ class InterpretationController(
         id: UUID,
         @RequestBody request: DeleteRequest,
     ) {
-        interpretationService.deleteInterpretation(spreadId, id, request.userId)
+        divinationService.deleteInterpretation(spreadId, id, request.userId)
     }
 }
