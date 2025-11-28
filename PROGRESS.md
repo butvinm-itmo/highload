@@ -89,3 +89,46 @@
 
 ### Next steps:
 - Create divination-service
+
+---
+
+## Step 5: Divination Service ✅
+
+**Completed:** 2025-11-28
+
+### What was done:
+- Created full divination-service implementation:
+  - `DivinationServiceApplication.kt` - Spring Boot main class with `@EnableFeignClients`
+  - `entity/Spread.kt`, `entity/SpreadCard.kt`, `entity/Interpretation.kt` - JPA entities (store IDs instead of entity references for cross-service data)
+  - `repository/SpreadRepository.kt`, `repository/SpreadCardRepository.kt`, `repository/InterpretationRepository.kt` - Spring Data JPA repositories
+  - `service/DivinationService.kt` - Business logic layer using Feign clients
+  - `controller/SpreadController.kt` - Spread REST API endpoints
+  - `controller/InterpretationController.kt` - Interpretation REST API endpoints
+  - `mapper/SpreadMapper.kt`, `mapper/InterpretationMapper.kt` - Entity to DTO mappers (using Feign clients for related data)
+  - `client/UserClient.kt` - Feign client for user-service
+  - `client/TarotClient.kt` - Feign client for tarot-service
+  - `exception/Exceptions.kt` - NotFoundException, ForbiddenException, ConflictException
+  - `exception/GlobalExceptionHandler.kt` - REST exception handling with Feign exception support
+- Created Flyway migrations:
+  - `V1__create_spread_table.sql` - Creates spread table with FKs to user and layout_type
+  - `V2__create_spread_card_table.sql` - Creates spread_card table
+  - `V3__create_interpretation_table.sql` - Creates interpretation table with unique constraint
+- Created `application.yml` with service URLs configuration
+- Created tests:
+  - Unit tests: `DivinationServiceTest.kt` (15 tests)
+  - Controller integration tests with WireMock: `SpreadControllerIntegrationTest.kt` (7 tests), `InterpretationControllerIntegrationTest.kt` (8 tests)
+  - Test utilities: `TestEntityFactory.kt`, `BaseIntegrationTest.kt`, `BaseControllerIntegrationTest.kt`
+  - Test database setup: `init-test-db.sql` (creates all prerequisite tables)
+- All 30 tests passing
+
+### Key learnings:
+- Spring Cloud OpenFeign with Spring Boot 3.5.6 requires disabling compatibility verifier (`spring.cloud.compatibility-verifier.enabled=false`)
+- WireMock JUnit 5 extension uses `wireMock.baseUrl()` for getting the mock server URL
+- Need to use `@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)` to avoid Spring context caching issues when multiple test classes share WireMock
+- For shared database with microservices, entities should store foreign key IDs instead of entity references to avoid cross-service entity loading
+- Lazy-loaded collections (`@OneToMany`) need to be handled carefully - pass counts as parameters to mappers to avoid `LazyInitializationException`
+
+### Next steps:
+- Add Dockerfiles for each service
+- Update docker-compose.yml for microservices
+- Full integration testing
