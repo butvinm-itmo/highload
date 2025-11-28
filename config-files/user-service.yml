@@ -1,0 +1,6 @@
+server:
+  port: 8081
+
+spring:
+  flyway:
+    table: flyway_schema_history_user

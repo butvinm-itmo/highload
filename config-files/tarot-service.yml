@@ -1,0 +1,6 @@
+server:
+  port: 8082
+
+spring:
+  flyway:
+    table: flyway_schema_history_tarot
