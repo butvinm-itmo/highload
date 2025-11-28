@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tarology Web Service** - A Kotlin/Spring Boot application for Tarot card readings and interpretations. Users can create spreads, view others' spreads, and add interpretations without authentication (user ID-based identification).
+**Tarology Web Service** - A Kotlin/Spring Boot microservices application for Tarot card readings and interpretations. Users can create spreads, view others' spreads, and add interpretations without authentication (user ID-based identification).
+
+**Architecture:** Microservices with Feign Clients for inter-service communication.
 
 Key features:
 - Create tarot spreads with different layouts (one card, three cards, cross/five cards)
@@ -12,21 +14,42 @@ Key features:
 - Add/edit/delete interpretations for spreads
 - User management with transactional deletion
 
+## Microservices Architecture
+
+The application is split into 3 microservices + shared DTO module:
+
+| Service | Port | Responsibility |
+|---------|------|----------------|
+| **user-service** | 8081 | User management |
+| **tarot-service** | 8082 | Cards & LayoutTypes reference data |
+| **divination-service** | 8083 | Spreads & Interpretations (uses Feign clients) |
+| **shared-dto** | - | Shared DTOs between services |
+
+**Inter-service Communication:**
+- `divination-service` → `user-service` via `UserClient` (Feign)
+- `divination-service` → `tarot-service` via `TarotClient` (Feign)
+
+**Database:** All services share a single PostgreSQL database with separate Flyway migration history tables.
+
 ## Build & Development Commands
 
 ### Build and Run
 ```bash
-# Build the project
+# Build all services
 ./gradlew build
 
-# Run the application locally
-./gradlew bootRun
+# Build specific service
+./gradlew :user-service:build
+./gradlew :tarot-service:build
+./gradlew :divination-service:build
 
-# Run tests
+# Run tests for all services
 ./gradlew test
 
-# Run a single test class
-./gradlew test --tests "com.github.butvinmitmo.highload.HighloadApplicationTests"
+# Run tests for specific service
+./gradlew :user-service:test
+./gradlew :tarot-service:test
+./gradlew :divination-service:test
 
 # Clean build artifacts
 ./gradlew clean
@@ -40,15 +63,18 @@ Key features:
 # Auto-format code with ktlint
 ./gradlew ktlintFormat
 
-# Run ktlint check for specific source set
-./gradlew ktlintMainSourceSetCheck
-./gradlew ktlintTestSourceSetCheck
+# Run ktlint for specific service
+./gradlew :user-service:ktlintCheck
+./gradlew :tarot-service:ktlintFormat
 ```
 
 ### Docker Commands
 ```bash
-# Start database and application with Docker Compose
+# Start all microservices with Docker Compose
 docker-compose up -d
+
+# Rebuild and restart all services
+docker-compose up -d --build
 
 # Start only the database (for local development)
 docker-compose up -d postgres
@@ -56,254 +82,317 @@ docker-compose up -d postgres
 # Stop all services
 docker-compose down
 
-# Rebuild and restart
-docker-compose up -d --build
+# View logs for specific service
+docker-compose logs -f user-service
+docker-compose logs -f tarot-service
+docker-compose logs -f divination-service
 
-# View logs
-docker-compose logs -f app
+# View all logs
+docker-compose logs -f
+```
+
+### E2E Testing
+```bash
+# Run end-to-end tests (requires services running via docker-compose)
+./e2e.sh
 ```
 
 ### Database Setup
-The project uses Flyway for database migrations. Migrations run automatically on application startup. Database configuration can be overridden via environment variables:
+Each service has its own Flyway migrations with separate history tables:
+- `flyway_schema_history_user` - user-service migrations
+- `flyway_schema_history_tarot` - tarot-service migrations
+- `flyway_schema_history_divination` - divination-service migrations
+
+Environment variables:
+- `DB_HOST` - Database host (default: localhost)
+- `DB_PORT` - Database port (default: 5432)
 - `DB_NAME` - Database name (default: tarot_db)
 - `DB_USER` - Database username (default: tarot_user)
 - `DB_PASSWORD` - Database password
-- `DB_PORT` - Database port (default: 5432)
-- `APP_PORT` - Application port (default: 8080)
 
-## Architecture
+## Technology Stack
 
-### Technology Stack
 - **Language:** Kotlin 2.2.10
 - **Framework:** Spring Boot 3.5.6
-- **Build Tool:** Gradle with Kotlin DSL
+- **Build Tool:** Gradle with Kotlin DSL (multi-project)
 - **JVM:** Java 21
 - **Database:** PostgreSQL 15
-- **Migrations:** Flyway
+- **Migrations:** Flyway (per-service)
 - **ORM:** Spring Data JPA with Hibernate
-- **Code Style:** ktlint 1.5.0 (enforced via Gradle plugin)
+- **Inter-service:** Spring Cloud OpenFeign
+- **Code Style:** ktlint 1.5.0
 
-### Database Schema
-Uses UUID-based identifiers for all entities. Main tables:
-- `user` - User accounts (id, username)
-- `spread` - Tarot spreads (id, question, layout_type_id, created_at, author_id)
-- `interpretation` - User interpretations (id, text, created_at, author_id, spread_id)
-  - Unique constraint: (author_id, spread_id) - one interpretation per user per spread
-- `card` - Tarot cards (id, name, arcana_type_id)
-- `spread_card` - Cards in spreads (id, spread_id, card_id, position_in_spread, is_reversed)
-- `layout_type` - Spread layouts (ONE_CARD, THREE_CARDS, CROSS)
-- `arcana_type` - Card types (MAJOR, MINOR)
+## Project Structure
 
-### API Endpoints
+```
+highload/
+├── shared-dto/                    # Shared DTOs module
+│   └── src/main/kotlin/.../shared/dto/
+│       ├── UserDto.kt, CreateUserRequest.kt, ...
+│       ├── CardDto.kt, LayoutTypeDto.kt, ArcanaTypeDto.kt
+│       ├── SpreadDto.kt, SpreadSummaryDto.kt, ...
+│       ├── InterpretationDto.kt, ...
+│       ├── PageResponse.kt, ScrollResponse.kt
+│       ├── ErrorResponse.kt, ValidationErrorResponse.kt
+│       └── DeleteRequest.kt
+│
+├── user-service/                  # User management (port 8081)
+│   └── src/main/kotlin/.../userservice/
+│       ├── controller/UserController.kt, InternalUserController.kt
+│       ├── service/UserService.kt
+│       ├── repository/UserRepository.kt
+│       ├── entity/User.kt
+│       └── mapper/UserMapper.kt
+│
+├── tarot-service/                 # Reference data (port 8082)
+│   └── src/main/kotlin/.../tarotservice/
+│       ├── controller/CardController.kt, LayoutTypeController.kt, InternalTarotController.kt
+│       ├── service/TarotService.kt
+│       ├── repository/CardRepository.kt, LayoutTypeRepository.kt
+│       ├── entity/Card.kt, LayoutType.kt, ArcanaType.kt
+│       └── mapper/CardMapper.kt, LayoutTypeMapper.kt
+│
+├── divination-service/            # Spreads & Interpretations (port 8083)
+│   └── src/main/kotlin/.../divinationservice/
+│       ├── controller/SpreadController.kt, InterpretationController.kt
+│       ├── service/DivinationService.kt
+│       ├── repository/SpreadRepository.kt, SpreadCardRepository.kt, InterpretationRepository.kt
+│       ├── entity/Spread.kt, SpreadCard.kt, Interpretation.kt
+│       ├── mapper/SpreadMapper.kt, InterpretationMapper.kt
+│       └── client/UserClient.kt, TarotClient.kt  # Feign clients
+│
+├── docker-compose.yml
+├── settings.gradle.kts            # Multi-project configuration
+├── e2e.sh                         # End-to-end test script
+└── src/                           # Original monolith (deprecated)
+```
+
+## API Endpoints
+
+### Response Format Convention
+
+**IMPORTANT:** All paginated endpoints return arrays directly with metadata in HTTP headers, NOT wrapped PageResponse/ScrollResponse objects.
+
+```bash
+# Paginated endpoints return:
+# Body: [...array of items...]
+# Header: X-Total-Count: <total>
+
+# Scroll endpoints return:
+# Body: [...array of items...]
+# Header: X-After: <cursor-uuid>  (only if more items exist)
+```
+
+The `PageResponse` and `ScrollResponse` DTOs are used **internally** between service/controller layers, not in API responses.
+
+### Pagination Limits
+
+All paginated endpoints enforce `@Max(50)` on the `size` parameter. Requesting `size > 50` returns 500 error.
+
+### user-service (port 8081)
+
+Base path: `/api/v0.0.1`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/users` | Create user (409 if username exists) |
+| GET | `/users?page=N&size=M` | List users (X-Total-Count header) |
+| GET | `/users/{id}` | Get user by ID |
+| PUT | `/users/{id}` | Update user |
+| DELETE | `/users/{id}` | Delete user and all associated data |
+
+**Internal endpoints** (for Feign clients):
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/internal/users/{id}/entity` | Get user DTO for internal use |
+
+### tarot-service (port 8082)
+
+Base path: `/api/v0.0.1`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/cards?page=N&size=M` | List cards (max 50/page, X-Total-Count header) |
+| GET | `/layout-types?page=N&size=M` | List layout types |
+
+**Note:** No `GET /cards/{id}` endpoint exists. Cards are reference data accessed via list or internal random endpoint.
+
+**Internal endpoints** (for Feign clients):
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/internal/cards/random?count=N` | Get N random cards |
+| GET | `/api/internal/layout-types/{id}` | Get layout type by ID |
+
+### divination-service (port 8083)
 
 Base path: `/api/v0.0.1`
 
 **Spreads:**
-- `POST /spreads` - Create spread
-- `GET /spreads?page=N&size=M` - Paginated list with X-Total-Count header
-- `GET /spreads/scroll?after=ID&size=N` - Infinite scroll
-- `GET /spreads/{id}` - Get spread details
-- `DELETE /spreads/{id}` - Delete spread (author only)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/spreads` | Create spread |
+| GET | `/spreads?page=N&size=M` | List spreads (X-Total-Count header) |
+| GET | `/spreads/scroll?after=ID&size=N` | Scroll spreads (X-After header) |
+| GET | `/spreads/{id}` | Get spread with cards and interpretations |
+| DELETE | `/spreads/{id}` | Delete spread (author only) |
 
 **Interpretations:**
-- `POST /spreads/{spreadId}/interpretations` - Add interpretation (409 if duplicate)
-- `PUT /spreads/{spreadId}/interpretations/{id}` - Edit interpretation (author only)
-- `DELETE /spreads/{spreadId}/interpretations/{id}` - Delete interpretation (author only)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/spreads/{spreadId}/interpretations` | List interpretations |
+| GET | `/spreads/{spreadId}/interpretations/{id}` | Get interpretation |
+| POST | `/spreads/{spreadId}/interpretations` | Add interpretation (409 if duplicate) |
+| PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation (author only) |
+| DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation (author only) |
 
-**Users:**
-- `POST /users` - Create user (409 if exists)
-- `GET /users?page=N&size=M` - List users
-- `GET /users/{id}` - Get user
-- `PUT /users/{id}` - Update user
-- `DELETE /users/{id}` - Delete user with all data (transactional)
+## Important API Details
 
-### Project Structure
-```
-src/main/kotlin/com/github/butvinmitmo/highload/
-├── controller/      # REST API controllers
-├── service/         # Business logic layer
-├── repository/      # Spring Data JPA repositories
-├── entity/          # JPA entities (User, Spread, Card, etc.)
-├── dto/             # Data Transfer Objects for API layer
-├── mapper/          # Entity ↔ DTO mappers
-├── exception/       # Custom exceptions
-└── config/          # Spring configuration
+### DeleteRequest DTO
 
-src/test/kotlin/com/github/butvinmitmo/highload/
-├── integration/
-│   ├── controller/  # Controller integration tests (MockMvc + real DB)
-│   └── service/     # Service integration tests (real DB, no HTTP layer)
-└── unit/
-    └── service/     # Service unit tests (mocked dependencies)
+**IMPORTANT:** Delete endpoints use `userId` field, NOT `authorId`:
+
+```kotlin
+// DeleteRequest.kt
+data class DeleteRequest(
+    val userId: UUID,  // NOT authorId
+)
 ```
 
-### DTO Layer
-The project uses DTOs to separate the API layer from the database entities:
+This differs from create/update requests which use `authorId`.
 
-**Response DTOs:**
-- `UserDto`, `SpreadDto`, `InterpretationDto`, `CardDto`, `SpreadCardDto`
-- `LayoutTypeDto`, `ArcanaTypeDto`
-- Summary DTOs for optimized list views: `SpreadSummaryDto`, `InterpretationSummaryDto`, `CardSummaryDto`
+### Request/Response DTOs
 
-**Request DTOs:**
-- `CreateUserRequest`, `UpdateUserRequest`
-- `CreateSpreadRequest`
-- `CreateInterpretationRequest`, `UpdateInterpretationRequest`
+**Create requests use `authorId`:**
+- `CreateSpreadRequest.authorId`
+- `CreateInterpretationRequest.authorId`
+- `UpdateInterpretationRequest.authorId`
 
-**Pagination DTOs:**
-- `PageRequest`/`PageResponse` for traditional pagination
-- `ScrollRequest`/`ScrollResponse` for infinite scroll
+**Delete requests use `userId`:**
+- `DeleteRequest.userId`
 
-**Error DTOs:**
-- `ErrorResponse` for general errors
-- `ValidationErrorResponse` for field validation errors
+### Entity ID Storage in divination-service
 
-### Repository Layer
-Spring Data JPA repositories provide data access with the following features:
+Entities in divination-service store foreign key IDs instead of entity references (since User and LayoutType are in other services):
 
-**Core Repositories:**
-- `UserRepository` - User CRUD operations, search by username
-- `SpreadRepository` - Spread operations with cursor-based pagination, search by question
-- `InterpretationRepository` - Interpretation management with unique constraint handling
-- `CardRepository` - Card operations with random selection for spreads
-- `SpreadCardRepository` - Spread-card relationships with statistics queries
-- `LayoutTypeRepository` - Layout type lookups with usage statistics
-- `ArcanaTypeRepository` - Arcana type management with distribution queries
+```kotlin
+// Spread.kt in divination-service
+@Column(name = "layout_type_id")
+val layoutTypeId: UUID  // NOT @ManyToOne LayoutType
 
-**Key Features:**
-- `@EntityGraph` annotations for optimized fetching and N+1 query prevention
-- Custom JPQL and native queries for complex operations
-- Cursor-based pagination support for infinite scroll
-- Statistical queries for analytics
-- Bulk delete operations for cascading deletions
+@Column(name = "author_id")
+val authorId: UUID  // NOT @ManyToOne User
+```
 
-Entities use JPA annotations with the following patterns:
-- `@Entity` with `@Table(name = "...")` for table mapping
-- `@Id` with `@GeneratedValue(strategy = GenerationType.UUID)` for primary keys
-- `@ManyToOne(fetch = FetchType.LAZY)` for foreign key relationships
-- `@Column` with explicit `columnDefinition` for text fields and UUIDs
-- Unique constraints defined at table level (e.g., interpretation has unique constraint on author_id + spread_id)
+Mappers fetch related data via Feign clients when building DTOs.
 
-### Code Style Guidelines
-The project uses ktlint for enforcing Kotlin code style. Key rules:
-- No wildcard imports (use explicit imports)
-- Files must end with a newline
-- Proper indentation (4 spaces)
-- Trailing commas in multi-line parameter lists
-- No trailing whitespace
+## Database Schema
 
-The build will fail if ktlint checks don't pass. Run `./gradlew ktlintFormat` before committing to auto-fix most issues.
+Shared PostgreSQL database with UUID-based identifiers:
 
-### Transactional Requirements
+**user-service tables:**
+- `user` - (id, username, created_at)
 
-Critical operations requiring single transaction (mark service methods with `@Transactional`):
-1. **Spread creation:** Insert spread + generate random cards + link cards in spread_card
-2. **Spread deletion:** Delete interpretations + spread_cards + spread (cascade configured in DB)
-3. **User deletion:** Delete user's spreads → interpretations on those spreads → spread_cards + delete user's interpretations on others' spreads + user record (cascade configured in DB)
+**tarot-service tables:**
+- `arcana_type` - (id, name) - MAJOR, MINOR
+- `layout_type` - (id, name, cards_count) - ONE_CARD, THREE_CARDS, CROSS
+- `card` - (id, name, arcana_type_id)
 
-Database schema enforces referential integrity with `ON DELETE CASCADE` for user-related deletions.
+**divination-service tables:**
+- `spread` - (id, question, layout_type_id, author_id, created_at)
+- `spread_card` - (id, spread_id, card_id, position_in_spread, is_reversed)
+- `interpretation` - (id, text, spread_id, author_id, created_at)
+  - Unique constraint: (author_id, spread_id)
 
 ## Testing
 
-### Test Structure
-Tests are organized hierarchically to mirror the production code structure:
+### Test Structure Per Service
+
+Each service has its own test structure:
 
 ```
-src/test/kotlin/com/github/butvinmitmo/highload/
-├── TestEntityFactory.kt              # Shared test utilities for entity creation
+{service}/src/test/kotlin/.../
+├── TestEntityFactory.kt
+├── BaseIntegrationTest.kt
 ├── integration/
-│   ├── BaseIntegrationTest.kt        # Shared base for all integration tests
 │   ├── controller/
-│   │   ├── BaseControllerIntegrationTest.kt  # Base for controller tests (MockMvc)
-│   │   ├── UserControllerIntegrationTest.kt
-│   │   ├── SpreadControllerIntegrationTest.kt
-│   │   ├── InterpretationControllerIntegrationTest.kt
-│   │   └── MockMvcExtensions.kt      # Helper functions for MockMvc
+│   │   └── *ControllerIntegrationTest.kt
 │   └── service/
-│       ├── UserServiceIntegrationTest.kt
-│       ├── SpreadServiceIntegrationTest.kt
-│       ├── InterpretationServiceIntegrationTest.kt
-│       └── CardServiceIntegrationTest.kt
+│       └── *ServiceIntegrationTest.kt
 └── unit/
     └── service/
-        ├── UserServiceTest.kt
-        ├── SpreadServiceTest.kt
-        ├── InterpretationServiceTest.kt
-        └── CardServiceTest.kt
+        └── *ServiceTest.kt
 ```
-
-### Test Types
-
-**Unit Tests** (`unit/service/`)
-- Test service layer in isolation
-- Mock all dependencies (repositories, other services)
-- Use TestEntityFactory for creating test entities
-- Fast execution, no database required
-
-**Service Integration Tests** (`integration/service/`)
-- Test service layer with real database
-- Use TestContainers for PostgreSQL
-- Extend BaseIntegrationTest for shared container
-- Automatic database cleanup after each test
-
-**Controller Integration Tests** (`integration/controller/`)
-- Test full stack: Controller → Service → Repository → Database
-- Use MockMvc to simulate HTTP requests (not real HTTP)
-- Use TestContainers for PostgreSQL
-- Extend BaseControllerIntegrationTest for shared setup
-- Note: These are NOT true end-to-end tests (no real HTTP server)
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# All tests
 ./gradlew test
 
-# Run unit tests only
-./gradlew test --tests "com.github.butvinmitmo.highload.unit.*"
-
-# Run integration tests only
-./gradlew test --tests "com.github.butvinmitmo.highload.integration.*"
-
-# Run controller integration tests only
-./gradlew test --tests "com.github.butvinmitmo.highload.integration.controller.*"
-
-# Run service integration tests only
-./gradlew test --tests "com.github.butvinmitmo.highload.integration.service.*"
-
-# Run specific test class
-./gradlew test --tests "com.github.butvinmitmo.highload.unit.service.UserServiceTest"
+# Specific service tests
+./gradlew :user-service:test
+./gradlew :tarot-service:test
+./gradlew :divination-service:test
 ```
 
-### Test Infrastructure
+### divination-service Test Specifics
 
-**TestEntityFactory** - Centralized entity creation for unit tests using reflection to set generated fields (id, createdAt)
+- Uses WireMock to mock Feign client responses
+- `@DirtiesContext(classMode = AFTER_CLASS)` to avoid Spring context caching issues
+- Test database setup includes prerequisite tables (user, card, layout_type) via `init-test-db.sql`
 
-**BaseIntegrationTest** - Provides:
-- Shared PostgreSQL TestContainer (single instance for all service integration tests)
-- Automatic database cleanup after each test
-- UUID-based seed data filtering
+### E2E Tests
 
-**BaseControllerIntegrationTest** - Provides:
-- Shared PostgreSQL TestContainer (single instance for all controller tests)
-- MockMvc for simulated HTTP requests
-- Jackson ObjectMapper for JSON serialization
-- Layout type UUIDs for test data setup
-- Automatic database cleanup after each test
+The `e2e.sh` script tests all microservices together:
+- Requires services running via `docker-compose up -d`
+- Tests CRUD operations across all services
+- Verifies inter-service communication via Feign
+- Tests error cases (404, 403, 409)
 
-**MockMvcExtensions** - Helper functions:
-- `postJson()`, `putJson()`, `deleteJson()` - Simplified HTTP request methods
-- `getIdFromBody()`, `getLocationId()` - UUID extraction from responses
+```bash
+./e2e.sh  # 55 tests
+```
 
-### Test Best Practices
+## Code Style Guidelines
 
-1. **Use TestEntityFactory for unit tests** - Avoids duplicated reflection code
-2. **Extend appropriate base class** - BaseIntegrationTest or BaseControllerIntegrationTest
-3. **Cleanup is automatic** - No need to manually clean database in integration tests
-4. **Shared containers** - Tests share PostgreSQL containers for performance
-5. **Descriptive test names** - Use backtick syntax with clear descriptions
-6. **No assertion messages** - Test names and code should be self-documenting
-7. **Use JUnit 5 assertions** - Consistent assertion style across all tests
+ktlint enforces Kotlin code style:
+- No wildcard imports
+- Files must end with newline
+- 4-space indentation
+- Trailing commas in multi-line parameter lists
+- No trailing whitespace
+
+Run `./gradlew ktlintFormat` before committing.
+
+## Key Implementation Notes
+
+### Spring Cloud OpenFeign Compatibility
+
+Spring Boot 3.5.6 requires disabling compatibility verifier:
+```yaml
+spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+```
+
+### Lazy Loading with Microservices
+
+When passing entity data to mappers, pass counts as parameters to avoid `LazyInitializationException`:
+```kotlin
+fun toDto(spread: Spread, cardsCount: Int, interpretationsCount: Int): SpreadSummaryDto
+```
+
+### Flyway with Shared Database
+
+Each service uses separate Flyway history table:
+```yaml
+spring:
+  flyway:
+    table: flyway_schema_history_user  # or _tarot, _divination
+    baseline-on-migrate: true
+    baseline-version: 0
+```
 
 ### Git Workflow
 - When using git add, specify files explicitly (avoid `git add .`)
