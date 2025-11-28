@@ -130,7 +130,7 @@
 
 ### Next steps:
 - ✅ Add Dockerfiles for each service
-- ✅ Update docker-compose.yml for microservices
+- ✅ Update docker compose.yml for microservices
 - ✅ Full integration testing
 
 ---
@@ -149,7 +149,7 @@
   - Uses `eclipse-temurin:21-jre` for runtime
   - Installs `curl` for healthcheck support
   - Builds only the specific service from root context (to access shared-dto)
-- Updated `docker-compose.yml` for microservices architecture:
+- Updated `docker compose.yml` for microservices architecture:
   - PostgreSQL with healthcheck
   - user-service (port 8081) with actuator healthcheck
   - tarot-service (port 8082) with actuator healthcheck
@@ -168,7 +168,7 @@
 - Dockerfiles should be built from root context (`context: .`) when they depend on multi-project modules like shared-dto
 
 ### Verification:
-- All services start successfully with `docker-compose up -d`
+- All services start successfully with `docker compose up -d`
 - Inter-service communication works:
   - divination-service → user-service (Feign client)
   - divination-service → tarot-service (Feign client)

@@ -71,29 +71,29 @@ The application is split into 3 microservices + shared DTO module:
 ### Docker Commands
 ```bash
 # Start all microservices with Docker Compose
-docker-compose up -d
+docker compose up -d
 
 # Rebuild and restart all services
-docker-compose up -d --build
+docker compose up -d --build
 
 # Start only the database (for local development)
-docker-compose up -d postgres
+docker compose up -d postgres
 
 # Stop all services
-docker-compose down
+docker compose down
 
 # View logs for specific service
-docker-compose logs -f user-service
-docker-compose logs -f tarot-service
-docker-compose logs -f divination-service
+docker compose logs -f user-service
+docker compose logs -f tarot-service
+docker compose logs -f divination-service
 
 # View all logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### E2E Testing
 ```bash
-# Run end-to-end tests (requires services running via docker-compose)
+# Run end-to-end tests (requires services running via docker compose)
 ./e2e.sh
 ```
 
@@ -161,7 +161,7 @@ highload/
 │       ├── mapper/SpreadMapper.kt, InterpretationMapper.kt
 │       └── client/UserClient.kt, TarotClient.kt  # Feign clients
 │
-├── docker-compose.yml
+├── docker compose.yml
 ├── settings.gradle.kts            # Multi-project configuration
 ├── e2e.sh                         # End-to-end test script
 └── src/                           # Original monolith (deprecated)
@@ -344,7 +344,7 @@ Each service has its own test structure:
 ### E2E Tests
 
 The `e2e.sh` script tests all microservices together:
-- Requires services running via `docker-compose up -d`
+- Requires services running via `docker compose up -d`
 - Tests CRUD operations across all services
 - Verifies inter-service communication via Feign
 - Tests error cases (404, 403, 409)

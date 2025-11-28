@@ -69,7 +69,7 @@
  │       ├── main/resources/db/migration/  # Spread, SpreadCard, Interpretation migrations
  │       └── test/kotlin/...               # Unit + integration tests
  │
- ├── docker-compose.yml (updated)
+ ├── docker compose.yml (updated)
  ├── settings.gradle.kts (multi-project build)
  └── src/ (original monolith - can be removed after migration)
 
@@ -434,7 +434,7 @@
  rootProject.name = "highload"
  include("shared-dto", "user-service", "tarot-service", "divination-service")
 
- docker-compose.yml (modify)
+ docker compose.yml (modify)
 
  - Add 3 service definitions
  - Configure networking and environment variables
@@ -448,7 +448,7 @@
  4. Create tarot-service (entities, repos, service, controllers, migrations, tests)
  5. Create divination-service (entities, repos, Feign clients, service, controllers, migrations, tests)
  6. Add Dockerfiles for each service
- 7. Update docker-compose.yml
+ 7. Update docker compose.yml
  8. Test each service independently
  9. Test inter-service communication (full integration)
 
@@ -468,5 +468,5 @@
  - After user-service complete
  - After tarot-service complete
  - After divination-service complete
- - After Dockerfiles + docker-compose.yml
+ - After Dockerfiles + docker compose.yml
  - After all tests pass

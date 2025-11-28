@@ -20,7 +20,7 @@ The application consists of 3 microservices:
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Verify services are running
 curl http://localhost:8081/actuator/health
@@ -106,28 +106,28 @@ Coverage reports are located at:
 
 ```bash
 # Start all services (database + microservices)
-docker-compose up -d
+docker compose up -d
 
 # Rebuild and restart
-docker-compose up -d --build
+docker compose up -d --build
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # View logs for specific service
-docker-compose logs -f user-service
-docker-compose logs -f tarot-service
-docker-compose logs -f divination-service
+docker compose logs -f user-service
+docker compose logs -f tarot-service
+docker compose logs -f divination-service
 
 # Stop all services
-docker-compose down
+docker compose down
 ```
 
 ### Running Locally (Development)
 
 ```bash
 # Start only the database
-docker-compose up -d postgres
+docker compose up -d postgres
 
 # Run individual services (in separate terminals)
 ./gradlew :user-service:bootRun
@@ -139,7 +139,7 @@ docker-compose up -d postgres
 
 ```bash
 # Start services first
-docker-compose up -d
+docker compose up -d
 
 # Run end-to-end tests
 ./e2e.sh
@@ -155,7 +155,7 @@ highload/
 ├── user-service/         # User management (port 8081)
 ├── tarot-service/        # Cards & Layouts (port 8082)
 ├── divination-service/   # Spreads & Interpretations (port 8083)
-├── docker-compose.yml    # Docker orchestration
+├── docker compose.yml    # Docker orchestration
 ├── e2e.sh               # End-to-end test script
 └── settings.gradle.kts   # Multi-project Gradle config
 ```
