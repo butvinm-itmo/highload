@@ -20,7 +20,7 @@ repositories {
     mavenCentral()
 }
 
-extra["springCloudVersion"] = "2024.0.1"
+extra["springCloudVersion"] = "2025.0.0"
 
 dependencyManagement {
     imports {
@@ -35,6 +35,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+    implementation("org.springframework.cloud:spring-cloud-starter-config")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")

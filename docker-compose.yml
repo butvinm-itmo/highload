@@ -1,4 +1,18 @@
 services:
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   postgres:
     image: postgres:15-alpine
     container_name: tarot-db
@@ -24,12 +38,15 @@ services:
     ports:
       - "8081:8081"
     environment:
+      CONFIG_SERVER_URL: http://config-server:8888
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-tarot_db}
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
     depends_on:
+      config-server:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     healthcheck:
@@ -47,12 +64,15 @@ services:
     ports:
       - "8082:8082"
     environment:
+      CONFIG_SERVER_URL: http://config-server:8888
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-tarot_db}
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
     depends_on:
+      config-server:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     healthcheck:
@@ -70,6 +90,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      CONFIG_SERVER_URL: http://config-server:8888
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-tarot_db}
@@ -78,6 +99,8 @@ services:
       USER_SERVICE_URL: http://user-service:8081
       TAROT_SERVICE_URL: http://tarot-service:8082
     depends_on:
+      config-server:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       user-service:

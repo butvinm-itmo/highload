@@ -16,10 +16,11 @@ Key features:
 
 ## Microservices Architecture
 
-The application is split into 3 microservices + shared DTO module:
+The application is split into 4 microservices + shared DTO module:
 
 | Service | Port | Responsibility |
 |---------|------|----------------|
+| **config-server** | 8888 | Centralized configuration management (Spring Cloud Config) |
 | **user-service** | 8081 | User management |
 | **tarot-service** | 8082 | Cards & LayoutTypes reference data |
 | **divination-service** | 8083 | Spreads & Interpretations (uses Feign clients) |
@@ -31,6 +32,49 @@ The application is split into 3 microservices + shared DTO module:
 
 **Database:** All services share a single PostgreSQL database with separate Flyway migration history tables.
 
+## Configuration Management
+
+The application uses Spring Cloud Config Server for centralized configuration management.
+
+### Config Server (port 8888)
+
+Centralized configuration service using Git backend from remote repository:
+- **Repository:** https://github.com/butvinm-itmo/highload-config.git
+- **Branch:** `main`
+- **Configuration files:**
+  - `application.yml` - Shared configuration (database, JPA, Flyway, SpringDoc)
+  - `user-service.yml` - User service specific (port, Flyway table)
+  - `tarot-service.yml` - Tarot service specific (port, Flyway table)
+  - `divination-service.yml` - Divination service specific (port, Feign clients, Flyway table)
+
+### Service Configuration
+
+Services fetch configuration from Config Server on startup:
+```yaml
+spring:
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+```
+
+**Environment Variables:**
+- `CONFIG_SERVER_URL` - Config Server URL (default: http://localhost:8888)
+- Database env vars (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) remain unchanged
+- Service URLs (USER_SERVICE_URL, TAROT_SERVICE_URL) for divination-service
+
+**Local Development:**
+```bash
+# Start config server
+./gradlew :config-server:bootRun
+
+# Verify config retrieval
+curl http://localhost:8888/actuator/health
+curl http://localhost:8888/user-service/default
+```
+
+**Testing:**
+Integration tests disable Config Server via `spring.config.import: none` in `application-test.yml`.
+Each service has `@ActiveProfiles("test")` annotation on `BaseIntegrationTest`.
+
 ## Build & Development Commands
 
 ### Build and Run
@@ -39,6 +83,7 @@ The application is split into 3 microservices + shared DTO module:
 ./gradlew build
 
 # Build specific service
+./gradlew :config-server:build
 ./gradlew :user-service:build
 ./gradlew :tarot-service:build
 ./gradlew :divination-service:build
@@ -53,6 +98,36 @@ The application is split into 3 microservices + shared DTO module:
 
 # Clean build artifacts
 ./gradlew clean
+```
+
+### Config Server Commands
+```bash
+# Build config server
+./gradlew :config-server:build
+
+# Run config server locally
+./gradlew :config-server:bootRun
+
+# Test config retrieval
+curl http://localhost:8888/actuator/health
+curl http://localhost:8888/user-service/default
+curl http://localhost:8888/application/default
+```
+
+### Configuration Repository Management
+```bash
+# Clone the config repository
+git clone https://github.com/butvinm-itmo/highload-config.git
+cd highload-config
+
+# Update configurations
+# Edit .yml files as needed
+git add .
+git commit -m "Update configuration"
+git push origin main
+
+# Config Server automatically pulls changes on restart
+docker compose restart config-server
 ```
 
 ### Code Quality
@@ -70,11 +145,14 @@ The application is split into 3 microservices + shared DTO module:
 
 ### Docker Commands
 ```bash
-# Start all microservices with Docker Compose
+# Start all microservices (includes config-server)
 docker compose up -d
 
 # Rebuild and restart all services
 docker compose up -d --build
+
+# Start only config-server (for local development)
+docker compose up -d config-server
 
 # Start only the database (for local development)
 docker compose up -d postgres
@@ -83,12 +161,19 @@ docker compose up -d postgres
 docker compose down
 
 # View logs for specific service
+docker compose logs -f config-server
 docker compose logs -f user-service
 docker compose logs -f tarot-service
 docker compose logs -f divination-service
 
 # View all logs
 docker compose logs -f
+
+# Restart config-server to pull latest configs
+docker compose restart config-server
+
+# Rebuild specific service
+docker compose up -d --build config-server
 ```
 
 ### E2E Testing
@@ -126,6 +211,19 @@ Environment variables:
 
 ```
 highload/
+├── config-server/                 # Config Server (port 8888)
+│   ├── Dockerfile
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/.../configserver/
+│       └── ConfigServerApplication.kt
+│
+├── config-files/                  # Local configuration files (to be pushed to remote repo)
+│   ├── application.yml            # Shared configuration
+│   ├── user-service.yml
+│   ├── tarot-service.yml
+│   ├── divination-service.yml
+│   └── README.md
+│
 ├── shared-dto/                    # Shared DTOs module
 │   └── src/main/kotlin/.../shared/dto/
 │       ├── UserDto.kt, CreateUserRequest.kt, ...

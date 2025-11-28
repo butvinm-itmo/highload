@@ -1,0 +1,25 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    config:
+      server:
+        git:
+          uri: https://github.com/butvinm-itmo/highload-config.git
+          default-label: main
+          clone-on-start: true
+          timeout: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

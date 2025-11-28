@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: tarot-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/test_db
+    username: test_user
+    password: test_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_tarot
+    baseline-on-migrate: true
+    baseline-version: 0

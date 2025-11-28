@@ -6,6 +6,7 @@
 set -e
 
 # Configuration
+CONFIG_SERVER="http://localhost:8888"
 USER_SERVICE="http://localhost:8081"
 TAROT_SERVICE="http://localhost:8082"
 DIVINATION_SERVICE="http://localhost:8083"
@@ -86,10 +87,11 @@ wait_for_services() {
     local attempt=1
 
     while [ $attempt -le $max_attempts ]; do
-        if curl -s "$USER_SERVICE/actuator/health" | jq -e '.status == "UP"' > /dev/null 2>&1 && \
+        if curl -s "$CONFIG_SERVER/actuator/health" | jq -e '.status == "UP"' > /dev/null 2>&1 && \
+           curl -s "$USER_SERVICE/actuator/health" | jq -e '.status == "UP"' > /dev/null 2>&1 && \
            curl -s "$TAROT_SERVICE/actuator/health" | jq -e '.status == "UP"' > /dev/null 2>&1 && \
            curl -s "$DIVINATION_SERVICE/actuator/health" | jq -e '.status == "UP"' > /dev/null 2>&1; then
-            log_success "All services are healthy"
+            log_success "All services are healthy (including Config Server)"
             return 0
         fi
 
