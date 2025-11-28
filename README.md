@@ -87,6 +87,11 @@ curl http://localhost:8083/actuator/health
 ./gradlew clean
 ```
 
+Coverage reports are located at:
+- `user-service/build/reports/jacoco/test/html/index.html`
+- `tarot-service/build/reports/jacoco/test/html/index.html`
+- `divination-service/build/reports/jacoco/test/html/index.html`
+
 ### Code Quality
 
 ```bash
