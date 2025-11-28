@@ -37,8 +37,6 @@ class DivinationService(
     private val spreadMapper: SpreadMapper,
     private val interpretationMapper: InterpretationMapper,
 ) {
-    // ==================== Spread Operations ====================
-
     @Transactional
     fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
         val user = userService.getUserEntity(request.authorId)
@@ -145,8 +143,6 @@ class DivinationService(
         spreadRepository
             .findById(id)
             .orElseThrow { NotFoundException("Spread not found") }
-
-    // ==================== Interpretation Operations ====================
 
     @Transactional
     fun addInterpretation(
