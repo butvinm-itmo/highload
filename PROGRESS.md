@@ -53,3 +53,39 @@
 
 ### Next steps:
 - Create tarot-service
+
+---
+
+## Step 4: Tarot Service ✅
+
+**Completed:** 2025-11-28
+
+### What was done:
+- Created full tarot-service implementation:
+  - `TarotServiceApplication.kt` - Spring Boot main class
+  - `entity/ArcanaType.kt`, `entity/LayoutType.kt`, `entity/Card.kt` - JPA entities
+  - `repository/CardRepository.kt`, `repository/LayoutTypeRepository.kt` - Spring Data JPA repositories
+  - `service/TarotService.kt` - Business logic layer
+  - `controller/CardController.kt`, `controller/LayoutTypeController.kt` - Public REST API endpoints
+  - `controller/InternalTarotController.kt` - Internal endpoints for Feign clients:
+    - `GET /api/internal/layout-types/{id}`
+    - `GET /api/internal/cards/random?count=N`
+  - `mapper/ArcanaTypeMapper.kt`, `mapper/LayoutTypeMapper.kt`, `mapper/CardMapper.kt` - Entity to DTO mappers
+  - `exception/NotFoundException.kt` - Custom exception
+  - `exception/GlobalExceptionHandler.kt` - REST exception handling
+- Created Flyway migrations:
+  - `V1__create_arcana_type_table.sql` - Creates arcana_type table
+  - `V2__create_layout_type_table.sql` - Creates layout_type table
+  - `V3__create_card_table.sql` - Creates card table with FK
+  - `V4__add_tarot_reference_data.sql` - Adds 78 tarot cards and layout types
+- Created tests:
+  - Service integration tests: `TarotServiceIntegrationTest.kt` (6 tests)
+  - Controller integration tests: `CardControllerIntegrationTest.kt`, `LayoutTypeControllerIntegrationTest.kt`, `InternalTarotControllerIntegrationTest.kt` (6 tests)
+- All 12 tests passing
+
+### Key learnings:
+- ktlint has strict rules about single-class files and expression bodies
+- Need to run ktlintFormat to auto-fix style issues
+
+### Next steps:
+- Create divination-service
