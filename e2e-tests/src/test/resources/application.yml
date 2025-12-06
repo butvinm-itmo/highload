@@ -1,0 +1,23 @@
+spring:
+  main:
+    web-application-type: none
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+# Service URLs - can be overridden via environment variables
+services:
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
+  tarot-service:
+    url: ${TAROT_SERVICE_URL:http://localhost:8082}
+  divination-service:
+    url: ${DIVINATION_SERVICE_URL:http://localhost:8083}
+
+logging:
+  level:
+    com.github.butvinmitmo.e2e: DEBUG
+    feign: DEBUG
