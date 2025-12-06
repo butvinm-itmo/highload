@@ -204,7 +204,7 @@ Environment variables:
 - **Database:** PostgreSQL 15
 - **Migrations:** Flyway (per-service)
 - **ORM:** Spring Data JPA with Hibernate
-- **Inter-service:** Spring Cloud OpenFeign
+- **Inter-service:** Spring Cloud OpenFeign with Resilience4j circuit breaker
 - **Code Style:** ktlint 1.5.0
 
 ## Project Structure
@@ -491,6 +491,35 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 ```
+
+### Resilience4j Circuit Breaker
+
+divination-service uses Resilience4j for resilience in Feign client calls:
+
+```yaml
+# Configuration in divination-service.yml (external config repo)
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
+```
+
+**Error handling:**
+- `FeignException.NotFound` → 404 (not counted as circuit breaker failure)
+- `FeignException` (other) → 502 BAD_GATEWAY
+- `CallNotPermittedException` (circuit open) → 503 SERVICE_UNAVAILABLE
 
 ### Git Workflow
 - When using git add, specify files explicitly (avoid `git add .`)

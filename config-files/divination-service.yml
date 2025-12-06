@@ -5,6 +5,11 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
   flyway:
     table: flyway_schema_history_divination
 
@@ -13,3 +18,90 @@ services:
     url: ${USER_SERVICE_URL:http://localhost:8081}
   tarot-service:
     url: ${TAROT_SERVICE_URL:http://localhost:8082}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - feign.FeignException.ServiceUnavailable
+          - feign.FeignException.InternalServerError
+          - feign.FeignException.BadGateway
+          - feign.FeignException.GatewayTimeout
+        ignoreExceptions:
+          - feign.FeignException.NotFound
+          - feign.FeignException.BadRequest
+    instances:
+      user-service:
+        baseConfig: default
+      tarot-service:
+        baseConfig: default
+
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - feign.FeignException.ServiceUnavailable
+          - feign.FeignException.InternalServerError
+        ignoreExceptions:
+          - feign.FeignException.NotFound
+          - feign.FeignException.BadRequest
+          - feign.FeignException.Forbidden
+    instances:
+      user-service:
+        baseConfig: default
+      tarot-service:
+        baseConfig: default
+
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
+        cancelRunningFuture: true
+    instances:
+      user-service:
+        baseConfig: default
+      tarot-service:
+        baseConfig: default
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 2000
+        readTimeout: 5000
+        loggerLevel: BASIC
+      user-service:
+        connectTimeout: 2000
+        readTimeout: 3000
+      tarot-service:
+        connectTimeout: 2000
+        readTimeout: 3000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents,retries,retryevents
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always

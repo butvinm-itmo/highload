@@ -3,6 +3,7 @@ package com.github.butvinmitmo.divinationservice.exception
 import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import feign.FeignException
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
@@ -103,6 +104,38 @@ class GlobalExceptionHandler {
                 path = request.getDescription(false).removePrefix("uri="),
             )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(CallNotPermittedException::class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    fun handleCircuitBreakerOpenException(
+        ex: CallNotPermittedException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "SERVICE_UNAVAILABLE",
+                message = "Service temporarily unavailable. Please try again later.",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+    }
+
+    @ExceptionHandler(FeignException::class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    fun handleFeignException(
+        ex: FeignException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "BAD_GATEWAY",
+                message = "Error communicating with downstream service",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.BAD_GATEWAY)
     }
 
     @ExceptionHandler(Exception::class)
