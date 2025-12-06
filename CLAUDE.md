@@ -25,6 +25,7 @@ The application is split into 4 microservices + shared DTO module:
 | **tarot-service** | 8082 | Cards & LayoutTypes reference data |
 | **divination-service** | 8083 | Spreads & Interpretations (uses Feign clients) |
 | **shared-dto** | - | Shared DTOs between services |
+| **e2e-tests** | - | End-to-end tests using Feign clients |
 
 **Inter-service Communication:**
 - `divination-service` → `user-service` via `UserClient` (Feign)
@@ -178,8 +179,14 @@ docker compose up -d --build config-server
 
 ### E2E Testing
 ```bash
-# Run end-to-end tests (requires services running via docker compose)
-./e2e.sh
+# Start services
+docker compose up -d
+
+# Run end-to-end tests
+./gradlew :e2e-tests:test
+
+# Stop services
+docker compose down
 ```
 
 ### Database Setup
@@ -259,9 +266,19 @@ highload/
 │       ├── mapper/SpreadMapper.kt, InterpretationMapper.kt
 │       └── client/UserClient.kt, TarotClient.kt  # Feign clients
 │
-├── docker compose.yml
+├── e2e-tests/                     # End-to-end tests module
+│   └── src/test/kotlin/.../e2e/
+│       ├── E2ETestApplication.kt
+│       ├── BaseE2ETest.kt
+│       ├── config/FeignConfig.kt, JacksonConfig.kt
+│       ├── client/UserServiceClient.kt, TarotServiceClient.kt, DivinationServiceClient.kt
+│       ├── UserServiceE2ETest.kt
+│       ├── TarotServiceE2ETest.kt
+│       ├── DivinationServiceE2ETest.kt
+│       └── CleanupAuthorizationE2ETest.kt
+│
+├── docker-compose.yml
 ├── settings.gradle.kts            # Multi-project configuration
-├── e2e.sh                         # End-to-end test script
 └── src/                           # Original monolith (deprecated)
 ```
 
@@ -441,15 +458,48 @@ Each service has its own test structure:
 
 ### E2E Tests
 
-The `e2e.sh` script tests all microservices together:
-- Requires services running via `docker compose up -d`
-- Tests CRUD operations across all services
-- Verifies inter-service communication via Feign
-- Tests error cases (404, 403, 409)
+The `e2e-tests` module contains Kotlin-based end-to-end tests using Spring Cloud OpenFeign:
 
-```bash
-./e2e.sh  # 55 tests
 ```
+e2e-tests/src/test/kotlin/.../e2e/
+├── E2ETestApplication.kt              # Spring Boot app for Feign clients
+├── BaseE2ETest.kt                     # Base class with service health checks
+├── config/
+│   ├── FeignConfig.kt                 # Feign error decoder config
+│   └── JacksonConfig.kt               # Jackson ObjectMapper with JavaTimeModule
+├── client/
+│   ├── UserServiceClient.kt           # Feign client for user-service
+│   ├── TarotServiceClient.kt          # Feign client for tarot-service
+│   └── DivinationServiceClient.kt     # Feign client for divination-service
+├── UserServiceE2ETest.kt              # User CRUD tests (8 tests)
+├── TarotServiceE2ETest.kt             # Cards & layout types tests (6 tests)
+├── DivinationServiceE2ETest.kt        # Spreads & interpretations tests (12 tests)
+└── CleanupAuthorizationE2ETest.kt     # Delete & authorization tests (5 tests)
+```
+
+**Running E2E tests:**
+```bash
+# Start services first
+docker compose up -d
+
+# Run tests
+./gradlew :e2e-tests:test
+
+# Stop services
+docker compose down
+```
+
+**Test coverage (31 tests):**
+- User CRUD, duplicate username (409), not found (404), internal endpoint
+- Cards pagination (78 total cards), layout types, internal endpoints
+- Spreads with inter-service Feign calls, interpretations CRUD
+- Delete operations, authorization verification (403)
+
+**Service URL configuration:**
+Service URLs default to localhost but can be overridden via environment variables:
+- `USER_SERVICE_URL` (default: http://localhost:8081)
+- `TAROT_SERVICE_URL` (default: http://localhost:8082)
+- `DIVINATION_SERVICE_URL` (default: http://localhost:8083)
 
 ## Code Style Guidelines
 
