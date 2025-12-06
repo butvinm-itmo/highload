@@ -32,8 +32,11 @@ jobs:
       - name: Run ktlint checks
         run: ./gradlew ktlintCheck
 
-      - name: Run tests with coverage
-        run: ./gradlew test jacocoTestReport
+      - name: Run unit and integration tests with coverage
+        run: ./gradlew test jacocoTestReport -x :e2e-tests:test
+
+      - name: Run E2E tests
+        run: ./gradlew :e2e-tests:test
 
       - name: Build application
         run: ./gradlew build -x test
