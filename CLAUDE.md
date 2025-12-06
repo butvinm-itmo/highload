@@ -177,16 +177,12 @@ docker compose restart config-server
 docker compose up -d --build config-server
 ```
 
+**Note:** `docker-compose.yml` does not include `container_name` fields to ensure compatibility with TestContainers (see https://github.com/testcontainers/testcontainers-java/issues/2472).
+
 ### E2E Testing
 ```bash
-# Start services
-docker compose up -d
-
-# Run end-to-end tests
+# TestContainers automatically starts and stops services
 ./gradlew :e2e-tests:test
-
-# Stop services
-docker compose down
 ```
 
 ### Database Setup
@@ -212,6 +208,7 @@ Environment variables:
 - **Migrations:** Flyway (per-service)
 - **ORM:** Spring Data JPA with Hibernate
 - **Inter-service:** Spring Cloud OpenFeign with Resilience4j circuit breaker
+- **Testing:** TestContainers 1.19.8 for E2E tests
 - **Code Style:** ktlint 1.5.0
 
 ## Project Structure
@@ -458,12 +455,12 @@ Each service has its own test structure:
 
 ### E2E Tests
 
-The `e2e-tests` module contains Kotlin-based end-to-end tests using Spring Cloud OpenFeign:
+The `e2e-tests` module contains Kotlin-based end-to-end tests using Spring Cloud OpenFeign and TestContainers:
 
 ```
 e2e-tests/src/test/kotlin/.../e2e/
 ├── E2ETestApplication.kt              # Spring Boot app for Feign clients
-├── BaseE2ETest.kt                     # Base class with service health checks
+├── BaseE2ETest.kt                     # Base class with TestContainers setup
 ├── config/
 │   ├── FeignConfig.kt                 # Feign error decoder config
 │   └── JacksonConfig.kt               # Jackson ObjectMapper with JavaTimeModule
@@ -477,29 +474,29 @@ e2e-tests/src/test/kotlin/.../e2e/
 └── CleanupAuthorizationE2ETest.kt     # Delete & authorization tests (5 tests)
 ```
 
+**TestContainers Integration:**
+E2E tests use TestContainers `ComposeContainer` to automatically manage service lifecycle:
+- Automatically starts all services (config-server, postgres, user-service, tarot-service, divination-service) from `docker-compose.yml`
+- Waits for health checks on all services (5-minute startup timeout)
+- Uses dynamic port mapping to avoid conflicts
+- Automatically stops containers after tests complete
+- **Note:** `docker-compose.yml` intentionally omits `container_name` fields for TestContainers compatibility
+
 **Running E2E tests:**
 ```bash
-# Start services first
-docker compose up -d
-
-# Run tests
+# TestContainers automatically starts and stops services
 ./gradlew :e2e-tests:test
-
-# Stop services
-docker compose down
 ```
+
+**Dependencies:**
+- `org.testcontainers:testcontainers:1.19.8`
+- `org.testcontainers:junit-jupiter:1.19.8`
 
 **Test coverage (31 tests):**
 - User CRUD, duplicate username (409), not found (404), internal endpoint
 - Cards pagination (78 total cards), layout types, internal endpoints
 - Spreads with inter-service Feign calls, interpretations CRUD
 - Delete operations, authorization verification (403)
-
-**Service URL configuration:**
-Service URLs default to localhost but can be overridden via environment variables:
-- `USER_SERVICE_URL` (default: http://localhost:8081)
-- `TAROT_SERVICE_URL` (default: http://localhost:8082)
-- `DIVINATION_SERVICE_URL` (default: http://localhost:8083)
 
 ## Code Style Guidelines
 
