@@ -57,38 +57,38 @@ abstract class BaseE2ETest {
                 .withExposedService(
                     CONFIG_SERVER,
                     CONFIG_SERVER_PORT,
-                    Wait.forHttp("/actuator/health")
+                    Wait
+                        .forHttp("/actuator/health")
                         .forStatusCode(200)
                         .withStartupTimeout(STARTUP_TIMEOUT),
-                )
-                .withExposedService(
+                ).withExposedService(
                     POSTGRES,
                     POSTGRES_PORT,
-                    Wait.forListeningPort()
+                    Wait
+                        .forListeningPort()
                         .withStartupTimeout(STARTUP_TIMEOUT),
-                )
-                .withExposedService(
+                ).withExposedService(
                     USER_SERVICE,
                     USER_SERVICE_PORT,
-                    Wait.forHttp("/actuator/health")
+                    Wait
+                        .forHttp("/actuator/health")
                         .forStatusCode(200)
                         .withStartupTimeout(STARTUP_TIMEOUT),
-                )
-                .withExposedService(
+                ).withExposedService(
                     TAROT_SERVICE,
                     TAROT_SERVICE_PORT,
-                    Wait.forHttp("/actuator/health")
+                    Wait
+                        .forHttp("/actuator/health")
                         .forStatusCode(200)
                         .withStartupTimeout(STARTUP_TIMEOUT),
-                )
-                .withExposedService(
+                ).withExposedService(
                     DIVINATION_SERVICE,
                     DIVINATION_SERVICE_PORT,
-                    Wait.forHttp("/actuator/health")
+                    Wait
+                        .forHttp("/actuator/health")
                         .forStatusCode(200)
                         .withStartupTimeout(STARTUP_TIMEOUT),
-                )
-                .apply { start() }
+                ).apply { start() }
 
         @JvmStatic
         @DynamicPropertySource
