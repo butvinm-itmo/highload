@@ -63,3 +63,17 @@ jobs:
             build/reports/jacoco/test/html/
             build/reports/jacoco/test/jacocoTestReport.xml
           retention-days: 7
+
+      - name: Add coverage to PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: |
+            ${{ github.workspace }}/user-service/build/reports/jacoco/test/jacocoTestReport.xml
+            ${{ github.workspace }}/tarot-service/build/reports/jacoco/test/jacocoTestReport.xml
+            ${{ github.workspace }}/divination-service/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          title: "Code Coverage Report"
+          update-comment: true
