@@ -1,0 +1,3 @@
+[submodule "highload-config"]
+	path = highload-config
+	url = https://github.com/butvinm-itmo/highload-config.git

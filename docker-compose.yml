@@ -117,8 +117,6 @@ services:
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      USER_SERVICE_URL: http://user-service:8081
-      TAROT_SERVICE_URL: http://tarot-service:8082
     depends_on:
       config-server:
         condition: service_healthy
