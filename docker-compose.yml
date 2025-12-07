@@ -12,6 +12,25 @@ services:
       retries: 10
       start_period: 30s
 
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    ports:
+      - "8761:8761"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_HOSTNAME: eureka-server
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   postgres:
     image: postgres:15-alpine
     environment:
@@ -41,8 +60,11 @@ services:
       DB_NAME: ${DB_NAME:-tarot_db}
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
+      EUREKA_URL: http://eureka-server:8761/eureka/
     depends_on:
       config-server:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -66,8 +88,11 @@ services:
       DB_NAME: ${DB_NAME:-tarot_db}
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
+      EUREKA_URL: http://eureka-server:8761/eureka/
     depends_on:
       config-server:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -91,10 +116,13 @@ services:
       DB_NAME: ${DB_NAME:-tarot_db}
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
+      EUREKA_URL: http://eureka-server:8761/eureka/
       USER_SERVICE_URL: http://user-service:8081
       TAROT_SERVICE_URL: http://tarot-service:8082
     depends_on:
       config-server:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
       postgres:
         condition: service_healthy

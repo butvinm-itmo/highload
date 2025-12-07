@@ -2,6 +2,8 @@ spring:
   application:
     name: divination-service
   cloud:
+    config:
+      enabled: false
     compatibility-verifier:
       enabled: false
     openfeign:
@@ -25,6 +27,10 @@ spring:
     table: flyway_schema_history_divination
     baseline-on-migrate: true
     baseline-version: 0
+
+eureka:
+  client:
+    enabled: false
 
 services:
   user-service:

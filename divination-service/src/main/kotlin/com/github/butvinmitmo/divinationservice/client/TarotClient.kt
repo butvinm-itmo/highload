@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestParam
 import java.util.UUID
 
-@FeignClient(name = "tarot-service", url = "\${services.tarot-service.url}")
+@FeignClient(name = "tarot-service", url = "\${services.tarot-service.url:}")
 interface TarotClient {
     @GetMapping("/api/internal/layout-types/{id}")
     fun getLayoutTypeById(

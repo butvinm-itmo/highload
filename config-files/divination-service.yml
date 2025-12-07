@@ -13,11 +13,19 @@ spring:
   flyway:
     table: flyway_schema_history_divination
 
-services:
-  user-service:
-    url: ${USER_SERVICE_URL:http://localhost:8081}
-  tarot-service:
-    url: ${TAROT_SERVICE_URL:http://localhost:8082}
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    instance-id: ${spring.application.name}:${random.value}
 
 resilience4j:
   circuitbreaker:

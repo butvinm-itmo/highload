@@ -37,12 +37,14 @@ abstract class BaseE2ETest {
 
     companion object {
         private const val CONFIG_SERVER = "config-server"
+        private const val EUREKA_SERVER = "eureka-server"
         private const val POSTGRES = "postgres"
         private const val USER_SERVICE = "user-service"
         private const val TAROT_SERVICE = "tarot-service"
         private const val DIVINATION_SERVICE = "divination-service"
 
         private const val CONFIG_SERVER_PORT = 8888
+        private const val EUREKA_SERVER_PORT = 8761
         private const val POSTGRES_PORT = 5432
         private const val USER_SERVICE_PORT = 8081
         private const val TAROT_SERVICE_PORT = 8082
@@ -57,6 +59,13 @@ abstract class BaseE2ETest {
                 .withExposedService(
                     CONFIG_SERVER,
                     CONFIG_SERVER_PORT,
+                    Wait
+                        .forHttp("/actuator/health")
+                        .forStatusCode(200)
+                        .withStartupTimeout(STARTUP_TIMEOUT),
+                ).withExposedService(
+                    EUREKA_SERVER,
+                    EUREKA_SERVER_PORT,
                     Wait
                         .forHttp("/actuator/health")
                         .forStatusCode(200)

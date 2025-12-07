@@ -1,6 +1,9 @@
 spring:
   application:
     name: tarot-service
+  cloud:
+    config:
+      enabled: false
   datasource:
     url: jdbc:postgresql://localhost:5432/test_db
     username: test_user
@@ -19,3 +22,7 @@ spring:
     table: flyway_schema_history_tarot
     baseline-on-migrate: true
     baseline-version: 0
+
+eureka:
+  client:
+    enabled: false
