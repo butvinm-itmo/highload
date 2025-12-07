@@ -16,11 +16,12 @@ Key features:
 
 ## Microservices Architecture
 
-The application is split into 4 microservices + shared DTO module:
+The application is split into 5 microservices + shared DTO module:
 
 | Service | Port | Responsibility |
 |---------|------|----------------|
 | **config-server** | 8888 | Centralized configuration management (Spring Cloud Config) |
+| **eureka-server** | 8761 | Service discovery (Netflix Eureka) |
 | **user-service** | 8081 | User management |
 | **tarot-service** | 8082 | Cards & LayoutTypes reference data |
 | **divination-service** | 8083 | Spreads & Interpretations (uses Feign clients) |
@@ -28,8 +29,9 @@ The application is split into 4 microservices + shared DTO module:
 | **e2e-tests** | - | End-to-end tests using Feign clients |
 
 **Inter-service Communication:**
-- `divination-service` → `user-service` via `UserClient` (Feign)
-- `divination-service` → `tarot-service` via `TarotClient` (Feign)
+- Services register with Eureka and discover each other dynamically
+- `divination-service` → `user-service` via `UserClient` (Feign + Eureka)
+- `divination-service` → `tarot-service` via `TarotClient` (Feign + Eureka)
 
 **Database:** All services share a single PostgreSQL database with separate Flyway migration history tables.
 
@@ -40,13 +42,14 @@ The application uses Spring Cloud Config Server for centralized configuration ma
 ### Config Server (port 8888)
 
 Centralized configuration service using Git backend from remote repository:
-- **Repository:** https://github.com/butvinm-itmo/highload-config.git
+- **Repository:** https://github.com/butvinm-itmo/highload-config.git (submodule: `highload-config/`)
 - **Branch:** `main`
 - **Configuration files:**
   - `application.yml` - Shared configuration (database, JPA, Flyway, SpringDoc)
-  - `user-service.yml` - User service specific (port, Flyway table)
-  - `tarot-service.yml` - Tarot service specific (port, Flyway table)
-  - `divination-service.yml` - Divination service specific (port, Feign clients, Flyway table)
+  - `eureka-server.yml` - Eureka server config (port, self-preservation settings)
+  - `user-service.yml` - User service specific (port, Flyway table, Eureka client)
+  - `tarot-service.yml` - Tarot service specific (port, Flyway table, Eureka client)
+  - `divination-service.yml` - Divination service specific (port, Eureka client, Resilience4j, Feign)
 
 ### Service Configuration
 
@@ -59,22 +62,30 @@ spring:
 
 **Environment Variables:**
 - `CONFIG_SERVER_URL` - Config Server URL (default: http://localhost:8888)
+- `EUREKA_URL` - Eureka Server URL (required, no default - services fail if not set)
+- `EUREKA_HOSTNAME` - Eureka server hostname (for eureka-server only)
 - Database env vars (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) remain unchanged
-- Service URLs (USER_SERVICE_URL, TAROT_SERVICE_URL) for divination-service
 
 **Local Development:**
 ```bash
 # Start config server
 ./gradlew :config-server:bootRun
 
+# Start eureka server
+./gradlew :eureka-server:bootRun
+
 # Verify config retrieval
 curl http://localhost:8888/actuator/health
 curl http://localhost:8888/user-service/default
+
+# Check Eureka dashboard
+open http://localhost:8761
 ```
 
 **Testing:**
-Integration tests disable Config Server via `spring.config.import: none` in `application-test.yml`.
-Each service has `@ActiveProfiles("test")` annotation on `BaseIntegrationTest`.
+- Integration tests disable Config Server via `spring.cloud.config.enabled: false` in `application-test.yml`
+- Integration tests disable Eureka via `eureka.client.enabled: false`
+- Each service has `@ActiveProfiles("test")` annotation on `BaseIntegrationTest`
 
 ## Build & Development Commands
 
@@ -85,6 +96,7 @@ Each service has `@ActiveProfiles("test")` annotation on `BaseIntegrationTest`.
 
 # Build specific service
 ./gradlew :config-server:build
+./gradlew :eureka-server:build
 ./gradlew :user-service:build
 ./gradlew :tarot-service:build
 ./gradlew :divination-service:build
@@ -115,17 +127,41 @@ curl http://localhost:8888/user-service/default
 curl http://localhost:8888/application/default
 ```
 
-### Configuration Repository Management
+### Eureka Server Commands
 ```bash
-# Clone the config repository
-git clone https://github.com/butvinm-itmo/highload-config.git
-cd highload-config
+# Build eureka server
+./gradlew :eureka-server:build
+
+# Run eureka server locally
+./gradlew :eureka-server:bootRun
+
+# Check Eureka health and registered services
+curl http://localhost:8761/actuator/health
+curl http://localhost:8761/eureka/apps
+
+# Eureka dashboard
+open http://localhost:8761
+```
+
+### Configuration Repository Management
+
+Config files are in the `highload-config/` submodule:
+
+```bash
+# Initialize submodule (after clone)
+git submodule update --init
 
 # Update configurations
+cd highload-config
 # Edit .yml files as needed
 git add .
 git commit -m "Update configuration"
-git push origin main
+git push ssh main  # Push via SSH remote
+
+# Update submodule reference in main repo
+cd ..
+git add highload-config
+git commit -m "Update config submodule"
 
 # Config Server automatically pulls changes on restart
 docker compose restart config-server
@@ -146,23 +182,21 @@ docker compose restart config-server
 
 ### Docker Commands
 ```bash
-# Start all microservices (includes config-server)
+# Start all microservices (includes config-server, eureka-server)
 docker compose up -d
 
 # Rebuild and restart all services
 docker compose up -d --build
 
-# Start only config-server (for local development)
-docker compose up -d config-server
-
-# Start only the database (for local development)
-docker compose up -d postgres
+# Start only infrastructure (for local development)
+docker compose up -d config-server eureka-server postgres
 
 # Stop all services
 docker compose down
 
 # View logs for specific service
 docker compose logs -f config-server
+docker compose logs -f eureka-server
 docker compose logs -f user-service
 docker compose logs -f tarot-service
 docker compose logs -f divination-service
@@ -174,7 +208,7 @@ docker compose logs -f
 docker compose restart config-server
 
 # Rebuild specific service
-docker compose up -d --build config-server
+docker compose up -d --build eureka-server
 ```
 
 **Note:** `docker-compose.yml` does not include `container_name` fields to ensure compatibility with TestContainers (see https://github.com/testcontainers/testcontainers-java/issues/2472).
@@ -207,7 +241,9 @@ Environment variables:
 - **Database:** PostgreSQL 15
 - **Migrations:** Flyway (per-service)
 - **ORM:** Spring Data JPA with Hibernate
-- **Inter-service:** Spring Cloud OpenFeign with Resilience4j circuit breaker
+- **Service Discovery:** Netflix Eureka (Spring Cloud Netflix)
+- **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
+- **Resilience:** Resilience4j circuit breaker, retry, time limiter
 - **Testing:** TestContainers 1.19.8 for E2E tests
 - **Code Style:** ktlint 1.5.0
 
@@ -221,8 +257,15 @@ highload/
 │   └── src/main/kotlin/.../configserver/
 │       └── ConfigServerApplication.kt
 │
-├── config-files/                  # Local configuration files (to be pushed to remote repo)
+├── eureka-server/                 # Eureka Server (port 8761)
+│   ├── Dockerfile
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/.../eurekaserver/
+│       └── EurekaServerApplication.kt
+│
+├── highload-config/               # Git submodule (config repository)
 │   ├── application.yml            # Shared configuration
+│   ├── eureka-server.yml          # Eureka server config
 │   ├── user-service.yml
 │   ├── tarot-service.yml
 │   ├── divination-service.yml
@@ -476,7 +519,7 @@ e2e-tests/src/test/kotlin/.../e2e/
 
 **TestContainers Integration:**
 E2E tests use TestContainers `ComposeContainer` to automatically manage service lifecycle:
-- Automatically starts all services (config-server, postgres, user-service, tarot-service, divination-service) from `docker-compose.yml`
+- Automatically starts all services (config-server, eureka-server, postgres, user-service, tarot-service, divination-service) from `docker-compose.yml`
 - Waits for health checks on all services (5-minute startup timeout)
 - Uses dynamic port mapping to avoid conflicts
 - Automatically stops containers after tests complete
@@ -538,6 +581,26 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 ```
+
+### Service Discovery (Eureka)
+
+Services register with Eureka Server and discover each other dynamically:
+
+**Startup order (enforced by docker-compose health checks):**
+1. `config-server` - Must be healthy first
+2. `eureka-server` - Fetches config, then starts
+3. `postgres` - Database
+4. `user-service`, `tarot-service` - Register with Eureka
+5. `divination-service` - Discovers other services via Eureka
+
+**Feign clients use Eureka discovery:**
+```kotlin
+@FeignClient(name = "user-service", url = "\${services.user-service.url:}")
+```
+- When `services.user-service.url` is empty (production): uses Eureka discovery
+- When set (tests): uses direct URL (for WireMock)
+
+**No fallbacks:** If `EUREKA_URL` is not set, services fail to start. This ensures Eureka is always required in production.
 
 ### Resilience4j Circuit Breaker
 
