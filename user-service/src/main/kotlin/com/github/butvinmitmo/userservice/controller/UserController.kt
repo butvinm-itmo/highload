@@ -36,7 +36,6 @@ class UserController(
     private val userService: UserService,
 ) {
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Create a new user",
         description =
@@ -53,7 +52,10 @@ class UserController(
     )
     fun createUser(
         @Valid @RequestBody request: CreateUserRequest,
-    ): CreateUserResponse = userService.createUser(request)
+    ): ResponseEntity<CreateUserResponse> {
+        val response = userService.createUser(request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
 
     @GetMapping
     @Operation(
@@ -98,7 +100,10 @@ class UserController(
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
-    ): UserDto = userService.getUser(id)
+    ): ResponseEntity<UserDto> {
+        val user = userService.getUser(id)
+        return ResponseEntity.ok(user)
+    }
 
     @PutMapping("/{id}")
     @Operation(
@@ -117,10 +122,12 @@ class UserController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateUserRequest,
-    ): UserDto = userService.updateUser(id, request)
+    ): ResponseEntity<UserDto> {
+        val updatedUser = userService.updateUser(id, request)
+        return ResponseEntity.ok(updatedUser)
+    }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Delete user",
         description = "Deletes a user and all their associated data (spreads, interpretations) in a single transaction",
@@ -135,7 +142,8 @@ class UserController(
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
-    ) {
+    ): ResponseEntity<Void> {
         userService.deleteUser(id)
+        return ResponseEntity.noContent().build()
     }
 }

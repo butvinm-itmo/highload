@@ -3,6 +3,7 @@ package com.github.butvinmitmo.userservice.controller
 import com.github.butvinmitmo.shared.dto.UserDto
 import com.github.butvinmitmo.userservice.service.UserService
 import io.swagger.v3.oas.annotations.Hidden
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -18,5 +19,8 @@ class InternalUserController(
     @GetMapping("/{id}/entity")
     fun getUserById(
         @PathVariable id: UUID,
-    ): UserDto = userService.getUser(id)
+    ): ResponseEntity<UserDto> {
+        val user = userService.getUser(id)
+        return ResponseEntity.ok(user)
+    }
 }
