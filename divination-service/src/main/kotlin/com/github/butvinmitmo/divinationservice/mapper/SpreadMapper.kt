@@ -22,8 +22,8 @@ class SpreadMapper(
         interpretations: List<Interpretation>,
         cardCache: Map<UUID, CardDto> = emptyMap(),
     ): SpreadDto {
-        val author = userClient.getUserById(spread.authorId)
-        val layoutType = tarotClient.getLayoutTypeById(spread.layoutTypeId)
+        val author = userClient.getUserById(spread.authorId).body!!
+        val layoutType = tarotClient.getLayoutTypeById(spread.layoutTypeId).body!!
 
         return SpreadDto(
             id = spread.id,
@@ -41,7 +41,7 @@ class SpreadMapper(
                 },
             interpretations =
                 interpretations.map { interpretation ->
-                    val interpAuthor = userClient.getUserById(interpretation.authorId)
+                    val interpAuthor = userClient.getUserById(interpretation.authorId).body!!
                     InterpretationDto(
                         id = interpretation.id,
                         text = interpretation.text,
@@ -59,8 +59,8 @@ class SpreadMapper(
         spread: Spread,
         interpretationsCount: Int = 0,
     ): SpreadSummaryDto {
-        val author = userClient.getUserById(spread.authorId)
-        val layoutType = tarotClient.getLayoutTypeById(spread.layoutTypeId)
+        val author = userClient.getUserById(spread.authorId).body!!
+        val layoutType = tarotClient.getLayoutTypeById(spread.layoutTypeId).body!!
 
         return SpreadSummaryDto(
             id = spread.id,
@@ -76,7 +76,8 @@ class SpreadMapper(
     private fun fetchCard(cardId: UUID): CardDto {
         // For single card fetches, we make individual calls
         // In production, you might want to add a batch endpoint
-        return tarotClient.getRandomCards(1).firstOrNull()
+        val cards = tarotClient.getRandomCards(1).body!!
+        return cards.firstOrNull()
             ?: throw IllegalStateException("Could not fetch card with id $cardId")
     }
 }

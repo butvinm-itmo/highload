@@ -10,7 +10,7 @@ class InterpretationMapper(
     private val userClient: UserClient,
 ) {
     fun toDto(interpretation: Interpretation): InterpretationDto {
-        val author = userClient.getUserById(interpretation.authorId)
+        val author = userClient.getUserById(interpretation.authorId).body!!
         return InterpretationDto(
             id = interpretation.id,
             text = interpretation.text,

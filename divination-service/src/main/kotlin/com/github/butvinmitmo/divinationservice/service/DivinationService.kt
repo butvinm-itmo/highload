@@ -42,10 +42,10 @@ class DivinationService(
 ) {
     @Transactional
     fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
-        // Validate user exists via Feign
+        // Validate user exists via Feign (throws FeignException.NotFound if not found)
         userClient.getUserById(request.authorId)
-        // Validate layout type exists via Feign
-        val layoutType = tarotClient.getLayoutTypeById(request.layoutTypeId)
+        // Validate layout type exists via Feign (throws FeignException.NotFound if not found)
+        val layoutType = tarotClient.getLayoutTypeById(request.layoutTypeId).body!!
 
         val spread =
             Spread(
@@ -55,7 +55,7 @@ class DivinationService(
             )
         val savedSpread = spreadRepository.save(spread)
 
-        val cards = tarotClient.getRandomCards(layoutType.cardsCount)
+        val cards = tarotClient.getRandomCards(layoutType.cardsCount).body!!
 
         cards.forEachIndexed { index, card ->
             val spreadCard =
@@ -181,7 +181,7 @@ class DivinationService(
         request: CreateInterpretationRequest,
     ): CreateInterpretationResponse {
         val spread = getSpreadEntity(spreadId)
-        // Validate user exists via Feign
+        // Validate user exists via Feign (throws FeignException.NotFound if not found)
         userClient.getUserById(request.authorId)
 
         if (interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)) {
@@ -279,7 +279,7 @@ class DivinationService(
     private fun buildCardCache(cardIds: Set<UUID>): Map<UUID, CardDto> {
         // For now, we fetch random cards for each position
         // In production, you might want to add a batch endpoint to fetch cards by IDs
-        val cards = tarotClient.getRandomCards(cardIds.size)
+        val cards = tarotClient.getRandomCards(cardIds.size).body!!
         return cardIds.zip(cards).toMap()
     }
 }
