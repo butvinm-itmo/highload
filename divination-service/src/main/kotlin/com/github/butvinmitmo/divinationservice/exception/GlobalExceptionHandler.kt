@@ -4,6 +4,7 @@ import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import feign.FeignException
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
@@ -104,6 +105,20 @@ class GlobalExceptionHandler {
                 path = request.getDescription(false).removePrefix("uri="),
             )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(NoFallbackAvailableException::class)
+    fun handleNoFallbackAvailableException(
+        ex: NoFallbackAvailableException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        // Unwrap the cause and delegate to appropriate handler
+        val cause = ex.cause
+        return when (cause) {
+            is FeignException.NotFound -> handleFeignNotFoundException(cause, request)
+            is FeignException -> handleFeignException(cause, request)
+            else -> handleGenericException(ex, request)
+        }
     }
 
     @ExceptionHandler(CallNotPermittedException::class)

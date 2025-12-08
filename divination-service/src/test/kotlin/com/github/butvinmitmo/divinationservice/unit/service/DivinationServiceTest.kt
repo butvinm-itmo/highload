@@ -104,10 +104,21 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(userClient.getUserById(userId)).thenReturn(org.springframework.http.ResponseEntity.ok(testUser))
-        whenever(tarotClient.getLayoutTypeById(layoutTypeId)).thenReturn(org.springframework.http.ResponseEntity.ok(testLayoutType))
+        whenever(userClient.getUserById(userId)).thenReturn(
+            org.springframework.http.ResponseEntity
+                .ok(testUser),
+        )
+        whenever(
+            tarotClient.getLayoutTypeById(layoutTypeId),
+        ).thenReturn(
+            org.springframework.http.ResponseEntity
+                .ok(testLayoutType),
+        )
         whenever(spreadRepository.save(any())).thenReturn(savedSpread)
-        whenever(tarotClient.getRandomCards(3)).thenReturn(org.springframework.http.ResponseEntity.ok(testCards))
+        whenever(tarotClient.getRandomCards(3)).thenReturn(
+            org.springframework.http.ResponseEntity
+                .ok(testCards),
+        )
 
         val result = divinationService.createSpread(request)
 
@@ -201,7 +212,10 @@ class DivinationServiceTest {
             )
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
-        whenever(userClient.getUserById(userId)).thenReturn(org.springframework.http.ResponseEntity.ok(testUser))
+        whenever(userClient.getUserById(userId)).thenReturn(
+            org.springframework.http.ResponseEntity
+                .ok(testUser),
+        )
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(false)
         whenever(interpretationRepository.save(any())).thenReturn(savedInterpretation)
 
@@ -217,7 +231,10 @@ class DivinationServiceTest {
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = userId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
-        whenever(userClient.getUserById(userId)).thenReturn(org.springframework.http.ResponseEntity.ok(testUser))
+        whenever(userClient.getUserById(userId)).thenReturn(
+            org.springframework.http.ResponseEntity
+                .ok(testUser),
+        )
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(true)
 
         val exception =
