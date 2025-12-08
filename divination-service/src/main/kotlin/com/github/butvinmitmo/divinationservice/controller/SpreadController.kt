@@ -40,7 +40,6 @@ class SpreadController(
     private val divinationService: DivinationService,
 ) {
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Create a new spread",
         description =
@@ -56,7 +55,10 @@ class SpreadController(
     )
     fun createSpread(
         @Valid @RequestBody request: CreateSpreadRequest,
-    ): CreateSpreadResponse = divinationService.createSpread(request)
+    ): ResponseEntity<CreateSpreadResponse> {
+        val response = divinationService.createSpread(request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
 
     @GetMapping
     @Operation(
@@ -155,10 +157,12 @@ class SpreadController(
         @Parameter(description = "Spread ID", required = true)
         @PathVariable
         id: UUID,
-    ): SpreadDto = divinationService.getSpread(id)
+    ): ResponseEntity<SpreadDto> {
+        val spread = divinationService.getSpread(id)
+        return ResponseEntity.ok(spread)
+    }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Delete a spread",
         description = "Deletes a spread and all associated data. Only the author can delete it.",
@@ -175,7 +179,8 @@ class SpreadController(
         @PathVariable
         id: UUID,
         @RequestBody request: DeleteRequest,
-    ) {
+    ): ResponseEntity<Void> {
         divinationService.deleteSpread(id, request.userId)
+        return ResponseEntity.noContent().build()
     }
 }
