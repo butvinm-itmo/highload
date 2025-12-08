@@ -87,10 +87,12 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID", required = true)
         @PathVariable
         id: UUID,
-    ): InterpretationDto = divinationService.getInterpretation(spreadId, id)
+    ): ResponseEntity<InterpretationDto> {
+        val interpretation = divinationService.getInterpretation(spreadId, id)
+        return ResponseEntity.ok(interpretation)
+    }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Add interpretation to a spread",
         description =
@@ -110,7 +112,10 @@ class InterpretationController(
         @PathVariable
         spreadId: UUID,
         @Valid @RequestBody request: CreateInterpretationRequest,
-    ): CreateInterpretationResponse = divinationService.addInterpretation(spreadId, request)
+    ): ResponseEntity<CreateInterpretationResponse> {
+        val response = divinationService.addInterpretation(spreadId, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
 
     @PutMapping("/{id}")
     @Operation(
@@ -133,10 +138,12 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
-    ): InterpretationDto = divinationService.updateInterpretation(spreadId, id, request.authorId, request)
+    ): ResponseEntity<InterpretationDto> {
+        val updatedInterpretation = divinationService.updateInterpretation(spreadId, id, request.authorId, request)
+        return ResponseEntity.ok(updatedInterpretation)
+    }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Delete interpretation",
         description = "Deletes an interpretation from a spread. Only the interpretation author can delete it.",
@@ -156,7 +163,8 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @RequestBody request: DeleteRequest,
-    ) {
+    ): ResponseEntity<Void> {
         divinationService.deleteInterpretation(spreadId, id, request.userId)
+        return ResponseEntity.noContent().build()
     }
 }
