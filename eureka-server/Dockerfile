@@ -1,14 +1,12 @@
 FROM gradle:8-jdk21 AS build
 WORKDIR /app
 
-COPY settings.gradle.kts ./
-COPY build.gradle.kts ./
-RUN mkdir -p eureka-server
-COPY eureka-server/build.gradle.kts ./eureka-server/
-RUN gradle dependencies --no-daemon
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
 
-COPY eureka-server ./eureka-server
-RUN gradle :eureka-server:bootJar --no-daemon -x test
+COPY . .
+
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    gradle :eureka-server:bootJar --no-daemon -x test
 
 FROM eclipse-temurin:21-jre
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

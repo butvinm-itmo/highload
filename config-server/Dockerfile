@@ -1,14 +1,12 @@
 FROM gradle:8-jdk21 AS build
 WORKDIR /app
 
-COPY settings.gradle.kts ./
-COPY build.gradle.kts ./
-RUN mkdir -p config-server
-COPY config-server/build.gradle.kts ./config-server/
-RUN gradle dependencies --no-daemon
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
 
-COPY config-server ./config-server
-RUN gradle :config-server:bootJar --no-daemon -x test
+COPY . .
+
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    gradle :config-server:bootJar --no-daemon -x test
 
 FROM eclipse-temurin:21-jre
 RUN apt-get update && apt-get install -y curl git openssh-client && rm -rf /var/lib/apt/lists/*
