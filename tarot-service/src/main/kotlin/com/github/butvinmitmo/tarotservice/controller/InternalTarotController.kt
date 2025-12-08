@@ -4,6 +4,7 @@ import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.tarotservice.service.TarotService
 import io.swagger.v3.oas.annotations.Hidden
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -20,10 +21,16 @@ class InternalTarotController(
     @GetMapping("/layout-types/{id}")
     fun getLayoutTypeById(
         @PathVariable id: UUID,
-    ): LayoutTypeDto = tarotService.getLayoutTypeDtoById(id)
+    ): ResponseEntity<LayoutTypeDto> {
+        val layoutType = tarotService.getLayoutTypeDtoById(id)
+        return ResponseEntity.ok(layoutType)
+    }
 
     @GetMapping("/cards/random")
     fun getRandomCards(
         @RequestParam count: Int,
-    ): List<CardDto> = tarotService.getRandomCardDtos(count)
+    ): ResponseEntity<List<CardDto>> {
+        val cards = tarotService.getRandomCardDtos(count)
+        return ResponseEntity.ok(cards)
+    }
 }
