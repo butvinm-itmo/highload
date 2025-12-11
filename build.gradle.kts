@@ -25,6 +25,9 @@ subprojects {
     apply(plugin = "jacoco")
 
     tasks.withType<Test>().configureEach {
+        testLogging {
+            events("passed", "failed", "skipped")
+        }
         finalizedBy("jacocoTestReport")
     }
 
