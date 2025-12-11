@@ -50,4 +50,26 @@ class CardController(
             .header("X-Total-Count", response.totalElements.toString())
             .body(response.content)
     }
+
+    @GetMapping("/random")
+    @Operation(
+        summary = "Get random cards",
+        description = "Retrieves a specified number of random tarot cards",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Random cards retrieved successfully"),
+            ApiResponse(responseCode = "400", description = "Invalid count parameter"),
+        ],
+    )
+    fun getRandomCards(
+        @Parameter(description = "Number of random cards to retrieve (1-78)", example = "3")
+        @RequestParam
+        @Min(1)
+        @Max(78)
+        count: Int,
+    ): ResponseEntity<List<CardDto>> {
+        val cards = tarotService.getRandomCardDtos(count)
+        return ResponseEntity.ok(cards)
+    }
 }
