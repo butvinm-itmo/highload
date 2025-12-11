@@ -1,3 +1,8 @@
+Plan granular step-by-step refactoring plan. 
+After each step run all tests. 
+Do not oversee any suspicious behavior like failing tests or docker build. Do not make ad-hoc decisions to fix unexpected problems. 
+Ask me if you see anything strange. Commit after each finished step.
+
 # Tarology Web Service
 
 A Kotlin/Spring Boot microservices application for Tarot card readings and interpretations.
