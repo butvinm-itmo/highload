@@ -1,8 +1,8 @@
 package com.github.butvinmitmo.e2e
 
-import com.github.butvinmitmo.e2e.client.DivinationServiceClient
-import com.github.butvinmitmo.e2e.client.TarotServiceClient
-import com.github.butvinmitmo.e2e.client.UserServiceClient
+import com.github.butvinmitmo.shared.client.DivinationServiceClient
+import com.github.butvinmitmo.shared.client.TarotServiceClient
+import com.github.butvinmitmo.shared.client.UserServiceClient
 import feign.FeignException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.TestInstance
