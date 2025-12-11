@@ -1,8 +1,6 @@
 package com.github.butvinmitmo.divinationservice.unit.service
 
 import com.github.butvinmitmo.divinationservice.TestEntityFactory
-import com.github.butvinmitmo.divinationservice.client.TarotClient
-import com.github.butvinmitmo.divinationservice.client.UserClient
 import com.github.butvinmitmo.divinationservice.exception.ConflictException
 import com.github.butvinmitmo.divinationservice.exception.ForbiddenException
 import com.github.butvinmitmo.divinationservice.exception.NotFoundException
@@ -12,6 +10,8 @@ import com.github.butvinmitmo.divinationservice.repository.InterpretationReposit
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
 import com.github.butvinmitmo.divinationservice.service.DivinationService
+import com.github.butvinmitmo.shared.client.TarotServiceClient
+import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
@@ -49,10 +49,10 @@ class DivinationServiceTest {
     private lateinit var interpretationRepository: InterpretationRepository
 
     @Mock
-    private lateinit var userClient: UserClient
+    private lateinit var userServiceClient: UserServiceClient
 
     @Mock
-    private lateinit var tarotClient: TarotClient
+    private lateinit var tarotServiceClient: TarotServiceClient
 
     @Mock
     private lateinit var spreadMapper: SpreadMapper
@@ -85,8 +85,8 @@ class DivinationServiceTest {
                 spreadRepository,
                 spreadCardRepository,
                 interpretationRepository,
-                userClient,
-                tarotClient,
+                userServiceClient,
+                tarotServiceClient,
                 spreadMapper,
                 interpretationMapper,
             )
@@ -104,18 +104,18 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(userClient.getUserById(userId)).thenReturn(
+        whenever(userServiceClient.getInternalUser(userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
         whenever(
-            tarotClient.getLayoutTypeById(layoutTypeId),
+            tarotServiceClient.getLayoutTypeById(layoutTypeId),
         ).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testLayoutType),
         )
         whenever(spreadRepository.save(any())).thenReturn(savedSpread)
-        whenever(tarotClient.getRandomCards(3)).thenReturn(
+        whenever(tarotServiceClient.getRandomCards(3)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testCards),
         )
@@ -124,8 +124,8 @@ class DivinationServiceTest {
 
         assertNotNull(result)
         assertEquals(spreadId, result.id)
-        verify(userClient).getUserById(userId)
-        verify(tarotClient).getLayoutTypeById(layoutTypeId)
+        verify(userServiceClient).getInternalUser(userId)
+        verify(tarotServiceClient).getLayoutTypeById(layoutTypeId)
         verify(spreadRepository).save(any())
     }
 
@@ -212,7 +212,7 @@ class DivinationServiceTest {
             )
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
-        whenever(userClient.getUserById(userId)).thenReturn(
+        whenever(userServiceClient.getInternalUser(userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
@@ -231,7 +231,7 @@ class DivinationServiceTest {
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = userId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
-        whenever(userClient.getUserById(userId)).thenReturn(
+        whenever(userServiceClient.getInternalUser(userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )

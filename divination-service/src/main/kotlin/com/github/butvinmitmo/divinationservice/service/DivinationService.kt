@@ -1,7 +1,5 @@
 package com.github.butvinmitmo.divinationservice.service
 
-import com.github.butvinmitmo.divinationservice.client.TarotClient
-import com.github.butvinmitmo.divinationservice.client.UserClient
 import com.github.butvinmitmo.divinationservice.entity.Interpretation
 import com.github.butvinmitmo.divinationservice.entity.Spread
 import com.github.butvinmitmo.divinationservice.entity.SpreadCard
@@ -13,6 +11,8 @@ import com.github.butvinmitmo.divinationservice.mapper.SpreadMapper
 import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
+import com.github.butvinmitmo.shared.client.TarotServiceClient
+import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
@@ -35,17 +35,17 @@ class DivinationService(
     private val spreadRepository: SpreadRepository,
     private val spreadCardRepository: SpreadCardRepository,
     private val interpretationRepository: InterpretationRepository,
-    private val userClient: UserClient,
-    private val tarotClient: TarotClient,
+    private val userServiceClient: UserServiceClient,
+    private val tarotServiceClient: TarotServiceClient,
     private val spreadMapper: SpreadMapper,
     private val interpretationMapper: InterpretationMapper,
 ) {
     @Transactional
     fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
         // Validate user exists via Feign (throws FeignException.NotFound if not found)
-        userClient.getUserById(request.authorId)
+        userServiceClient.getInternalUser(request.authorId)
         // Validate layout type exists via Feign (throws FeignException.NotFound if not found)
-        val layoutType = tarotClient.getLayoutTypeById(request.layoutTypeId).body!!
+        val layoutType = tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!!
 
         val spread =
             Spread(
@@ -55,7 +55,7 @@ class DivinationService(
             )
         val savedSpread = spreadRepository.save(spread)
 
-        val cards = tarotClient.getRandomCards(layoutType.cardsCount).body!!
+        val cards = tarotServiceClient.getRandomCards(layoutType.cardsCount).body!!
 
         cards.forEachIndexed { index, card ->
             val spreadCard =
@@ -182,7 +182,7 @@ class DivinationService(
     ): CreateInterpretationResponse {
         val spread = getSpreadEntity(spreadId)
         // Validate user exists via Feign (throws FeignException.NotFound if not found)
-        userClient.getUserById(request.authorId)
+        userServiceClient.getInternalUser(request.authorId)
 
         if (interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)) {
             throw ConflictException("You already have an interpretation for this spread")
@@ -279,7 +279,7 @@ class DivinationService(
     private fun buildCardCache(cardIds: Set<UUID>): Map<UUID, CardDto> {
         // For now, we fetch random cards for each position
         // In production, you might want to add a batch endpoint to fetch cards by IDs
-        val cards = tarotClient.getRandomCards(cardIds.size).body!!
+        val cards = tarotServiceClient.getRandomCards(cardIds.size).body!!
         return cardIds.zip(cards).toMap()
     }
 }

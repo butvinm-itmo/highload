@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients
+@EnableFeignClients(basePackages = ["com.github.butvinmitmo.shared.client"])
 class DivinationServiceApplication
 
 fun main(args: Array<String>) {
