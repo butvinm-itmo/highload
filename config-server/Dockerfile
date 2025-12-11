@@ -5,7 +5,7 @@ ENV GRADLE_USER_HOME=/home/gradle/.gradle
 
 COPY . .
 
-RUN --mount=type=cache,target=/home/gradle/.gradle \
+RUN --mount=type=cache,target=/home/gradle/.gradle,id=config-server-gradle \
     gradle :config-server:bootJar --no-daemon -x test
 
 FROM eclipse-temurin:21-jre
