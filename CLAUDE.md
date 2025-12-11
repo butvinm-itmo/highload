@@ -16,7 +16,7 @@ Key features:
 
 ## Microservices Architecture
 
-The application is split into 5 microservices + shared DTO module:
+The application is split into 5 microservices + shared modules:
 
 | Service | Port | Responsibility |
 |---------|------|----------------|
@@ -24,14 +24,15 @@ The application is split into 5 microservices + shared DTO module:
 | **eureka-server** | 8761 | Service discovery (Netflix Eureka) |
 | **user-service** | 8081 | User management |
 | **tarot-service** | 8082 | Cards & LayoutTypes reference data |
-| **divination-service** | 8083 | Spreads & Interpretations (uses Feign clients) |
+| **divination-service** | 8083 | Spreads & Interpretations (uses shared-clients) |
 | **shared-dto** | - | Shared DTOs between services |
-| **e2e-tests** | - | End-to-end tests using Feign clients |
+| **shared-clients** | - | Shared Feign clients (UserServiceClient, TarotServiceClient, DivinationServiceClient) |
+| **e2e-tests** | - | End-to-end tests using shared-clients |
 
 **Inter-service Communication:**
 - Services register with Eureka and discover each other dynamically
-- `divination-service` → `user-service` via `UserClient` (Feign + Eureka)
-- `divination-service` → `tarot-service` via `TarotClient` (Feign + Eureka)
+- `divination-service` uses shared-clients module for inter-service calls
+- Feign clients support both Eureka discovery (production) and direct URLs (testing)
 
 **Database:** All services share a single PostgreSQL database with separate Flyway migration history tables.
 
@@ -232,6 +233,52 @@ Environment variables:
 - `DB_USER` - Database username (default: tarot_user)
 - `DB_PASSWORD` - Database password
 
+## Shared Feign Clients
+
+The `shared-clients` module provides unified Feign client interfaces for inter-service communication, used by both `divination-service` and `e2e-tests`.
+
+**Available Clients:**
+- **UserServiceClient** - User CRUD operations + internal endpoints
+  - Public: create, list, get, update, delete users
+  - Internal: `getInternalUser()` for internal API access (NOT `getUserById()`)
+- **TarotServiceClient** - Cards and layout types
+  - Public: list cards, list layout types
+  - Internal: random cards, get layout type by ID
+- **DivinationServiceClient** - Spreads and interpretations
+  - Full CRUD for spreads and interpretations
+  - Scroll pagination and nested interpretation endpoints
+
+**Configuration Classes:**
+- **SharedFeignConfig** - Feign error decoder with `@ConditionalOnMissingBean`
+- **SharedJacksonConfig** - ObjectMapper with Kotlin + JavaTimeModule
+
+**Usage Pattern:**
+1. Add dependency in `build.gradle.kts`:
+   ```kotlin
+   implementation(project(":shared-clients"))
+   ```
+
+2. Enable Feign clients in Spring Boot application:
+   ```kotlin
+   @EnableFeignClients(basePackages = ["com.github.butvinmitmo.shared.client"])
+   ```
+
+3. Configure URL properties (optional, for testing):
+   ```yaml
+   services:
+     user-service:
+       url: http://localhost:8081  # Empty for Eureka discovery
+   ```
+
+**URL Configuration:**
+- Empty URL (default): Uses Eureka service discovery in production
+- Explicit URL: For testing with WireMock or TestContainers
+- Pattern: `@FeignClient(name = "service-name", url = "\${services.service-name.url:}")`
+
+**Dependency Exposure:**
+- `api` dependencies for transitive exposure: Spring Cloud OpenFeign, Jackson Kotlin/JavaTime
+- Consumers automatically get Feign classes like `FeignException` and `@EnableFeignClients`
+
 ## Technology Stack
 
 - **Language:** Kotlin 2.2.10
@@ -281,6 +328,16 @@ highload/
 │       ├── ErrorResponse.kt, ValidationErrorResponse.kt
 │       └── DeleteRequest.kt
 │
+├── shared-clients/                # Shared Feign clients module
+│   └── src/main/kotlin/.../shared/
+│       ├── client/
+│       │   ├── UserServiceClient.kt
+│       │   ├── TarotServiceClient.kt
+│       │   └── DivinationServiceClient.kt
+│       └── config/
+│           ├── SharedFeignConfig.kt
+│           └── SharedJacksonConfig.kt
+│
 ├── user-service/                  # User management (port 8081)
 │   └── src/main/kotlin/.../userservice/
 │       ├── controller/UserController.kt, InternalUserController.kt
@@ -303,15 +360,12 @@ highload/
 │       ├── service/DivinationService.kt
 │       ├── repository/SpreadRepository.kt, SpreadCardRepository.kt, InterpretationRepository.kt
 │       ├── entity/Spread.kt, SpreadCard.kt, Interpretation.kt
-│       ├── mapper/SpreadMapper.kt, InterpretationMapper.kt
-│       └── client/UserClient.kt, TarotClient.kt  # Feign clients
+│       └── mapper/SpreadMapper.kt, InterpretationMapper.kt
 │
 ├── e2e-tests/                     # End-to-end tests module
 │   └── src/test/kotlin/.../e2e/
 │       ├── E2ETestApplication.kt
 │       ├── BaseE2ETest.kt
-│       ├── config/FeignConfig.kt, JacksonConfig.kt
-│       ├── client/UserServiceClient.kt, TarotServiceClient.kt, DivinationServiceClient.kt
 │       ├── UserServiceE2ETest.kt
 │       ├── TarotServiceE2ETest.kt
 │       ├── DivinationServiceE2ETest.kt
