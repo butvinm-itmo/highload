@@ -1,6 +1,7 @@
 rootProject.name = "highload"
 
 include("shared-dto")
+include("shared-clients")
 include("user-service")
 include("tarot-service")
 include("divination-service")
