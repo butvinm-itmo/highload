@@ -12,9 +12,11 @@ import jakarta.validation.constraints.Min
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v0.0.1/layout-types")
@@ -49,5 +51,24 @@ class LayoutTypeController(
             .ok()
             .header("X-Total-Count", response.totalElements.toString())
             .body(response.content)
+    }
+
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Get layout type by ID",
+        description = "Retrieves a specific layout type by its UUID",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Layout type found"),
+            ApiResponse(responseCode = "404", description = "Layout type not found"),
+        ],
+    )
+    fun getLayoutTypeById(
+        @Parameter(description = "Layout Type ID", required = true)
+        @PathVariable id: UUID,
+    ): ResponseEntity<LayoutTypeDto> {
+        val layoutType = tarotService.getLayoutTypeDtoById(id)
+        return ResponseEntity.ok(layoutType)
     }
 }
