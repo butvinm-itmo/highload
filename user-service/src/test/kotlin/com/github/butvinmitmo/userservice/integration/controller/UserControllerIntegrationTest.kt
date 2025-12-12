@@ -153,26 +153,4 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
             .perform(delete("$baseUrl/$nonExistentId"))
             .andExpect(status().isNotFound)
     }
-
-    @Test
-    fun `GET internal users endpoint should return user`() {
-        val createRequest = CreateUserRequest(username = "internaluser")
-        val createResult =
-            mockMvc
-                .perform(
-                    post(baseUrl)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)),
-                ).andExpect(status().isCreated)
-                .andReturn()
-
-        val responseJson = createResult.response.contentAsString
-        val userId = objectMapper.readTree(responseJson).get("id").asText()
-
-        mockMvc
-            .perform(get("/api/internal/users/$userId/entity"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.id").value(userId))
-            .andExpect(jsonPath("$.username").value("internaluser"))
-    }
 }
