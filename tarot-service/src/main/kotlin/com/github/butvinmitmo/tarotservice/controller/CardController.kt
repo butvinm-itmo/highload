@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/v0.0.1/cards")
@@ -43,13 +44,15 @@ class CardController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): ResponseEntity<List<CardDto>> {
-        val response = tarotService.getCards(page, size)
-        return ResponseEntity
-            .ok()
-            .header("X-Total-Count", response.totalElements.toString())
-            .body(response.content)
-    }
+    ): Mono<ResponseEntity<List<CardDto>>> =
+        tarotService
+            .getCards(page, size)
+            .map { response ->
+                ResponseEntity
+                    .ok()
+                    .header("X-Total-Count", response.totalElements.toString())
+                    .body(response.content)
+            }
 
     @GetMapping("/random")
     @Operation(
@@ -68,8 +71,8 @@ class CardController(
         @Min(1)
         @Max(78)
         count: Int,
-    ): ResponseEntity<List<CardDto>> {
-        val cards = tarotService.getRandomCardDtos(count)
-        return ResponseEntity.ok(cards)
-    }
+    ): Mono<ResponseEntity<List<CardDto>>> =
+        tarotService
+            .getRandomCardDtos(count)
+            .map { cards -> ResponseEntity.ok(cards) }
 }

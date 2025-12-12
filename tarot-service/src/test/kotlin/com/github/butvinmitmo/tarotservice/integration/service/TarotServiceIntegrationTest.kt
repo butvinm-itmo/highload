@@ -17,19 +17,19 @@ class TarotServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `getCards should return paginated cards`() {
-        val result = tarotService.getCards(0, 10)
+        val result = tarotService.getCards(0, 10).block()
 
         assertNotNull(result)
-        assertTrue(result.content.isNotEmpty())
+        assertTrue(result!!.content.isNotEmpty())
         assertTrue(result.totalElements > 0)
     }
 
     @Test
     fun `getLayoutTypes should return paginated layout types`() {
-        val result = tarotService.getLayoutTypes(0, 10)
+        val result = tarotService.getLayoutTypes(0, 10).block()
 
         assertNotNull(result)
-        assertEquals(3, result.content.size)
+        assertEquals(3, result!!.content.size)
         assertTrue(result.content.any { it.name == "ONE_CARD" })
         assertTrue(result.content.any { it.name == "THREE_CARDS" })
         assertTrue(result.content.any { it.name == "CROSS" })
@@ -39,10 +39,10 @@ class TarotServiceIntegrationTest : BaseIntegrationTest() {
     fun `getLayoutTypeById should return layout type`() {
         val oneCardLayoutId = UUID.fromString("30000000-0000-0000-0000-000000000001")
 
-        val layoutType = tarotService.getLayoutTypeById(oneCardLayoutId)
+        val layoutType = tarotService.getLayoutTypeById(oneCardLayoutId).block()
 
         assertNotNull(layoutType)
-        assertEquals("ONE_CARD", layoutType.name)
+        assertEquals("ONE_CARD", layoutType!!.name)
         assertEquals(1, layoutType.cardsCount)
     }
 
@@ -51,22 +51,22 @@ class TarotServiceIntegrationTest : BaseIntegrationTest() {
         val nonExistentId = UUID.randomUUID()
 
         assertThrows<NotFoundException> {
-            tarotService.getLayoutTypeById(nonExistentId)
+            tarotService.getLayoutTypeById(nonExistentId).block()
         }
     }
 
     @Test
     fun `getRandomCards should return requested number of cards`() {
-        val cards = tarotService.getRandomCards(3)
+        val cards = tarotService.getRandomCards(3).block()
 
-        assertEquals(3, cards.size)
+        assertEquals(3, cards!!.size)
     }
 
     @Test
     fun `getRandomCardDtos should return requested number of cards as DTOs`() {
-        val cardDtos = tarotService.getRandomCardDtos(5)
+        val cardDtos = tarotService.getRandomCardDtos(5).block()
 
-        assertEquals(5, cardDtos.size)
+        assertEquals(5, cardDtos!!.size)
         cardDtos.forEach { card ->
             assertNotNull(card.id)
             assertNotNull(card.name)

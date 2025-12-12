@@ -12,6 +12,8 @@ import com.github.butvinmitmo.tarotservice.repository.CardRepository
 import com.github.butvinmitmo.tarotservice.repository.LayoutTypeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import java.util.UUID
 
 @Service
@@ -24,48 +26,60 @@ class TarotService(
     fun getCards(
         page: Int,
         size: Int,
-    ): PageResponse<CardDto> {
-        val pageable = PageRequest.of(page, size)
-        val cardsPage = cardRepository.findAll(pageable)
-        return PageResponse(
-            content = cardsPage.content.map { cardMapper.toDto(it) },
-            page = cardsPage.number,
-            size = cardsPage.size,
-            totalElements = cardsPage.totalElements,
-            totalPages = cardsPage.totalPages,
-            isFirst = cardsPage.isFirst,
-            isLast = cardsPage.isLast,
-        )
-    }
+    ): Mono<PageResponse<CardDto>> =
+        Mono
+            .fromCallable {
+                val pageable = PageRequest.of(page, size)
+                val cardsPage = cardRepository.findAll(pageable)
+                PageResponse(
+                    content = cardsPage.content.map { cardMapper.toDto(it) },
+                    page = cardsPage.number,
+                    size = cardsPage.size,
+                    totalElements = cardsPage.totalElements,
+                    totalPages = cardsPage.totalPages,
+                    isFirst = cardsPage.isFirst,
+                    isLast = cardsPage.isLast,
+                )
+            }.subscribeOn(Schedulers.boundedElastic())
 
     fun getLayoutTypes(
         page: Int,
         size: Int,
-    ): PageResponse<LayoutTypeDto> {
-        val pageable = PageRequest.of(page, size)
-        val layoutTypesPage = layoutTypeRepository.findAll(pageable)
-        return PageResponse(
-            content = layoutTypesPage.content.map { layoutTypeMapper.toDto(it) },
-            page = layoutTypesPage.number,
-            size = layoutTypesPage.size,
-            totalElements = layoutTypesPage.totalElements,
-            totalPages = layoutTypesPage.totalPages,
-            isFirst = layoutTypesPage.isFirst,
-            isLast = layoutTypesPage.isLast,
-        )
-    }
+    ): Mono<PageResponse<LayoutTypeDto>> =
+        Mono
+            .fromCallable {
+                val pageable = PageRequest.of(page, size)
+                val layoutTypesPage = layoutTypeRepository.findAll(pageable)
+                PageResponse(
+                    content = layoutTypesPage.content.map { layoutTypeMapper.toDto(it) },
+                    page = layoutTypesPage.number,
+                    size = layoutTypesPage.size,
+                    totalElements = layoutTypesPage.totalElements,
+                    totalPages = layoutTypesPage.totalPages,
+                    isFirst = layoutTypesPage.isFirst,
+                    isLast = layoutTypesPage.isLast,
+                )
+            }.subscribeOn(Schedulers.boundedElastic())
 
-    fun getLayoutTypeById(id: UUID): LayoutType =
-        layoutTypeRepository
-            .findById(id)
-            .orElseThrow { NotFoundException("Layout type not found") }
+    fun getLayoutTypeById(id: UUID): Mono<LayoutType> =
+        Mono
+            .fromCallable {
+                layoutTypeRepository
+                    .findById(id)
+                    .orElseThrow { NotFoundException("Layout type not found") }
+            }.subscribeOn(Schedulers.boundedElastic())
 
-    fun getLayoutTypeDtoById(id: UUID): LayoutTypeDto {
-        val layoutType = getLayoutTypeById(id)
-        return layoutTypeMapper.toDto(layoutType)
-    }
+    fun getLayoutTypeDtoById(id: UUID): Mono<LayoutTypeDto> =
+        getLayoutTypeById(id)
+            .map { layoutTypeMapper.toDto(it) }
 
-    fun getRandomCards(count: Int): List<Card> = cardRepository.findRandomCards(count)
+    fun getRandomCards(count: Int): Mono<List<Card>> =
+        Mono
+            .fromCallable {
+                cardRepository.findRandomCards(count)
+            }.subscribeOn(Schedulers.boundedElastic())
 
-    fun getRandomCardDtos(count: Int): List<CardDto> = getRandomCards(count).map { cardMapper.toDto(it) }
+    fun getRandomCardDtos(count: Int): Mono<List<CardDto>> =
+        getRandomCards(count)
+            .map { cards -> cards.map { cardMapper.toDto(it) } }
 }

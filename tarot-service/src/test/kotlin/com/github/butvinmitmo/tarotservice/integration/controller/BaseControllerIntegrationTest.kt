@@ -2,20 +2,18 @@ package com.github.butvinmitmo.tarotservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
 @Testcontainers
 abstract class BaseControllerIntegrationTest {
     @Autowired
-    protected lateinit var mockMvc: MockMvc
+    protected lateinit var webTestClient: WebTestClient
 
     @Autowired
     protected lateinit var objectMapper: ObjectMapper

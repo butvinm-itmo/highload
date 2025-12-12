@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @RestController
@@ -45,13 +46,15 @@ class LayoutTypeController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): ResponseEntity<List<LayoutTypeDto>> {
-        val response = tarotService.getLayoutTypes(page, size)
-        return ResponseEntity
-            .ok()
-            .header("X-Total-Count", response.totalElements.toString())
-            .body(response.content)
-    }
+    ): Mono<ResponseEntity<List<LayoutTypeDto>>> =
+        tarotService
+            .getLayoutTypes(page, size)
+            .map { response ->
+                ResponseEntity
+                    .ok()
+                    .header("X-Total-Count", response.totalElements.toString())
+                    .body(response.content)
+            }
 
     @GetMapping("/{id}")
     @Operation(
@@ -67,8 +70,8 @@ class LayoutTypeController(
     fun getLayoutTypeById(
         @Parameter(description = "Layout Type ID", required = true)
         @PathVariable id: UUID,
-    ): ResponseEntity<LayoutTypeDto> {
-        val layoutType = tarotService.getLayoutTypeDtoById(id)
-        return ResponseEntity.ok(layoutType)
-    }
+    ): Mono<ResponseEntity<LayoutTypeDto>> =
+        tarotService
+            .getLayoutTypeDtoById(id)
+            .map { layoutType -> ResponseEntity.ok(layoutType) }
 }
