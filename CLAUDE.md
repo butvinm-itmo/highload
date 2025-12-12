@@ -16,12 +16,13 @@ Key features:
 
 ## Microservices Architecture
 
-The application is split into 5 microservices + shared modules:
+The application is split into 6 microservices + shared modules:
 
 | Service | Port | Responsibility |
 |---------|------|----------------|
 | **config-server** | 8888 | Centralized configuration management (Spring Cloud Config) |
 | **eureka-server** | 8761 | Service discovery (Netflix Eureka) |
+| **gateway-service** | 8080 | API Gateway (routing, resilience, monitoring) |
 | **user-service** | 8081 | User management |
 | **tarot-service** | 8082 | Cards & LayoutTypes reference data |
 | **divination-service** | 8083 | Spreads & Interpretations (uses shared-clients) |
@@ -33,8 +34,52 @@ The application is split into 5 microservices + shared modules:
 - Services register with Eureka and discover each other dynamically
 - `divination-service` uses shared-clients module for inter-service calls
 - Feign clients support both Eureka discovery (production) and direct URLs (testing)
+- External clients access backend services through `gateway-service`
 
 **Database:** All services share a single PostgreSQL database with separate Flyway migration history tables.
+
+## API Gateway (Spring Cloud Gateway)
+
+The **gateway-service** provides a unified entry point for all external API requests, offering centralized routing, resilience features, and monitoring.
+
+**Architecture:**
+- **External Clients** → Gateway (port 8080) → Backend Services via Eureka discovery
+- **Internal Services** → Direct Feign calls via Eureka (bypasses gateway for efficiency)
+
+**Key Features:**
+- **Intelligent Routing**: Routes requests to backend services using Eureka service discovery
+- **Circuit Breaker**: Resilience4j circuit breaker per route for fault tolerance
+- **Request Monitoring**: Centralized logging and metrics collection
+- **Preserved API Versioning**: Maintains `/api/v0.0.1` versioning across all services
+
+**Route Configuration:**
+| Route Pattern | Target Service | Circuit Breaker |
+|---------------|----------------|-----------------|
+| `/api/v0.0.1/users/**` | user-service | ✓ |
+| `/api/v0.0.1/cards/**` | tarot-service | ✓ |
+| `/api/v0.0.1/layout-types/**` | tarot-service | ✓ |
+| `/api/v0.0.1/spreads/**` | divination-service | ✓ |
+
+**Access Patterns:**
+- **External Clients**: Use gateway at `http://localhost:8080`
+- **Internal Feign Clients**: Direct service URLs via Eureka (e.g., `lb://user-service`)
+- **E2E Tests**: Route through gateway to simulate external access
+
+**Configuration Location:**
+- Routes and resilience policies: `highload-config/gateway-service.yml`
+- Circuit breaker settings match divination-service patterns
+- Actuator endpoints: `/actuator/health`, `/actuator/circuitbreakers`
+
+**Resilience Configuration:**
+```yaml
+resilience4j:
+  circuitbreaker:
+    slidingWindowSize: 10
+    failureRateThreshold: 50%
+    waitDurationInOpenState: 10s
+  timelimiter:
+    timeoutDuration: 3s
+```
 
 ## Configuration Management
 
@@ -98,6 +143,7 @@ open http://localhost:8761
 # Build specific service
 ./gradlew :config-server:build
 ./gradlew :eureka-server:build
+./gradlew :gateway-service:build
 ./gradlew :user-service:build
 ./gradlew :tarot-service:build
 ./gradlew :divination-service:build
@@ -106,6 +152,7 @@ open http://localhost:8761
 ./gradlew test
 
 # Run tests for specific service
+./gradlew :gateway-service:test
 ./gradlew :user-service:test
 ./gradlew :tarot-service:test
 ./gradlew :divination-service:test
@@ -142,6 +189,26 @@ curl http://localhost:8761/eureka/apps
 
 # Eureka dashboard
 open http://localhost:8761
+```
+
+### Gateway Service Commands
+```bash
+# Build gateway service
+./gradlew :gateway-service:build
+
+# Run gateway service locally (requires config-server and eureka-server)
+./gradlew :gateway-service:bootRun
+
+# Check gateway health
+curl http://localhost:8080/actuator/health
+
+# View circuit breaker status
+curl http://localhost:8080/actuator/circuitbreakers | jq
+
+# Test routes through gateway
+curl http://localhost:8080/api/v0.0.1/users
+curl http://localhost:8080/api/v0.0.1/cards
+curl http://localhost:8080/api/v0.0.1/spreads
 ```
 
 ### Configuration Repository Management
@@ -190,7 +257,7 @@ docker compose up -d
 docker compose up -d --build
 
 # Start only infrastructure (for local development)
-docker compose up -d config-server eureka-server postgres
+docker compose up -d config-server eureka-server gateway-service postgres
 
 # Stop all services
 docker compose down
@@ -198,6 +265,7 @@ docker compose down
 # View logs for specific service
 docker compose logs -f config-server
 docker compose logs -f eureka-server
+docker compose logs -f gateway-service
 docker compose logs -f user-service
 docker compose logs -f tarot-service
 docker compose logs -f divination-service
@@ -210,6 +278,10 @@ docker compose restart config-server
 
 # Rebuild specific service
 docker compose up -d --build eureka-server
+
+# Check gateway health and circuit breakers
+curl http://localhost:8080/actuator/health
+curl http://localhost:8080/actuator/circuitbreakers | jq
 ```
 
 **Note:** `docker-compose.yml` does not include `container_name` fields to ensure compatibility with TestContainers (see https://github.com/testcontainers/testcontainers-java/issues/2472).
@@ -287,6 +359,7 @@ The `shared-clients` module provides unified Feign client interfaces for inter-s
 - **Migrations:** Flyway (per-service)
 - **ORM:** Spring Data JPA with Hibernate
 - **Service Discovery:** Netflix Eureka (Spring Cloud Netflix)
+- **API Gateway:** Spring Cloud Gateway with circuit breaker
 - **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
 - **Resilience:** Resilience4j circuit breaker, retry, time limiter
 - **Testing:** TestContainers 1.19.8 for E2E tests
@@ -308,9 +381,16 @@ highload/
 │   └── src/main/kotlin/.../eurekaserver/
 │       └── EurekaServerApplication.kt
 │
+├── gateway-service/               # API Gateway (port 8080)
+│   ├── Dockerfile
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/.../gatewayservice/
+│       └── GatewayServiceApplication.kt
+│
 ├── highload-config/               # Git submodule (config repository)
 │   ├── application.yml            # Shared configuration
 │   ├── eureka-server.yml          # Eureka server config
+│   ├── gateway-service.yml        # Gateway routes and resilience config
 │   ├── user-service.yml
 │   ├── tarot-service.yml
 │   ├── divination-service.yml
@@ -632,9 +712,10 @@ Services register with Eureka Server and discover each other dynamically:
 **Startup order (enforced by docker-compose health checks):**
 1. `config-server` - Must be healthy first
 2. `eureka-server` - Fetches config, then starts
-3. `postgres` - Database
-4. `user-service`, `tarot-service` - Register with Eureka
-5. `divination-service` - Discovers other services via Eureka
+3. `gateway-service` - Registers with Eureka for routing
+4. `postgres` - Database
+5. `user-service`, `tarot-service` - Register with Eureka
+6. `divination-service` - Discovers other services via Eureka
 
 **Feign clients use Eureka discovery:**
 ```kotlin
