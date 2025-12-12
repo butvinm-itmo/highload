@@ -12,11 +12,11 @@ class InterpretationMapper(
     fun toDto(interpretation: Interpretation): InterpretationDto {
         val author = userServiceClient.getUserById(interpretation.authorId).body!!
         return InterpretationDto(
-            id = interpretation.id,
+            id = interpretation.id!!,
             text = interpretation.text,
             author = author,
-            spreadId = interpretation.spread.id,
-            createdAt = interpretation.createdAt,
+            spreadId = interpretation.spreadId,
+            createdAt = interpretation.createdAt!!,
         )
     }
 }

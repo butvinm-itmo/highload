@@ -1,46 +1,80 @@
 package com.github.butvinmitmo.divinationservice.repository
 
 import com.github.butvinmitmo.divinationservice.entity.Spread
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
+import org.springframework.data.r2dbc.repository.Query
+import org.springframework.data.r2dbc.repository.R2dbcRepository
+import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Repository
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import java.time.Instant
 import java.util.UUID
 
 @Repository
-interface SpreadRepository : JpaRepository<Spread, UUID> {
-    @Query(
-        """
-        SELECT DISTINCT s FROM Spread s
-        LEFT JOIN FETCH s.spreadCards sc
-        WHERE s.id = :id
-        """,
-    )
-    fun findByIdWithCards(
-        @Param("id") id: UUID,
-    ): Spread?
+interface SpreadRepository :
+    R2dbcRepository<Spread, UUID>,
+    SpreadRepositoryCustom {
+    @Query("SELECT * FROM spread WHERE id = :id")
+    fun findByIdWithCards(id: UUID): Mono<Spread>
 
-    @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC")
-    fun findAllOrderByCreatedAtDesc(pageable: Pageable): Page<Spread>
+    @Query("SELECT * FROM spread ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
+    fun findAllOrderByCreatedAtDesc(
+        offset: Long,
+        limit: Int,
+    ): Flux<Spread>
 
-    @Query(
-        """
-        SELECT s FROM Spread s
-        WHERE s.createdAt < (SELECT s2.createdAt FROM Spread s2 WHERE s2.id = :spreadId)
-        OR (s.createdAt = (SELECT s2.createdAt FROM Spread s2 WHERE s2.id = :spreadId) AND s.id < :spreadId)
-        ORDER BY s.createdAt DESC, s.id DESC
-        LIMIT :limit
-    """,
-    )
+    @Query("SELECT COUNT(*) FROM spread")
+    override fun count(): Mono<Long>
+}
+
+interface SpreadRepositoryCustom {
     fun findSpreadsAfterCursor(
-        @Param("spreadId") spreadId: UUID,
-        @Param("limit") limit: Int,
-    ): List<Spread>
+        spreadId: UUID,
+        limit: Int,
+    ): Flux<Spread>
 
-    @Query("SELECT s FROM Spread s ORDER BY s.createdAt DESC, s.id DESC LIMIT :limit")
-    fun findLatestSpreads(
-        @Param("limit") limit: Int,
-    ): List<Spread>
+    fun findLatestSpreads(limit: Int): Flux<Spread>
+}
+
+class SpreadRepositoryCustomImpl(
+    private val databaseClient: DatabaseClient,
+) : SpreadRepositoryCustom {
+    override fun findSpreadsAfterCursor(
+        spreadId: UUID,
+        limit: Int,
+    ): Flux<Spread> =
+        databaseClient
+            .sql(
+                """
+                SELECT * FROM spread
+                WHERE created_at < (SELECT created_at FROM spread WHERE id = :spreadId)
+                OR (created_at = (SELECT created_at FROM spread WHERE id = :spreadId) AND id < :spreadId)
+                ORDER BY created_at DESC, id DESC
+                LIMIT :limit
+                """.trimIndent(),
+            ).bind("spreadId", spreadId)
+            .bind("limit", limit)
+            .map { row, _ ->
+                Spread(
+                    id = row.get("id", UUID::class.java),
+                    question = row.get("question", String::class.java),
+                    layoutTypeId = row.get("layout_type_id", UUID::class.java)!!,
+                    authorId = row.get("author_id", UUID::class.java)!!,
+                    createdAt = row.get("created_at", Instant::class.java),
+                )
+            }.all()
+
+    override fun findLatestSpreads(limit: Int): Flux<Spread> =
+        databaseClient
+            .sql("SELECT * FROM spread ORDER BY created_at DESC, id DESC LIMIT :limit")
+            .bind("limit", limit)
+            .map { row, _ ->
+                Spread(
+                    id = row.get("id", UUID::class.java),
+                    question = row.get("question", String::class.java),
+                    layoutTypeId = row.get("layout_type_id", UUID::class.java)!!,
+                    authorId = row.get("author_id", UUID::class.java)!!,
+                    createdAt = row.get("created_at", Instant::class.java),
+                )
+            }.all()
 }

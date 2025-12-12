@@ -11,13 +11,18 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import reactor.core.publisher.Mono
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
 abstract class BaseIntegrationTest {
+    @Autowired
+    protected lateinit var webTestClient: WebTestClient
+
     @Autowired
     protected lateinit var spreadRepository: SpreadRepository
 
@@ -29,9 +34,12 @@ abstract class BaseIntegrationTest {
 
     @AfterEach
     fun cleanupDatabase() {
-        interpretationRepository.deleteAll()
-        spreadCardRepository.deleteAll()
-        spreadRepository.deleteAll()
+        Mono
+            .`when`(
+                interpretationRepository.deleteAll(),
+                spreadCardRepository.deleteAll(),
+                spreadRepository.deleteAll(),
+            ).block()
     }
 
     companion object {
@@ -60,10 +68,6 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
-            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
             registry.add("spring.r2dbc.url") {
                 "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
             }

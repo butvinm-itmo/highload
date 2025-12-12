@@ -24,9 +24,11 @@ import com.github.butvinmitmo.shared.dto.ScrollResponse
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
-import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import java.util.UUID
 import kotlin.random.Random
 
@@ -41,150 +43,181 @@ class DivinationService(
     private val interpretationMapper: InterpretationMapper,
 ) {
     @Transactional
-    fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
-        // Validate user exists via Feign (throws FeignException.NotFound if not found)
-        userServiceClient.getUserById(request.authorId)
-        // Validate layout type exists via Feign (throws FeignException.NotFound if not found)
-        val layoutType = tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!!
-
-        val spread =
-            Spread(
-                question = request.question,
-                authorId = request.authorId,
-                layoutTypeId = request.layoutTypeId,
-            )
-        val savedSpread = spreadRepository.save(spread)
-
-        val cards = tarotServiceClient.getRandomCards(layoutType.cardsCount).body!!
-
-        cards.forEachIndexed { index, card ->
-            val spreadCard =
-                SpreadCard(
-                    spread = savedSpread,
-                    cardId = card.id,
-                    positionInSpread = index + 1,
-                    isReversed = Random.nextBoolean(),
-                )
-            spreadCardRepository.save(spreadCard)
-        }
-
-        return CreateSpreadResponse(id = savedSpread.id)
+    fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
+        // Validate user exists via Feign (blocking call on boundedElastic)
+        return Mono
+            .fromCallable { userServiceClient.getUserById(request.authorId) }
+            .subscribeOn(Schedulers.boundedElastic())
+            .flatMap {
+                // Validate layout type exists via Feign (blocking call on boundedElastic)
+                Mono
+                    .fromCallable { tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!! }
+                    .subscribeOn(Schedulers.boundedElastic())
+            }.flatMap { layoutType ->
+                val spread =
+                    Spread(
+                        question = request.question,
+                        authorId = request.authorId,
+                        layoutTypeId = request.layoutTypeId,
+                    )
+                spreadRepository
+                    .save(spread)
+                    .flatMap { savedSpread ->
+                        // Get random cards via Feign
+                        Mono
+                            .fromCallable { tarotServiceClient.getRandomCards(layoutType.cardsCount).body!! }
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .flatMapMany { cards ->
+                                // Save all spread cards reactively
+                                Flux.fromIterable(
+                                    cards.mapIndexed { index, card ->
+                                        SpreadCard(
+                                            spreadId = savedSpread.id!!,
+                                            cardId = card.id,
+                                            positionInSpread = index + 1,
+                                            isReversed = Random.nextBoolean(),
+                                        )
+                                    },
+                                )
+                            }.flatMap { spreadCard ->
+                                spreadCardRepository.save(spreadCard)
+                            }.then(Mono.just(CreateSpreadResponse(id = savedSpread.id!!)))
+                    }
+            }
     }
 
     fun getSpreads(
         page: Int,
         size: Int,
-    ): PageResponse<SpreadSummaryDto> {
-        val pageable = PageRequest.of(page, size)
-        val spreadsPage = spreadRepository.findAllOrderByCreatedAtDesc(pageable)
-
-        val spreadIds = spreadsPage.content.map { it.id }
-        val interpretationCounts = getInterpretationCounts(spreadIds)
-
-        return PageResponse(
-            content =
-                spreadsPage.content.map { spread ->
-                    spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
-                },
-            page = spreadsPage.number,
-            size = spreadsPage.size,
-            totalElements = spreadsPage.totalElements,
-            totalPages = spreadsPage.totalPages,
-            isFirst = spreadsPage.isFirst,
-            isLast = spreadsPage.isLast,
-        )
+    ): Mono<PageResponse<SpreadSummaryDto>> {
+        val offset = page.toLong() * size
+        return spreadRepository
+            .count()
+            .flatMap { totalElements ->
+                spreadRepository
+                    .findAllOrderByCreatedAtDesc(offset, size)
+                    .collectList()
+                    .flatMap { spreads ->
+                        val spreadIds = spreads.map { it.id!! }
+                        getInterpretationCounts(spreadIds)
+                            .map { interpretationCounts ->
+                                val totalPages = (totalElements + size - 1) / size
+                                PageResponse(
+                                    content =
+                                        spreads.map { spread ->
+                                            spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
+                                        },
+                                    page = page,
+                                    size = size,
+                                    totalElements = totalElements,
+                                    totalPages = totalPages.toInt(),
+                                    isFirst = page == 0,
+                                    isLast = page >= totalPages - 1,
+                                )
+                            }
+                    }
+            }
     }
 
     @Transactional(readOnly = true)
     fun getSpreadsByScroll(
         after: UUID?,
         size: Int,
-    ): ScrollResponse<SpreadSummaryDto> {
-        val spreads =
+    ): Mono<ScrollResponse<SpreadSummaryDto>> {
+        val spreadsFlux =
             if (after != null) {
                 spreadRepository.findSpreadsAfterCursor(after, size + 1)
             } else {
                 spreadRepository.findLatestSpreads(size + 1)
             }
 
-        val hasMore = spreads.size > size
-        val itemsToReturn = if (hasMore) spreads.take(size) else spreads
-        val nextCursor = if (hasMore) itemsToReturn.last().id else null
+        return spreadsFlux
+            .collectList()
+            .flatMap { spreads ->
+                val hasMore = spreads.size > size
+                val itemsToReturn = if (hasMore) spreads.take(size) else spreads
+                val nextCursor = if (hasMore) itemsToReturn.last().id else null
 
-        val spreadIds = itemsToReturn.map { it.id }
-        val interpretationCounts = getInterpretationCounts(spreadIds)
-
-        return ScrollResponse(
-            items =
-                itemsToReturn.map { spread ->
-                    spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
-                },
-            nextCursor = nextCursor,
-        )
+                val spreadIds = itemsToReturn.map { it.id!! }
+                getInterpretationCounts(spreadIds)
+                    .map { interpretationCounts ->
+                        ScrollResponse(
+                            items =
+                                itemsToReturn.map { spread ->
+                                    spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
+                                },
+                            nextCursor = nextCursor,
+                        )
+                    }
+            }
     }
 
-    private fun getInterpretationCounts(spreadIds: List<UUID>): Map<UUID, Int> {
-        if (spreadIds.isEmpty()) return emptyMap()
-        val results = interpretationRepository.countBySpreadIds(spreadIds)
-        return results.associate { row ->
-            val spreadId = row[0] as UUID
-            val count = (row[1] as Long).toInt()
-            spreadId to count
-        }
+    private fun getInterpretationCounts(spreadIds: List<UUID>): Mono<Map<UUID, Int>> {
+        if (spreadIds.isEmpty()) return Mono.just(emptyMap())
+        return interpretationRepository
+            .countBySpreadIds(spreadIds)
+            .collectMap({ it.first }, { it.second.toInt() })
     }
 
     @Transactional
-    fun getSpread(id: UUID): SpreadDto {
-        val spread =
-            spreadRepository.findByIdWithCards(id)
-                ?: throw NotFoundException("Spread not found")
+    fun getSpread(id: UUID): Mono<SpreadDto> =
+        spreadRepository
+            .findByIdWithCards(id)
+            .switchIfEmpty(Mono.error(NotFoundException("Spread not found")))
+            .flatMap { spread ->
+                // Load spread cards separately (R2DBC doesn't support @OneToMany)
+                val spreadCardsFlux = spreadCardRepository.findBySpreadId(spread.id!!)
+                // Load interpretations (limit 50)
+                val interpretationsFlux =
+                    interpretationRepository
+                        .findBySpreadIdOrderByCreatedAtDesc(spread.id!!, 0, 50)
 
-        val interpretations =
-            interpretationRepository
-                .findBySpreadIdOrderByCreatedAtDesc(
-                    spread.id,
-                    PageRequest.of(0, 50),
-                ).content
+                Mono
+                    .zip(spreadCardsFlux.collectList(), interpretationsFlux.collectList())
+                    .flatMap { tuple ->
+                        val spreadCards = tuple.t1
+                        val interpretations = tuple.t2
 
-        // Build a cache of cards for this spread
-        val cardIds = spread.spreadCards.map { it.cardId }.toSet()
-        val cardCache = buildCardCache(cardIds)
-
-        return spreadMapper.toDto(spread, interpretations, cardCache)
-    }
+                        // Build card cache
+                        val cardIds = spreadCards.map { it.cardId }.toSet()
+                        buildCardCache(cardIds)
+                            .map { cardCache ->
+                                spreadMapper.toDto(spread, spreadCards, interpretations, cardCache)
+                            }
+                    }
+            }
 
     @Transactional
     fun deleteSpread(
         id: UUID,
         userId: UUID,
-    ) {
-        val spread =
-            spreadRepository
-                .findById(id)
-                .orElseThrow { NotFoundException("Spread not found") }
-
-        if (spread.authorId != userId) {
-            throw ForbiddenException("You can only delete your own spreads")
-        }
-
-        spreadRepository.deleteById(id)
-    }
-
-    fun getSpreadEntity(id: UUID): Spread =
+    ): Mono<Void> =
         spreadRepository
             .findById(id)
-            .orElseThrow { NotFoundException("Spread not found") }
+            .switchIfEmpty(Mono.error(NotFoundException("Spread not found")))
+            .flatMap { spread ->
+                if (spread.authorId != userId) {
+                    Mono.error(ForbiddenException("You can only delete your own spreads"))
+                } else {
+                    spreadRepository.deleteById(id)
+                }
+            }
+
+    fun getSpreadEntity(id: UUID): Mono<Spread> =
+        spreadRepository
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException("Spread not found")))
 
     @Transactional
     fun addInterpretation(
         spreadId: UUID,
         request: CreateInterpretationRequest,
     ): CreateInterpretationResponse {
-        val spread = getSpreadEntity(spreadId)
+        val spread = getSpreadEntity(spreadId).block()!!
         // Validate user exists via Feign (throws FeignException.NotFound if not found)
         userServiceClient.getUserById(request.authorId)
 
-        if (interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)) {
+        if (interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId).block()!!) {
             throw ConflictException("You already have an interpretation for this spread")
         }
 
@@ -192,11 +225,11 @@ class DivinationService(
             Interpretation(
                 text = request.text,
                 authorId = request.authorId,
-                spread = spread,
+                spreadId = spreadId,
             )
 
-        val saved = interpretationRepository.save(interpretation)
-        return CreateInterpretationResponse(id = saved.id)
+        val saved = interpretationRepository.save(interpretation).block()!!
+        return CreateInterpretationResponse(id = saved.id!!)
     }
 
     @Transactional
@@ -209,14 +242,14 @@ class DivinationService(
         val interpretation =
             interpretationRepository
                 .findById(id)
-                .orElseThrow { NotFoundException("Interpretation not found") }
+                .block() ?: throw NotFoundException("Interpretation not found")
 
         if (interpretation.authorId != userId) {
             throw ForbiddenException("You can only edit your own interpretations")
         }
 
         interpretation.text = request.text
-        val saved = interpretationRepository.save(interpretation)
+        val saved = interpretationRepository.save(interpretation).block()!!
 
         return interpretationMapper.toDto(saved)
     }
@@ -230,13 +263,13 @@ class DivinationService(
         val interpretation =
             interpretationRepository
                 .findById(id)
-                .orElseThrow { NotFoundException("Interpretation not found") }
+                .block() ?: throw NotFoundException("Interpretation not found")
 
         if (interpretation.authorId != userId) {
             throw ForbiddenException("You can only delete your own interpretations")
         }
 
-        interpretationRepository.deleteById(id)
+        interpretationRepository.deleteById(id).block()
     }
 
     @Transactional(readOnly = true)
@@ -247,9 +280,9 @@ class DivinationService(
         val interpretation =
             interpretationRepository
                 .findById(id)
-                .orElseThrow { NotFoundException("Interpretation not found") }
+                .block() ?: throw NotFoundException("Interpretation not found")
 
-        if (interpretation.spread.id != spreadId) {
+        if (interpretation.spreadId != spreadId) {
             throw NotFoundException("Interpretation not found in this spread")
         }
 
@@ -262,24 +295,33 @@ class DivinationService(
         page: Int,
         size: Int,
     ): PageResponse<InterpretationDto> {
-        getSpreadEntity(spreadId)
-        val pageable = PageRequest.of(page, size)
-        val interpretationsPage = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, pageable)
+        getSpreadEntity(spreadId).block()
+        val offset = page.toLong() * size
+        val interpretationsFlux = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, offset, size)
+        val countMono = interpretationRepository.countBySpreadId(spreadId)
+
+        val interpretations = interpretationsFlux.collectList().block()!!
+        val totalElements = countMono.block()!!
+        val totalPages = (totalElements + size - 1) / size
+
         return PageResponse(
-            content = interpretationsPage.content.map { interpretationMapper.toDto(it) },
-            page = interpretationsPage.number,
-            size = interpretationsPage.size,
-            totalElements = interpretationsPage.totalElements,
-            totalPages = interpretationsPage.totalPages,
-            isFirst = interpretationsPage.isFirst,
-            isLast = interpretationsPage.isLast,
+            content = interpretations.map { interpretationMapper.toDto(it) },
+            page = page,
+            size = size,
+            totalElements = totalElements,
+            totalPages = totalPages.toInt(),
+            isFirst = page == 0,
+            isLast = page >= totalPages - 1,
         )
     }
 
-    private fun buildCardCache(cardIds: Set<UUID>): Map<UUID, CardDto> {
+    private fun buildCardCache(cardIds: Set<UUID>): Mono<Map<UUID, CardDto>> {
         // For now, we fetch random cards for each position
         // In production, you might want to add a batch endpoint to fetch cards by IDs
-        val cards = tarotServiceClient.getRandomCards(cardIds.size).body!!
-        return cardIds.zip(cards).toMap()
+        return Mono
+            .fromCallable {
+                val cards = tarotServiceClient.getRandomCards(cardIds.size).body!!
+                cardIds.zip(cards).toMap()
+            }.subscribeOn(Schedulers.boundedElastic())
     }
 }

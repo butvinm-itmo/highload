@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @RestController
@@ -54,10 +55,10 @@ class SpreadController(
     )
     fun createSpread(
         @Valid @RequestBody request: CreateSpreadRequest,
-    ): ResponseEntity<CreateSpreadResponse> {
-        val response = divinationService.createSpread(request)
-        return ResponseEntity.status(HttpStatus.CREATED).body(response)
-    }
+    ): Mono<ResponseEntity<CreateSpreadResponse>> =
+        divinationService
+            .createSpread(request)
+            .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @GetMapping
     @Operation(
@@ -90,13 +91,15 @@ class SpreadController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): ResponseEntity<List<SpreadSummaryDto>> {
-        val response = divinationService.getSpreads(page, size)
-        return ResponseEntity
-            .ok()
-            .header("X-Total-Count", response.totalElements.toString())
-            .body(response.content)
-    }
+    ): Mono<ResponseEntity<List<SpreadSummaryDto>>> =
+        divinationService
+            .getSpreads(page, size)
+            .map { response ->
+                ResponseEntity
+                    .ok()
+                    .header("X-Total-Count", response.totalElements.toString())
+                    .body(response.content)
+            }
 
     @GetMapping("/scroll")
     @Operation(
@@ -130,16 +133,17 @@ class SpreadController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): ResponseEntity<List<SpreadSummaryDto>> {
-        val result = divinationService.getSpreadsByScroll(after, size)
-        val response = ResponseEntity.ok()
-
-        return if (result.nextCursor != null) {
-            response.header("X-After", result.nextCursor.toString()).body(result.items)
-        } else {
-            response.body(result.items)
-        }
-    }
+    ): Mono<ResponseEntity<List<SpreadSummaryDto>>> =
+        divinationService
+            .getSpreadsByScroll(after, size)
+            .map { result ->
+                val response = ResponseEntity.ok()
+                if (result.nextCursor != null) {
+                    response.header("X-After", result.nextCursor.toString()).body(result.items)
+                } else {
+                    response.body(result.items)
+                }
+            }
 
     @GetMapping("/{id}")
     @Operation(
@@ -156,10 +160,10 @@ class SpreadController(
         @Parameter(description = "Spread ID", required = true)
         @PathVariable
         id: UUID,
-    ): ResponseEntity<SpreadDto> {
-        val spread = divinationService.getSpread(id)
-        return ResponseEntity.ok(spread)
-    }
+    ): Mono<ResponseEntity<SpreadDto>> =
+        divinationService
+            .getSpread(id)
+            .map { spread -> ResponseEntity.ok(spread) }
 
     @DeleteMapping("/{id}")
     @Operation(
@@ -178,8 +182,8 @@ class SpreadController(
         @PathVariable
         id: UUID,
         @RequestBody request: DeleteRequest,
-    ): ResponseEntity<Void> {
-        divinationService.deleteSpread(id, request.userId)
-        return ResponseEntity.noContent().build()
-    }
+    ): Mono<ResponseEntity<Void>> =
+        divinationService
+            .deleteSpread(id, request.userId)
+            .then(Mono.just(ResponseEntity.noContent().build()))
 }

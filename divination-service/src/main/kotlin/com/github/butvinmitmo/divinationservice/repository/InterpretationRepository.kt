@@ -1,52 +1,68 @@
 package com.github.butvinmitmo.divinationservice.repository
 
 import com.github.butvinmitmo.divinationservice.entity.Interpretation
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
+import org.springframework.data.r2dbc.repository.Query
+import org.springframework.data.r2dbc.repository.R2dbcRepository
+import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Repository
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @Repository
-interface InterpretationRepository : JpaRepository<Interpretation, UUID> {
-    @Query("SELECT COUNT(i) > 0 FROM Interpretation i WHERE i.authorId = :authorId AND i.spread.id = :spreadId")
+interface InterpretationRepository :
+    R2dbcRepository<Interpretation, UUID>,
+    InterpretationRepositoryCustom {
+    @Query(
+        "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
+            "FROM interpretation WHERE author_id = :authorId AND spread_id = :spreadId",
+    )
     fun existsByAuthorAndSpread(
-        @Param("authorId") authorId: UUID,
-        @Param("spreadId") spreadId: UUID,
-    ): Boolean
+        authorId: UUID,
+        spreadId: UUID,
+    ): Mono<Boolean>
 
     @Query(
         """
-        SELECT i FROM Interpretation i
-        WHERE i.spread.id = :spreadId
-        ORDER BY i.createdAt DESC
+        SELECT * FROM interpretation
+        WHERE spread_id = :spreadId
+        ORDER BY created_at DESC
+        LIMIT :limit OFFSET :offset
         """,
     )
     fun findBySpreadIdOrderByCreatedAtDesc(
-        @Param("spreadId") spreadId: UUID,
-        pageable: Pageable,
-    ): Page<Interpretation>
+        spreadId: UUID,
+        offset: Long,
+        limit: Int,
+    ): Flux<Interpretation>
 
-    @Query(
-        value = """
-        SELECT COUNT(i) FROM Interpretation i
-        WHERE i.spread.id = :spreadId
-        """,
-    )
-    fun countBySpreadId(
-        @Param("spreadId") spreadId: UUID,
-    ): Long
+    @Query("SELECT COUNT(*) FROM interpretation WHERE spread_id = :spreadId")
+    fun countBySpreadId(spreadId: UUID): Mono<Long>
+}
 
-    @Query(
-        """
-        SELECT i.spread.id, COUNT(i) FROM Interpretation i
-        WHERE i.spread.id IN :spreadIds
-        GROUP BY i.spread.id
-        """,
-    )
-    fun countBySpreadIds(
-        @Param("spreadIds") spreadIds: List<UUID>,
-    ): List<Array<Any>>
+interface InterpretationRepositoryCustom {
+    fun countBySpreadIds(spreadIds: List<UUID>): Flux<Pair<UUID, Long>>
+}
+
+class InterpretationRepositoryCustomImpl(
+    private val databaseClient: DatabaseClient,
+) : InterpretationRepositoryCustom {
+    override fun countBySpreadIds(spreadIds: List<UUID>): Flux<Pair<UUID, Long>> {
+        if (spreadIds.isEmpty()) return Flux.empty()
+
+        return databaseClient
+            .sql(
+                """
+                SELECT spread_id, COUNT(*) as count
+                FROM interpretation
+                WHERE spread_id = ANY(:spreadIds)
+                GROUP BY spread_id
+                """.trimIndent(),
+            ).bind("spreadIds", spreadIds.toTypedArray())
+            .map { row, _ ->
+                val spreadId = row.get("spread_id", UUID::class.java)!!
+                val count = (row.get("count", java.lang.Long::class.java) ?: 0L).toLong()
+                spreadId to count
+            }.all()
+    }
 }

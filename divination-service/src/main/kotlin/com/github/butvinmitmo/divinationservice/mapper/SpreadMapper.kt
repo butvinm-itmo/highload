@@ -2,6 +2,7 @@ package com.github.butvinmitmo.divinationservice.mapper
 
 import com.github.butvinmitmo.divinationservice.entity.Interpretation
 import com.github.butvinmitmo.divinationservice.entity.Spread
+import com.github.butvinmitmo.divinationservice.entity.SpreadCard
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.CardDto
@@ -19,6 +20,7 @@ class SpreadMapper(
 ) {
     fun toDto(
         spread: Spread,
+        spreadCards: List<SpreadCard>,
         interpretations: List<Interpretation>,
         cardCache: Map<UUID, CardDto> = emptyMap(),
     ): SpreadDto {
@@ -26,14 +28,14 @@ class SpreadMapper(
         val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
 
         return SpreadDto(
-            id = spread.id,
+            id = spread.id!!,
             question = spread.question,
             layoutType = layoutType,
             cards =
-                spread.spreadCards.sortedBy { it.positionInSpread }.map { spreadCard ->
+                spreadCards.sortedBy { it.positionInSpread }.map { spreadCard ->
                     val card = cardCache[spreadCard.cardId] ?: fetchCard(spreadCard.cardId)
                     SpreadCardDto(
-                        id = spreadCard.id,
+                        id = spreadCard.id!!,
                         card = card,
                         positionInSpread = spreadCard.positionInSpread,
                         isReversed = spreadCard.isReversed,
@@ -43,15 +45,15 @@ class SpreadMapper(
                 interpretations.map { interpretation ->
                     val interpAuthor = userServiceClient.getUserById(interpretation.authorId).body!!
                     InterpretationDto(
-                        id = interpretation.id,
+                        id = interpretation.id!!,
                         text = interpretation.text,
                         author = interpAuthor,
-                        spreadId = interpretation.spread.id,
-                        createdAt = interpretation.createdAt,
+                        spreadId = interpretation.spreadId,
+                        createdAt = interpretation.createdAt!!,
                     )
                 },
             author = author,
-            createdAt = spread.createdAt,
+            createdAt = spread.createdAt!!,
         )
     }
 
@@ -63,13 +65,13 @@ class SpreadMapper(
         val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
 
         return SpreadSummaryDto(
-            id = spread.id,
+            id = spread.id!!,
             question = spread.question,
             layoutTypeName = layoutType.name,
             cardsCount = layoutType.cardsCount,
             interpretationsCount = interpretationsCount,
             authorUsername = author.username,
-            createdAt = spread.createdAt,
+            createdAt = spread.createdAt!!,
         )
     }
 
