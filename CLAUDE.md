@@ -238,12 +238,10 @@ Environment variables:
 The `shared-clients` module provides unified Feign client interfaces for inter-service communication, used by both `divination-service` and `e2e-tests`.
 
 **Available Clients:**
-- **UserServiceClient** - User CRUD operations + internal endpoints
-  - Public: create, list, get, update, delete users
-  - Internal: `getInternalUser()` for internal API access (NOT `getUserById()`)
+- **UserServiceClient** - User CRUD operations
+  - create, list, get, update, delete users
 - **TarotServiceClient** - Cards and layout types
-  - Public: list cards, list layout types
-  - Internal: random cards, get layout type by ID
+  - list cards, list layout types, get random cards, get layout type by ID
 - **DivinationServiceClient** - Spreads and interpretations
   - Full CRUD for spreads and interpretations
   - Scroll pagination and nested interpretation endpoints
@@ -340,7 +338,7 @@ highload/
 │
 ├── user-service/                  # User management (port 8081)
 │   └── src/main/kotlin/.../userservice/
-│       ├── controller/UserController.kt, InternalUserController.kt
+│       ├── controller/UserController.kt
 │       ├── service/UserService.kt
 │       ├── repository/UserRepository.kt
 │       ├── entity/User.kt
@@ -348,7 +346,7 @@ highload/
 │
 ├── tarot-service/                 # Reference data (port 8082)
 │   └── src/main/kotlin/.../tarotservice/
-│       ├── controller/CardController.kt, LayoutTypeController.kt, InternalTarotController.kt
+│       ├── controller/CardController.kt, LayoutTypeController.kt
 │       ├── service/TarotService.kt
 │       ├── repository/CardRepository.kt, LayoutTypeRepository.kt
 │       ├── entity/Card.kt, LayoutType.kt, ArcanaType.kt
@@ -410,11 +408,6 @@ Base path: `/api/v0.0.1`
 | PUT | `/users/{id}` | Update user |
 | DELETE | `/users/{id}` | Delete user and all associated data |
 
-**Internal endpoints** (for Feign clients):
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/internal/users/{id}/entity` | Get user DTO for internal use |
-
 ### tarot-service (port 8082)
 
 Base path: `/api/v0.0.1`
@@ -422,15 +415,11 @@ Base path: `/api/v0.0.1`
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/cards?page=N&size=M` | List cards (max 50/page, X-Total-Count header) |
+| GET | `/cards/random?count=N` | Get N random cards (1-78) |
 | GET | `/layout-types?page=N&size=M` | List layout types |
+| GET | `/layout-types/{id}` | Get layout type by ID |
 
-**Note:** No `GET /cards/{id}` endpoint exists. Cards are reference data accessed via list or internal random endpoint.
-
-**Internal endpoints** (for Feign clients):
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/internal/cards/random?count=N` | Get N random cards |
-| GET | `/api/internal/layout-types/{id}` | Get layout type by ID |
+**Note:** No `GET /cards/{id}` endpoint exists. Cards are reference data accessed via list or random endpoint.
 
 ### divination-service (port 8083)
 
@@ -589,9 +578,9 @@ E2E tests use TestContainers `ComposeContainer` to automatically manage service 
 - `org.testcontainers:testcontainers:1.19.8`
 - `org.testcontainers:junit-jupiter:1.19.8`
 
-**Test coverage (31 tests):**
-- User CRUD, duplicate username (409), not found (404), internal endpoint
-- Cards pagination (78 total cards), layout types, internal endpoints
+**Test coverage (30 tests):**
+- User CRUD, duplicate username (409), not found (404)
+- Cards pagination (78 total cards), layout types, random cards, layout type by ID
 - Spreads with inter-service Feign calls, interpretations CRUD
 - Delete operations, authorization verification (403)
 
