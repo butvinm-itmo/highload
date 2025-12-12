@@ -6,13 +6,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
-class InternalTarotControllerIntegrationTest : BaseControllerIntegrationTest() {
+class PublicTarotEndpointsIntegrationTest : BaseControllerIntegrationTest() {
     @Test
-    fun `GET internal layout-types by id should return layout type`() {
+    fun `GET layout-types by id should return layout type`() {
         val oneCardLayoutId = "30000000-0000-0000-0000-000000000001"
 
         mockMvc
-            .perform(get("/api/internal/layout-types/$oneCardLayoutId"))
+            .perform(get("/api/v0.0.1/layout-types/$oneCardLayoutId"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(oneCardLayoutId))
             .andExpect(jsonPath("$.name").value("ONE_CARD"))
@@ -20,19 +20,19 @@ class InternalTarotControllerIntegrationTest : BaseControllerIntegrationTest() {
     }
 
     @Test
-    fun `GET internal layout-types by id should return 404 for non-existent id`() {
+    fun `GET layout-types by id should return 404 for non-existent id`() {
         val nonExistentId = UUID.randomUUID()
 
         mockMvc
-            .perform(get("/api/internal/layout-types/$nonExistentId"))
+            .perform(get("/api/v0.0.1/layout-types/$nonExistentId"))
             .andExpect(status().isNotFound)
     }
 
     @Test
-    fun `GET internal cards random should return requested number of cards`() {
+    fun `GET cards random should return requested number of cards`() {
         mockMvc
             .perform(
-                get("/api/internal/cards/random")
+                get("/api/v0.0.1/cards/random")
                     .param("count", "3"),
             ).andExpect(status().isOk)
             .andExpect(jsonPath("$").isArray)
