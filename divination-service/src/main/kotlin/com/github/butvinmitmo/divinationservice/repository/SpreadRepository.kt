@@ -4,6 +4,7 @@ import com.github.butvinmitmo.divinationservice.entity.Spread
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.r2dbc.repository.R2dbcRepository
 import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -36,7 +37,7 @@ interface SpreadRepositoryCustom {
     fun findLatestSpreads(limit: Int): Flux<Spread>
 }
 
-@Repository
+@Component
 class SpreadRepositoryCustomImpl(
     private val databaseClient: DatabaseClient,
 ) : SpreadRepositoryCustom {

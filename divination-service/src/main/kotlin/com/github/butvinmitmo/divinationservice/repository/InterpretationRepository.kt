@@ -4,6 +4,7 @@ import com.github.butvinmitmo.divinationservice.entity.Interpretation
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.r2dbc.repository.R2dbcRepository
 import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -44,7 +45,7 @@ interface InterpretationRepositoryCustom {
     fun countBySpreadIds(spreadIds: List<UUID>): Flux<Pair<UUID, Long>>
 }
 
-@Repository
+@Component
 class InterpretationRepositoryCustomImpl(
     private val databaseClient: DatabaseClient,
 ) : InterpretationRepositoryCustom {
