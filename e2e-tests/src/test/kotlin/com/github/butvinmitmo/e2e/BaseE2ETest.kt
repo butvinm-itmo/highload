@@ -38,6 +38,7 @@ abstract class BaseE2ETest {
     companion object {
         private const val CONFIG_SERVER = "config-server"
         private const val EUREKA_SERVER = "eureka-server"
+        private const val GATEWAY_SERVICE = "gateway-service"
         private const val POSTGRES = "postgres"
         private const val USER_SERVICE = "user-service"
         private const val TAROT_SERVICE = "tarot-service"
@@ -45,6 +46,7 @@ abstract class BaseE2ETest {
 
         private const val CONFIG_SERVER_PORT = 8888
         private const val EUREKA_SERVER_PORT = 8761
+        private const val GATEWAY_PORT = 8080
         private const val POSTGRES_PORT = 5432
         private const val USER_SERVICE_PORT = 8081
         private const val TAROT_SERVICE_PORT = 8082
@@ -66,6 +68,13 @@ abstract class BaseE2ETest {
                 ).withExposedService(
                     EUREKA_SERVER,
                     EUREKA_SERVER_PORT,
+                    Wait
+                        .forHttp("/actuator/health")
+                        .forStatusCode(200)
+                        .withStartupTimeout(STARTUP_TIMEOUT),
+                ).withExposedService(
+                    GATEWAY_SERVICE,
+                    GATEWAY_PORT,
                     Wait
                         .forHttp("/actuator/health")
                         .forStatusCode(200)
@@ -102,16 +111,12 @@ abstract class BaseE2ETest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            val userHost = compose.getServiceHost(USER_SERVICE, USER_SERVICE_PORT)
-            val userPort = compose.getServicePort(USER_SERVICE, USER_SERVICE_PORT)
-            val tarotHost = compose.getServiceHost(TAROT_SERVICE, TAROT_SERVICE_PORT)
-            val tarotPort = compose.getServicePort(TAROT_SERVICE, TAROT_SERVICE_PORT)
-            val divinationHost = compose.getServiceHost(DIVINATION_SERVICE, DIVINATION_SERVICE_PORT)
-            val divinationPort = compose.getServicePort(DIVINATION_SERVICE, DIVINATION_SERVICE_PORT)
+            val gatewayHost = compose.getServiceHost(GATEWAY_SERVICE, GATEWAY_PORT)
+            val gatewayPort = compose.getServicePort(GATEWAY_SERVICE, GATEWAY_PORT)
 
-            registry.add("services.user-service.url") { "http://$userHost:$userPort" }
-            registry.add("services.tarot-service.url") { "http://$tarotHost:$tarotPort" }
-            registry.add("services.divination-service.url") { "http://$divinationHost:$divinationPort" }
+            registry.add("services.user-service.url") { "http://$gatewayHost:$gatewayPort" }
+            registry.add("services.tarot-service.url") { "http://$gatewayHost:$gatewayPort" }
+            registry.add("services.divination-service.url") { "http://$gatewayHost:$gatewayPort" }
         }
     }
 
