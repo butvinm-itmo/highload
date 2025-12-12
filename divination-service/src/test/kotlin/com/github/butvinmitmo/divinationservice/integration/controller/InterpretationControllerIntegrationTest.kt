@@ -10,12 +10,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
 class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() {
     @BeforeEach

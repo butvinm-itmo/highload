@@ -7,6 +7,7 @@ import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -44,6 +45,11 @@ abstract class BaseControllerIntegrationTest {
     protected val oneCardLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000020")
     protected val threeCardsLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000021")
     protected val crossLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000022")
+
+    @BeforeEach
+    fun resetWireMockBase() {
+        wireMock.resetAll()
+    }
 
     @AfterEach
     fun cleanupDatabase() {

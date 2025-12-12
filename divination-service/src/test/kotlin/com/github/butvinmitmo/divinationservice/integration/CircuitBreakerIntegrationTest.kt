@@ -5,19 +5,31 @@ import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test", "circuitbreaker")
 class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
+    @Autowired
+    private lateinit var circuitBreakerRegistry: CircuitBreakerRegistry
+
     @BeforeEach
     fun resetWireMock() {
         wireMock.resetAll()
+    }
+
+    @AfterEach
+    fun resetCircuitBreakers() {
+        circuitBreakerRegistry.allCircuitBreakers.forEach { circuitBreaker ->
+            circuitBreaker.reset()
+            circuitBreaker.transitionToClosedState()
+        }
     }
 
     @Test
