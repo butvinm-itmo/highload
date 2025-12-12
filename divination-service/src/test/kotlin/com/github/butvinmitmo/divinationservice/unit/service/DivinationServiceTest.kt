@@ -115,7 +115,9 @@ class DivinationServiceTest {
                 .ok(testLayoutType),
         )
         whenever(spreadRepository.save(any())).thenReturn(Mono.just(savedSpread))
-        whenever(spreadCardRepository.save(any())).thenReturn(Mono.just(TestEntityFactory.createSpreadCard(spreadId = spreadId)))
+        whenever(
+            spreadCardRepository.save(any()),
+        ).thenReturn(Mono.just(TestEntityFactory.createSpreadCard(spreadId = spreadId)))
         whenever(tarotServiceClient.getRandomCards(3)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testCards),

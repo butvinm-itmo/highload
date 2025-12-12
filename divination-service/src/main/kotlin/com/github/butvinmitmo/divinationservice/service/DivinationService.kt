@@ -300,10 +300,16 @@ class DivinationService(
         getSpreadEntity(spreadId)
             .flatMap {
                 val offset = page.toLong() * size
-                val interpretationsFlux = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, offset, size)
+                val interpretationsFlux =
+                    interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(
+                        spreadId,
+                        offset,
+                        size,
+                    )
                 val countMono = interpretationRepository.countBySpreadId(spreadId)
 
-                Mono.zip(interpretationsFlux.collectList(), countMono)
+                Mono
+                    .zip(interpretationsFlux.collectList(), countMono)
                     .map { tuple ->
                         val interpretations = tuple.t1
                         val totalElements = tuple.t2

@@ -45,9 +45,11 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isEqualTo(502)
+            .expectStatus()
+            .isEqualTo(502)
             .expectBody()
-            .jsonPath("$.error").isEqualTo("BAD_GATEWAY")
+            .jsonPath("$.error")
+            .isEqualTo("BAD_GATEWAY")
     }
 
     @Test
@@ -123,9 +125,11 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isNotFound
+            .expectStatus()
+            .isNotFound
             .expectBody()
-            .jsonPath("$.error").isEqualTo("NOT_FOUND")
+            .jsonPath("$.error")
+            .isEqualTo("NOT_FOUND")
     }
 
     @Test
@@ -171,9 +175,11 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isEqualTo(502)
+            .expectStatus()
+            .isEqualTo(502)
             .expectBody()
-            .jsonPath("$.error").isEqualTo("BAD_GATEWAY")
+            .jsonPath("$.error")
+            .isEqualTo("BAD_GATEWAY")
     }
 
     @Test
@@ -201,8 +207,10 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isEqualTo(502)
+            .expectStatus()
+            .isEqualTo(502)
             .expectBody()
-            .jsonPath("$.error").isEqualTo("BAD_GATEWAY")
+            .jsonPath("$.error")
+            .isEqualTo("BAD_GATEWAY")
     }
 }

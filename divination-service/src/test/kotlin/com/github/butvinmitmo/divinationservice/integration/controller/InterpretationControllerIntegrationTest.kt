@@ -92,11 +92,14 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isCreated
+            .expectStatus()
+            .isCreated
             .expectBody()
-            .jsonPath("$.id").exists()
+            .jsonPath("$.id")
+            .exists()
             .returnResult()
-            .responseBody?.let { body ->
+            .responseBody
+            ?.let { body ->
                 objectMapper.readTree(body).get("id").asText()
             }!!
     }
@@ -112,9 +115,11 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isCreated
+            .expectStatus()
+            .isCreated
             .expectBody()
-            .jsonPath("$.id").exists()
+            .jsonPath("$.id")
+            .exists()
     }
 
     @Test
@@ -135,7 +140,8 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isEqualTo(409)
+            .expectStatus()
+            .isEqualTo(409)
     }
 
     @Test
@@ -154,11 +160,15 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .get()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations?page=0&size=10")
             .exchange()
-            .expectStatus().isOk
-            .expectHeader().exists("X-Total-Count")
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .exists("X-Total-Count")
             .expectBody()
-            .jsonPath("$").isArray
-            .jsonPath("$[0].text").isEqualTo("Test interpretation")
+            .jsonPath("$")
+            .isArray
+            .jsonPath("$[0].text")
+            .isEqualTo("Test interpretation")
     }
 
     @Test
@@ -173,11 +183,14 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -185,10 +198,13 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .get()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.id").isEqualTo(interpretationId)
-            .jsonPath("$.text").isEqualTo("Test interpretation")
+            .jsonPath("$.id")
+            .isEqualTo(interpretationId)
+            .jsonPath("$.text")
+            .isEqualTo("Test interpretation")
     }
 
     @Test
@@ -203,11 +219,14 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -219,9 +238,11 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updateRequest)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.text").isEqualTo("Updated text")
+            .jsonPath("$.text")
+            .isEqualTo("Updated text")
     }
 
     @Test
@@ -236,11 +257,14 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -252,7 +276,8 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updateRequest)
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
     }
 
     @Test
@@ -267,11 +292,14 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -283,7 +311,8 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(deleteRequest)
             .exchange()
-            .expectStatus().isNoContent
+            .expectStatus()
+            .isNoContent
     }
 
     @Test
@@ -298,11 +327,14 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -314,6 +346,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(deleteRequest)
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
     }
 }

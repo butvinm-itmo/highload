@@ -13,15 +13,14 @@ object TestEntityFactory {
         layoutTypeId: UUID = UUID.randomUUID(),
         authorId: UUID = UUID.randomUUID(),
         createdAt: Instant = Instant.now(),
-    ): Spread {
-        return Spread(
+    ): Spread =
+        Spread(
             id = id,
             question = question,
             layoutTypeId = layoutTypeId,
             authorId = authorId,
             createdAt = createdAt,
         )
-    }
 
     fun createSpreadCard(
         id: UUID = UUID.randomUUID(),
@@ -29,15 +28,14 @@ object TestEntityFactory {
         cardId: UUID = UUID.randomUUID(),
         positionInSpread: Int = 1,
         isReversed: Boolean = false,
-    ): SpreadCard {
-        return SpreadCard(
+    ): SpreadCard =
+        SpreadCard(
             id = id,
             spreadId = spreadId,
             cardId = cardId,
             positionInSpread = positionInSpread,
             isReversed = isReversed,
         )
-    }
 
     fun createInterpretation(
         id: UUID = UUID.randomUUID(),
@@ -45,13 +43,12 @@ object TestEntityFactory {
         authorId: UUID = UUID.randomUUID(),
         spreadId: UUID,
         createdAt: Instant = Instant.now(),
-    ): Interpretation {
-        return Interpretation(
+    ): Interpretation =
+        Interpretation(
             id = id,
             text = text,
             authorId = authorId,
             spreadId = spreadId,
             createdAt = createdAt,
         )
-    }
 }

@@ -8,7 +8,5 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 @TestConfiguration
 class TestFeignConfiguration {
     @Bean
-    fun httpMessageConverters(): HttpMessageConverters {
-        return HttpMessageConverters(MappingJackson2HttpMessageConverter())
-    }
+    fun httpMessageConverters(): HttpMessageConverters = HttpMessageConverters(MappingJackson2HttpMessageConverter())
 }

@@ -15,6 +15,5 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 @Configuration
 class FeignConfiguration {
     @Bean
-    fun httpMessageConverters(): HttpMessageConverters =
-        HttpMessageConverters(MappingJackson2HttpMessageConverter())
+    fun httpMessageConverters(): HttpMessageConverters = HttpMessageConverters(MappingJackson2HttpMessageConverter())
 }

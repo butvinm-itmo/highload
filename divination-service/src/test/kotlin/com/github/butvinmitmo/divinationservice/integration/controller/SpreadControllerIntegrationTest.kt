@@ -119,9 +119,11 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
-            .expectStatus().isCreated
+            .expectStatus()
+            .isCreated
             .expectBody()
-            .jsonPath("$.id").exists()
+            .jsonPath("$.id")
+            .exists()
     }
 
     @Test
@@ -144,10 +146,13 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/spreads?page=0&size=10")
             .exchange()
-            .expectStatus().isOk
-            .expectHeader().exists("X-Total-Count")
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .exists("X-Total-Count")
             .expectBody()
-            .jsonPath("$").isArray
+            .jsonPath("$")
+            .isArray
     }
 
     @Test
@@ -166,11 +171,14 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -178,10 +186,13 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/spreads/$spreadId")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.id").isEqualTo(spreadId)
-            .jsonPath("$.question").isEqualTo("Test question")
+            .jsonPath("$.id")
+            .isEqualTo(spreadId)
+            .jsonPath("$.question")
+            .isEqualTo("Test question")
     }
 
     @Test
@@ -192,7 +203,8 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/spreads/$nonExistentId")
             .exchange()
-            .expectStatus().isNotFound
+            .expectStatus()
+            .isNotFound
     }
 
     @Test
@@ -211,11 +223,14 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -227,7 +242,8 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(deleteRequest)
             .exchange()
-            .expectStatus().isNoContent
+            .expectStatus()
+            .isNoContent
     }
 
     @Test
@@ -246,11 +262,14 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
-                .expectStatus().isCreated
+                .expectStatus()
+                .isCreated
                 .expectBody()
-                .jsonPath("$.id").exists()
+                .jsonPath("$.id")
+                .exists()
                 .returnResult()
-                .responseBody?.let { body ->
+                .responseBody
+                ?.let { body ->
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
@@ -262,7 +281,8 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(deleteRequest)
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
     }
 
     @Test
@@ -285,8 +305,10 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/spreads/scroll?size=10")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$").isArray
+            .jsonPath("$")
+            .isArray
     }
 }

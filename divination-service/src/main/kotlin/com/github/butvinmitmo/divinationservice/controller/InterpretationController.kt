@@ -167,5 +167,8 @@ class InterpretationController(
     ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
         divinationService
             .deleteInterpretation(spreadId, id, request.userId)
-            .then(reactor.core.publisher.Mono.just(ResponseEntity.noContent().build()))
+            .then(
+                reactor.core.publisher.Mono
+                    .just(ResponseEntity.noContent().build()),
+            )
 }
