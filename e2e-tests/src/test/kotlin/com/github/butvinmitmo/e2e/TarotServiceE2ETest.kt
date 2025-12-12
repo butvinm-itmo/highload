@@ -62,7 +62,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
 
     @Test
     @Order(5)
-    fun `GET internal random cards should return requested count`() {
+    fun `GET random cards should return requested count`() {
         val response = tarotClient.getRandomCards(count = 3)
 
         assertEquals(200, response.statusCode.value())
@@ -71,7 +71,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
 
     @Test
     @Order(6)
-    fun `GET internal layout type by id should return correct type`() {
+    fun `GET layout type by id should return correct type`() {
         val response = tarotClient.getLayoutTypeById(oneCardLayoutId)
 
         assertEquals(200, response.statusCode.value())

@@ -78,16 +78,6 @@ class UserServiceE2ETest : BaseE2ETest() {
     }
 
     @Test
-    @Order(7)
-    fun `GET internal user endpoint should return user`() {
-        val response = userClient.getInternalUser(testUserId)
-
-        assertEquals(200, response.statusCode.value())
-        assertEquals(testUserId, response.body?.id)
-        assertEquals(updatedUsername, response.body?.username)
-    }
-
-    @Test
     @Order(100)
     fun `DELETE user should succeed and cleanup`() {
         val response = userClient.deleteUser(testUserId)
