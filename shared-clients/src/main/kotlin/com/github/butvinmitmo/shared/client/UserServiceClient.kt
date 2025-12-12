@@ -43,9 +43,4 @@ interface UserServiceClient {
     fun deleteUser(
         @PathVariable id: UUID,
     ): ResponseEntity<Void>
-
-    @GetMapping("/api/internal/users/{id}/entity")
-    fun getInternalUser(
-        @PathVariable id: UUID,
-    ): ResponseEntity<UserDto>
 }
