@@ -104,7 +104,7 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(userServiceClient.getInternalUser(userId)).thenReturn(
+        whenever(userServiceClient.getUserById(userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
@@ -124,7 +124,7 @@ class DivinationServiceTest {
 
         assertNotNull(result)
         assertEquals(spreadId, result.id)
-        verify(userServiceClient).getInternalUser(userId)
+        verify(userServiceClient).getUserById(userId)
         verify(tarotServiceClient).getLayoutTypeById(layoutTypeId)
         verify(spreadRepository).save(any())
     }
@@ -212,7 +212,7 @@ class DivinationServiceTest {
             )
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
-        whenever(userServiceClient.getInternalUser(userId)).thenReturn(
+        whenever(userServiceClient.getUserById(userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
@@ -231,7 +231,7 @@ class DivinationServiceTest {
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = userId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Optional.of(spread))
-        whenever(userServiceClient.getInternalUser(userId)).thenReturn(
+        whenever(userServiceClient.getUserById(userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )

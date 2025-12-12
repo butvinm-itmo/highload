@@ -43,7 +43,7 @@ class DivinationService(
     @Transactional
     fun createSpread(request: CreateSpreadRequest): CreateSpreadResponse {
         // Validate user exists via Feign (throws FeignException.NotFound if not found)
-        userServiceClient.getInternalUser(request.authorId)
+        userServiceClient.getUserById(request.authorId)
         // Validate layout type exists via Feign (throws FeignException.NotFound if not found)
         val layoutType = tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!!
 
@@ -182,7 +182,7 @@ class DivinationService(
     ): CreateInterpretationResponse {
         val spread = getSpreadEntity(spreadId)
         // Validate user exists via Feign (throws FeignException.NotFound if not found)
-        userServiceClient.getInternalUser(request.authorId)
+        userServiceClient.getUserById(request.authorId)
 
         if (interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)) {
             throw ConflictException("You already have an interpretation for this spread")

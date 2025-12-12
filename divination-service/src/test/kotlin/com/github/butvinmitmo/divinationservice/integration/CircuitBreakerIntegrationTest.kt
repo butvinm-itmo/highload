@@ -24,7 +24,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 502 when user-service returns 503`() {
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/users/.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(503)
@@ -52,7 +52,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return error when user-service times out`() {
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/users/.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -95,7 +95,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 404 for non-existent user - not counted as circuit breaker failure`() {
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/users/.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(404)
@@ -123,7 +123,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 502 when tarot-service returns 503`() {
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/users/.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -169,7 +169,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 502 when user-service returns 500`() {
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/users/.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(500)

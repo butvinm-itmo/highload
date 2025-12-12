@@ -24,7 +24,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
     fun setupWireMock() {
         wireMock.resetAll()
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/users/.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)

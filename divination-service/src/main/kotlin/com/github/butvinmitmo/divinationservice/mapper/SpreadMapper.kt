@@ -22,7 +22,7 @@ class SpreadMapper(
         interpretations: List<Interpretation>,
         cardCache: Map<UUID, CardDto> = emptyMap(),
     ): SpreadDto {
-        val author = userServiceClient.getInternalUser(spread.authorId).body!!
+        val author = userServiceClient.getUserById(spread.authorId).body!!
         val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
 
         return SpreadDto(
@@ -41,7 +41,7 @@ class SpreadMapper(
                 },
             interpretations =
                 interpretations.map { interpretation ->
-                    val interpAuthor = userServiceClient.getInternalUser(interpretation.authorId).body!!
+                    val interpAuthor = userServiceClient.getUserById(interpretation.authorId).body!!
                     InterpretationDto(
                         id = interpretation.id,
                         text = interpretation.text,
@@ -59,7 +59,7 @@ class SpreadMapper(
         spread: Spread,
         interpretationsCount: Int = 0,
     ): SpreadSummaryDto {
-        val author = userServiceClient.getInternalUser(spread.authorId).body!!
+        val author = userServiceClient.getUserById(spread.authorId).body!!
         val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
 
         return SpreadSummaryDto(
