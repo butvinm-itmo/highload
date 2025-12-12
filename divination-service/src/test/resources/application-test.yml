@@ -1,6 +1,8 @@
 spring:
   application:
     name: divination-service
+  main:
+    allow-bean-definition-overriding: true
   cloud:
     config:
       enabled: false
