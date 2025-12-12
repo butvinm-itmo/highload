@@ -8,15 +8,17 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ActiveProfiles("test")
 class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
     @BeforeEach
     fun setupWireMock() {
-        wireMock.resetAll()
+        // WireMock reset handled by BaseControllerIntegrationTest.resetWireMockBase()
         wireMock.stubFor(
             wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
                 .willReturn(

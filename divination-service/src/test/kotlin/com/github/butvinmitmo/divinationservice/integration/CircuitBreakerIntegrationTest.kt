@@ -19,10 +19,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Autowired
     private lateinit var circuitBreakerRegistry: CircuitBreakerRegistry
 
-    @BeforeEach
-    fun resetWireMock() {
-        wireMock.resetAll()
-    }
+    // WireMock reset handled by BaseControllerIntegrationTest.resetWireMockBase()
 
     @AfterEach
     fun resetCircuitBreakers() {
