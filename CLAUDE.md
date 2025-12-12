@@ -290,7 +290,13 @@ curl http://localhost:8080/actuator/circuitbreakers | jq
 ```bash
 # TestContainers automatically starts and stops services
 ./gradlew :e2e-tests:test
+
+# IMPORTANT: If tests fail with startup timeouts, pre-build Docker images first
+docker compose build
+./gradlew :e2e-tests:test
 ```
+
+**Note:** TestContainers may time out during the first run if Docker images aren't pre-built. Building images beforehand (via `docker compose build`) ensures faster startup and prevents timeout failures during test execution.
 
 ### Database Setup
 Each service has its own Flyway migrations with separate history tables:
