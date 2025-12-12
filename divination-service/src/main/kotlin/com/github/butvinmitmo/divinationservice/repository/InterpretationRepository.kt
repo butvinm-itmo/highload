@@ -44,6 +44,7 @@ interface InterpretationRepositoryCustom {
     fun countBySpreadIds(spreadIds: List<UUID>): Flux<Pair<UUID, Long>>
 }
 
+@Repository
 class InterpretationRepositoryCustomImpl(
     private val databaseClient: DatabaseClient,
 ) : InterpretationRepositoryCustom {

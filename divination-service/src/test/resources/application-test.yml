@@ -9,6 +9,11 @@ spring:
     openfeign:
       circuitbreaker:
         enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/test_db
+    username: test_user
+    password: test_password
+    driver-class-name: org.postgresql.Driver
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/test_db
     username: test_user

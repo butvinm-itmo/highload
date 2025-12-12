@@ -36,6 +36,7 @@ interface SpreadRepositoryCustom {
     fun findLatestSpreads(limit: Int): Flux<Spread>
 }
 
+@Repository
 class SpreadRepositoryCustomImpl(
     private val databaseClient: DatabaseClient,
 ) : SpreadRepositoryCustom {
