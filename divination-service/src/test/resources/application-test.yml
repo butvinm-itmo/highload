@@ -21,6 +21,13 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/test_db
+    username: test_user
+    password: test_password
+    pool:
+      initial-size: 5
+      max-size: 20
   flyway:
     enabled: true
     locations: classpath:db/migration
