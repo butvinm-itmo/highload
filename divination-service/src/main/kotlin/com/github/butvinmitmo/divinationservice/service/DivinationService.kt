@@ -212,25 +212,30 @@ class DivinationService(
     fun addInterpretation(
         spreadId: UUID,
         request: CreateInterpretationRequest,
-    ): CreateInterpretationResponse {
-        val spread = getSpreadEntity(spreadId).block()!!
-        // Validate user exists via Feign (throws FeignException.NotFound if not found)
-        userServiceClient.getUserById(request.authorId)
-
-        if (interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId).block()!!) {
-            throw ConflictException("You already have an interpretation for this spread")
-        }
-
-        val interpretation =
-            Interpretation(
-                text = request.text,
-                authorId = request.authorId,
-                spreadId = spreadId,
-            )
-
-        val saved = interpretationRepository.save(interpretation).block()!!
-        return CreateInterpretationResponse(id = saved.id!!)
-    }
+    ): Mono<CreateInterpretationResponse> =
+        getSpreadEntity(spreadId)
+            .flatMap {
+                // Validate user exists via Feign (blocking call on boundedElastic)
+                Mono
+                    .fromCallable { userServiceClient.getUserById(request.authorId) }
+                    .subscribeOn(Schedulers.boundedElastic())
+            }.flatMap {
+                interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)
+            }.flatMap { exists ->
+                if (exists) {
+                    Mono.error(ConflictException("You already have an interpretation for this spread"))
+                } else {
+                    val interpretation =
+                        Interpretation(
+                            text = request.text,
+                            authorId = request.authorId,
+                            spreadId = spreadId,
+                        )
+                    interpretationRepository
+                        .save(interpretation)
+                        .map { saved -> CreateInterpretationResponse(id = saved.id!!) }
+                }
+            }
 
     @Transactional
     fun updateInterpretation(
@@ -238,82 +243,83 @@ class DivinationService(
         id: UUID,
         userId: UUID,
         request: UpdateInterpretationRequest,
-    ): InterpretationDto {
-        val interpretation =
-            interpretationRepository
-                .findById(id)
-                .block() ?: throw NotFoundException("Interpretation not found")
-
-        if (interpretation.authorId != userId) {
-            throw ForbiddenException("You can only edit your own interpretations")
-        }
-
-        interpretation.text = request.text
-        val saved = interpretationRepository.save(interpretation).block()!!
-
-        return interpretationMapper.toDto(saved)
-    }
+    ): Mono<InterpretationDto> =
+        interpretationRepository
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
+            .flatMap { interpretation ->
+                if (interpretation.authorId != userId) {
+                    Mono.error(ForbiddenException("You can only edit your own interpretations"))
+                } else {
+                    interpretation.text = request.text
+                    interpretationRepository
+                        .save(interpretation)
+                        .map { saved -> interpretationMapper.toDto(saved) }
+                }
+            }
 
     @Transactional
     fun deleteInterpretation(
         spreadId: UUID,
         id: UUID,
         userId: UUID,
-    ) {
-        val interpretation =
-            interpretationRepository
-                .findById(id)
-                .block() ?: throw NotFoundException("Interpretation not found")
-
-        if (interpretation.authorId != userId) {
-            throw ForbiddenException("You can only delete your own interpretations")
-        }
-
-        interpretationRepository.deleteById(id).block()
-    }
+    ): Mono<Void> =
+        interpretationRepository
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
+            .flatMap { interpretation ->
+                if (interpretation.authorId != userId) {
+                    Mono.error(ForbiddenException("You can only delete your own interpretations"))
+                } else {
+                    interpretationRepository.deleteById(id)
+                }
+            }
 
     @Transactional(readOnly = true)
     fun getInterpretation(
         spreadId: UUID,
         id: UUID,
-    ): InterpretationDto {
-        val interpretation =
-            interpretationRepository
-                .findById(id)
-                .block() ?: throw NotFoundException("Interpretation not found")
-
-        if (interpretation.spreadId != spreadId) {
-            throw NotFoundException("Interpretation not found in this spread")
-        }
-
-        return interpretationMapper.toDto(interpretation)
-    }
+    ): Mono<InterpretationDto> =
+        interpretationRepository
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
+            .flatMap { interpretation ->
+                if (interpretation.spreadId != spreadId) {
+                    Mono.error(NotFoundException("Interpretation not found in this spread"))
+                } else {
+                    Mono.just(interpretationMapper.toDto(interpretation))
+                }
+            }
 
     @Transactional(readOnly = true)
     fun getInterpretations(
         spreadId: UUID,
         page: Int,
         size: Int,
-    ): PageResponse<InterpretationDto> {
-        getSpreadEntity(spreadId).block()
-        val offset = page.toLong() * size
-        val interpretationsFlux = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, offset, size)
-        val countMono = interpretationRepository.countBySpreadId(spreadId)
+    ): Mono<PageResponse<InterpretationDto>> =
+        getSpreadEntity(spreadId)
+            .flatMap {
+                val offset = page.toLong() * size
+                val interpretationsFlux = interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, offset, size)
+                val countMono = interpretationRepository.countBySpreadId(spreadId)
 
-        val interpretations = interpretationsFlux.collectList().block()!!
-        val totalElements = countMono.block()!!
-        val totalPages = (totalElements + size - 1) / size
+                Mono.zip(interpretationsFlux.collectList(), countMono)
+                    .map { tuple ->
+                        val interpretations = tuple.t1
+                        val totalElements = tuple.t2
+                        val totalPages = (totalElements + size - 1) / size
 
-        return PageResponse(
-            content = interpretations.map { interpretationMapper.toDto(it) },
-            page = page,
-            size = size,
-            totalElements = totalElements,
-            totalPages = totalPages.toInt(),
-            isFirst = page == 0,
-            isLast = page >= totalPages - 1,
-        )
-    }
+                        PageResponse(
+                            content = interpretations.map { interpretationMapper.toDto(it) },
+                            page = page,
+                            size = size,
+                            totalElements = totalElements,
+                            totalPages = totalPages.toInt(),
+                            isFirst = page == 0,
+                            isLast = page >= totalPages - 1,
+                        )
+                    }
+            }
 
     private fun buildCardCache(cardIds: Set<UUID>): Mono<Map<UUID, CardDto>> {
         // For now, we fetch random cards for each position

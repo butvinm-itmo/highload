@@ -60,13 +60,15 @@ class InterpretationController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): ResponseEntity<List<InterpretationDto>> {
-        val response = divinationService.getInterpretations(spreadId, page, size)
-        return ResponseEntity
-            .ok()
-            .header("X-Total-Count", response.totalElements.toString())
-            .body(response.content)
-    }
+    ): reactor.core.publisher.Mono<ResponseEntity<List<InterpretationDto>>> =
+        divinationService
+            .getInterpretations(spreadId, page, size)
+            .map { response ->
+                ResponseEntity
+                    .ok()
+                    .header("X-Total-Count", response.totalElements.toString())
+                    .body(response.content)
+            }
 
     @GetMapping("/{id}")
     @Operation(
@@ -86,10 +88,10 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID", required = true)
         @PathVariable
         id: UUID,
-    ): ResponseEntity<InterpretationDto> {
-        val interpretation = divinationService.getInterpretation(spreadId, id)
-        return ResponseEntity.ok(interpretation)
-    }
+    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
+        divinationService
+            .getInterpretation(spreadId, id)
+            .map { interpretation -> ResponseEntity.ok(interpretation) }
 
     @PostMapping
     @Operation(
@@ -111,10 +113,10 @@ class InterpretationController(
         @PathVariable
         spreadId: UUID,
         @Valid @RequestBody request: CreateInterpretationRequest,
-    ): ResponseEntity<CreateInterpretationResponse> {
-        val response = divinationService.addInterpretation(spreadId, request)
-        return ResponseEntity.status(HttpStatus.CREATED).body(response)
-    }
+    ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
+        divinationService
+            .addInterpretation(spreadId, request)
+            .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @PutMapping("/{id}")
     @Operation(
@@ -137,10 +139,10 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
-    ): ResponseEntity<InterpretationDto> {
-        val updatedInterpretation = divinationService.updateInterpretation(spreadId, id, request.authorId, request)
-        return ResponseEntity.ok(updatedInterpretation)
-    }
+    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
+        divinationService
+            .updateInterpretation(spreadId, id, request.authorId, request)
+            .map { updatedInterpretation -> ResponseEntity.ok(updatedInterpretation) }
 
     @DeleteMapping("/{id}")
     @Operation(
@@ -162,8 +164,8 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @RequestBody request: DeleteRequest,
-    ): ResponseEntity<Void> {
-        divinationService.deleteInterpretation(spreadId, id, request.userId)
-        return ResponseEntity.noContent().build()
-    }
+    ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
+        divinationService
+            .deleteInterpretation(spreadId, id, request.userId)
+            .then(reactor.core.publisher.Mono.just(ResponseEntity.noContent().build()))
 }

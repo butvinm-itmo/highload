@@ -23,9 +23,9 @@ The application is split into 6 microservices + shared modules:
 | **config-server** | 8888 | Centralized configuration management (Spring Cloud Config) |
 | **eureka-server** | 8761 | Service discovery (Netflix Eureka) |
 | **gateway-service** | 8080 | API Gateway (routing, resilience, monitoring) |
-| **user-service** | 8081 | User management |
-| **tarot-service** | 8082 | Cards & LayoutTypes reference data |
-| **divination-service** | 8083 | Spreads & Interpretations (uses shared-clients) |
+| **user-service** | 8081 | User management (Spring MVC + JPA) |
+| **tarot-service** | 8082 | Cards & LayoutTypes reference data (Spring MVC + JPA) |
+| **divination-service** | 8083 | Spreads & Interpretations (Spring WebFlux + R2DBC, reactive) |
 | **shared-dto** | - | Shared DTOs between services |
 | **shared-clients** | - | Shared Feign clients (UserServiceClient, TarotServiceClient, DivinationServiceClient) |
 | **e2e-tests** | - | End-to-end tests using shared-clients |
@@ -363,7 +363,12 @@ The `shared-clients` module provides unified Feign client interfaces for inter-s
 - **JVM:** Java 21
 - **Database:** PostgreSQL 15
 - **Migrations:** Flyway (per-service)
-- **ORM:** Spring Data JPA with Hibernate
+- **ORM:**
+  - Spring Data JPA with Hibernate (user-service, tarot-service)
+  - Spring Data R2DBC (divination-service - reactive/non-blocking)
+- **Web Stack:**
+  - Spring MVC (user-service, tarot-service, gateway-service)
+  - Spring WebFlux with Netty (divination-service - reactive)
 - **Service Discovery:** Netflix Eureka (Spring Cloud Netflix)
 - **API Gateway:** Spring Cloud Gateway with circuit breaker
 - **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
@@ -760,6 +765,137 @@ resilience4j:
 - `FeignException.NotFound` → 404 (not counted as circuit breaker failure)
 - `FeignException` (other) → 502 BAD_GATEWAY
 - `CallNotPermittedException` (circuit open) → 503 SERVICE_UNAVAILABLE
+
+### Reactive Programming (divination-service)
+
+**divination-service** uses Spring WebFlux with R2DBC for fully reactive, non-blocking I/O.
+
+#### R2DBC Entity Patterns
+
+R2DBC entities differ from JPA entities:
+
+```kotlin
+@Table("spread")
+data class Spread(
+    @Id val id: UUID? = null,                    // Nullable for DB generation
+    @Column("question") val question: String?,
+    @Column("layout_type_id") val layoutTypeId: UUID,  // Store ID, not entity
+    @Column("author_id") val authorId: UUID,
+    @Column("created_at") val createdAt: Instant? = null,
+)
+```
+
+**Key differences from JPA:**
+- Use `@Table` instead of `@Entity`
+- Use immutable `data class` with `val` fields
+- ID is nullable (`UUID?`) for database generation
+- No `@ManyToOne` or `@OneToMany` - store foreign key IDs directly
+- No `@GeneratedValue` - database generates via `DEFAULT uuid_generate_v4()`
+- Always use the returned entity from `save()`: `repository.save(entity).flatMap { savedEntity -> }`
+
+#### Reactive Repositories
+
+```kotlin
+interface SpreadRepository : ReactiveCrudRepository<Spread, UUID> {
+    @Query("SELECT * FROM spread ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
+    fun findAllOrderByCreatedAtDesc(offset: Long, limit: Int): Flux<Spread>
+
+    fun findByAuthorId(authorId: UUID): Flux<Spread>
+}
+```
+
+Use `Mono<T>` for single results, `Flux<T>` for multiple results.
+
+#### Blocking Feign Clients in Reactive Streams
+
+**Challenge:** Feign clients are blocking, but divination-service is reactive.
+
+**Solution:** Wrap Feign calls in `Mono.fromCallable().subscribeOn(Schedulers.boundedElastic())`:
+
+```kotlin
+@Transactional
+fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
+    return Mono
+        .fromCallable { userServiceClient.getUserById(request.authorId) }
+        .subscribeOn(Schedulers.boundedElastic())  // Execute on bounded elastic thread pool
+        .flatMap { user ->
+            Mono.fromCallable { tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!! }
+                .subscribeOn(Schedulers.boundedElastic())
+        }
+        .flatMap { layoutType ->
+            // Reactive DB operations...
+            spreadRepository.save(spread)
+        }
+}
+```
+
+**Why this works:**
+- `Schedulers.boundedElastic()` - Dedicated thread pool for blocking operations
+- Keeps shared-clients module unchanged (blocking Feign)
+- Avoids blocking reactive event loop
+- Maintains reactive backpressure
+
+#### Reactive Controllers
+
+```kotlin
+@RestController
+class SpreadController(private val service: DivinationService) {
+
+    @PostMapping("/spreads")
+    fun createSpread(@RequestBody request: CreateSpreadRequest): Mono<ResponseEntity<CreateSpreadResponse>> {
+        return service.createSpread(request)
+            .map { ResponseEntity.status(HttpStatus.CREATED).body(it) }
+    }
+}
+```
+
+Return `Mono<ResponseEntity<T>>` instead of `ResponseEntity<T>`.
+
+#### Testing Reactive Code
+
+**Integration Tests:**
+- Use `WebTestClient` instead of `MockMvc`
+- Provide `HttpMessageConverters` bean manually for Feign clients:
+
+```kotlin
+@TestConfiguration
+class TestFeignConfiguration {
+    @Bean
+    fun httpMessageConverters(): HttpMessageConverters {
+        return HttpMessageConverters(MappingJackson2HttpMessageConverter())
+    }
+}
+```
+
+**Unit Tests:**
+- Mock repositories return `Mono.just()` / `Flux.just()`
+- Use `.block()` to await results in tests
+- Use `StepVerifier` for testing reactive streams
+
+**Why HttpMessageConverters needed:**
+- Feign clients need Spring MVC's `HttpMessageConverters` for serialization
+- Production app is WebFlux-only (no Spring MVC)
+- Tests manually provide this bean to avoid full Spring MVC auto-configuration
+
+#### Database Configuration
+
+divination-service uses **dual database configuration**:
+- **Flyway (JDBC):** Runs schema migrations synchronously on startup
+- **R2DBC:** All runtime database operations (reactive, non-blocking)
+
+```yaml
+spring:
+  flyway:
+    url: jdbc:postgresql://...
+    user: tarot_user
+    password: password
+  r2dbc:
+    url: r2dbc:postgresql://...
+    username: tarot_user
+    password: password
+```
+
+Both use the same database, just different drivers.
 
 ### Git Workflow
 - When using git add, specify files explicitly (avoid `git add .`)

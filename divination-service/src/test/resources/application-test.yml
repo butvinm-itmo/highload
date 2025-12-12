@@ -8,12 +8,7 @@ spring:
       enabled: false
     openfeign:
       circuitbreaker:
-        enabled: true
-  datasource:
-    url: jdbc:postgresql://localhost:5432/test_db
-    username: test_user
-    password: test_password
-    driver-class-name: org.postgresql.Driver
+        enabled: false
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/test_db
     username: test_user
@@ -27,6 +22,9 @@ spring:
     table: flyway_schema_history_divination
     baseline-on-migrate: true
     baseline-version: 0
+    url: jdbc:postgresql://localhost:5432/test_db
+    user: test_user
+    password: test_password
 
 eureka:
   client:
@@ -42,31 +40,10 @@ resilience4j:
   circuitbreaker:
     configs:
       default:
-        slidingWindowSize: 4
-        minimumNumberOfCalls: 2
-        waitDurationInOpenState: 1s
-        permittedNumberOfCallsInHalfOpenState: 1
-        failureRateThreshold: 50
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 100
+        failureRateThreshold: 100
         registerHealthIndicator: false
-    instances:
-      user-service:
-        baseConfig: default
-      tarot-service:
-        baseConfig: default
-  retry:
-    configs:
-      default:
-        maxAttempts: 1
-        waitDuration: 100ms
-    instances:
-      user-service:
-        baseConfig: default
-      tarot-service:
-        baseConfig: default
-  timelimiter:
-    configs:
-      default:
-        timeoutDuration: 5s
     instances:
       user-service:
         baseConfig: default

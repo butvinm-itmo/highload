@@ -11,17 +11,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
 class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() {
     @BeforeEach
     fun setupWireMock() {
@@ -91,15 +86,19 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                 layoutTypeId = oneCardLayoutId,
             )
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andReturn()
-
-        return objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        return webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .jsonPath("$.id").exists()
+            .returnResult()
+            .responseBody?.let { body ->
+                objectMapper.readTree(body).get("id").asText()
+            }!!
     }
 
     @Test
@@ -107,13 +106,15 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isCreated)
-            .andExpect(jsonPath("$.id").exists())
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .jsonPath("$.id").exists()
     }
 
     @Test
@@ -121,18 +122,20 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
 
-        mockMvc.perform(
-            post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)),
-        )
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isConflict)
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isEqualTo(409)
     }
 
     @Test
@@ -140,18 +143,22 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
 
-        mockMvc.perform(
-            post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)),
-        )
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
 
-        mockMvc
-            .perform(get("/api/v0.0.1/spreads/$spreadId/interpretations?page=0&size=10"))
-            .andExpect(status().isOk)
-            .andExpect(header().exists("X-Total-Count"))
-            .andExpect(jsonPath("$").isArray)
-            .andExpect(jsonPath("$[0].text").value("Test interpretation"))
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations?page=0&size=10")
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().exists("X-Total-Count")
+            .expectBody()
+            .jsonPath("$").isArray
+            .jsonPath("$[0].text").isEqualTo("Test interpretation")
     }
 
     @Test
@@ -159,21 +166,29 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andReturn()
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
-        val interpretationId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
-
-        mockMvc
-            .perform(get("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.id").value(interpretationId))
-            .andExpect(jsonPath("$.text").value("Test interpretation"))
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.id").isEqualTo(interpretationId)
+            .jsonPath("$.text").isEqualTo("Test interpretation")
     }
 
     @Test
@@ -181,25 +196,32 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val createRequest = CreateInterpretationRequest(text = "Original text", authorId = testUserId)
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)),
-                ).andReturn()
-
-        val interpretationId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(createRequest)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
         val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = testUserId)
 
-        mockMvc
-            .perform(
-                put("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(updateRequest)),
-            ).andExpect(status().isOk)
-            .andExpect(jsonPath("$.text").value("Updated text"))
+        webTestClient
+            .put()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(updateRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.text").isEqualTo("Updated text")
     }
 
     @Test
@@ -207,24 +229,30 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val createRequest = CreateInterpretationRequest(text = "Original text", authorId = testUserId)
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)),
-                ).andReturn()
-
-        val interpretationId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(createRequest)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
         val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = UUID.randomUUID())
 
-        mockMvc
-            .perform(
-                put("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(updateRequest)),
-            ).andExpect(status().isForbidden)
+        webTestClient
+            .put()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(updateRequest)
+            .exchange()
+            .expectStatus().isForbidden
     }
 
     @Test
@@ -232,24 +260,30 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val createRequest = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)),
-                ).andReturn()
-
-        val interpretationId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(createRequest)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
         val deleteRequest = DeleteRequest(userId = testUserId)
 
-        mockMvc
-            .perform(
-                delete("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(deleteRequest)),
-            ).andExpect(status().isNoContent)
+        webTestClient
+            .method(org.springframework.http.HttpMethod.DELETE)
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deleteRequest)
+            .exchange()
+            .expectStatus().isNoContent
     }
 
     @Test
@@ -257,23 +291,29 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val spreadId = createSpread()
         val createRequest = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads/$spreadId/interpretations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)),
-                ).andReturn()
-
-        val interpretationId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(createRequest)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
         val deleteRequest = DeleteRequest(userId = UUID.randomUUID())
 
-        mockMvc
-            .perform(
-                delete("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(deleteRequest)),
-            ).andExpect(status().isForbidden)
+        webTestClient
+            .method(org.springframework.http.HttpMethod.DELETE)
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deleteRequest)
+            .exchange()
+            .expectStatus().isForbidden
     }
 }

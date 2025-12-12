@@ -16,6 +16,7 @@ import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
+import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.UserDto
@@ -220,10 +221,10 @@ class DivinationServiceTest {
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
 
-        val result = divinationService.addInterpretation(spreadId, request)
+        val result = divinationService.addInterpretation(spreadId, request).block()
 
         assertNotNull(result)
-        assertEquals(interpretationId, result.id)
+        assertEquals(interpretationId, result!!.id)
     }
 
     @Test
@@ -240,7 +241,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ConflictException> {
-                divinationService.addInterpretation(spreadId, request)
+                divinationService.addInterpretation(spreadId, request).block()
             }
         assertEquals("You already have an interpretation for this spread", exception.message)
 
@@ -259,10 +260,13 @@ class DivinationServiceTest {
             )
         val request = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
 
+        val interpretationDto = InterpretationDto(interpretationId, "Updated text", createdAt, testUser, spreadId)
+
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation))
+        whenever(interpretationMapper.toDto(any())).thenReturn(interpretationDto)
 
-        divinationService.updateInterpretation(spreadId, interpretationId, userId, request)
+        divinationService.updateInterpretation(spreadId, interpretationId, userId, request).block()
 
         verify(interpretationRepository).save(any())
     }
@@ -284,7 +288,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ForbiddenException> {
-                divinationService.updateInterpretation(spreadId, interpretationId, userId, request)
+                divinationService.updateInterpretation(spreadId, interpretationId, userId, request).block()
             }
         assertEquals("You can only edit your own interpretations", exception.message)
 
@@ -305,7 +309,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(interpretationRepository.deleteById(interpretationId)).thenReturn(Mono.empty())
 
-        divinationService.deleteInterpretation(spreadId, interpretationId, userId)
+        divinationService.deleteInterpretation(spreadId, interpretationId, userId).block()
 
         verify(interpretationRepository).deleteById(interpretationId)
     }
@@ -326,7 +330,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ForbiddenException> {
-                divinationService.deleteInterpretation(spreadId, interpretationId, userId)
+                divinationService.deleteInterpretation(spreadId, interpretationId, userId).block()
             }
         assertEquals("You can only delete your own interpretations", exception.message)
 
@@ -344,9 +348,12 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
+        val interpretationDto = InterpretationDto(interpretationId, "Test", createdAt, testUser, spreadId)
 
-        divinationService.getInterpretation(spreadId, interpretationId)
+        whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
+        whenever(interpretationMapper.toDto(interpretation)).thenReturn(interpretationDto)
+
+        divinationService.getInterpretation(spreadId, interpretationId).block()
 
         verify(interpretationMapper).toDto(interpretation)
     }
@@ -367,7 +374,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<NotFoundException> {
-                divinationService.getInterpretation(otherSpreadId, interpretationId)
+                divinationService.getInterpretation(otherSpreadId, interpretationId).block()
             }
         assertEquals("Interpretation not found in this spread", exception.message)
     }
@@ -386,9 +393,9 @@ class DivinationServiceTest {
             .thenReturn(Flux.fromIterable(interpretations))
         whenever(interpretationRepository.countBySpreadId(spreadId)).thenReturn(Mono.just(2L))
 
-        val result = divinationService.getInterpretations(spreadId, 0, 2)
+        val result = divinationService.getInterpretations(spreadId, 0, 2).block()
 
         assertNotNull(result)
-        assertEquals(2, result.content.size)
+        assertEquals(2, result!!.content.size)
     }
 }

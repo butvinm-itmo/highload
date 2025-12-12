@@ -9,12 +9,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.context.ActiveProfiles
 import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test", "circuitbreaker")
 class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @BeforeEach
     fun resetWireMock() {
@@ -40,13 +39,15 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isBadGateway)
-            .andExpect(jsonPath("$.error").value("BAD_GATEWAY"))
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isEqualTo(502)
+            .expectBody()
+            .jsonPath("$.error").isEqualTo("BAD_GATEWAY")
     }
 
     @Test
@@ -77,18 +78,23 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        // Timeout causes error - either 404 (stub timeout) or 502 (Feign timeout)
+        // Timeout causes error - time limiter should return 502 after 5s
+        // Set WebTestClient timeout to 10s (longer than time limiter's 5s)
         val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andReturn()
+            webTestClient
+                .mutate()
+                .responseTimeout(java.time.Duration.ofSeconds(10))
+                .build()
+                .post()
+                .uri("/api/v0.0.1/spreads")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .returnResult(String::class.java)
 
         // Verify we don't get a successful response
-        assert(result.response.status != 200 && result.response.status != 201) {
-            "Expected error status but got ${result.response.status}"
+        assert(result.status.value() != 200 && result.status.value() != 201) {
+            "Expected error status but got ${result.status.value()}"
         }
     }
 
@@ -111,13 +117,15 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isNotFound
+            .expectBody()
+            .jsonPath("$.error").isEqualTo("NOT_FOUND")
     }
 
     @Test
@@ -157,13 +165,15 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isBadGateway)
-            .andExpect(jsonPath("$.error").value("BAD_GATEWAY"))
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isEqualTo(502)
+            .expectBody()
+            .jsonPath("$.error").isEqualTo("BAD_GATEWAY")
     }
 
     @Test
@@ -185,12 +195,14 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isBadGateway)
-            .andExpect(jsonPath("$.error").value("BAD_GATEWAY"))
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isEqualTo(502)
+            .expectBody()
+            .jsonPath("$.error").isEqualTo("BAD_GATEWAY")
     }
 }

@@ -9,16 +9,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
 class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
     @BeforeEach
     fun setupWireMock() {
@@ -117,13 +113,15 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc
-            .perform(
-                post("/api/v0.0.1/spreads")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isCreated)
-            .andExpect(jsonPath("$.id").exists())
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .jsonPath("$.id").exists()
     }
 
     @Test
@@ -135,17 +133,21 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc.perform(
-            post("/api/v0.0.1/spreads")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)),
-        )
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
 
-        mockMvc
-            .perform(get("/api/v0.0.1/spreads?page=0&size=10"))
-            .andExpect(status().isOk)
-            .andExpect(header().exists("X-Total-Count"))
-            .andExpect(jsonPath("$").isArray)
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads?page=0&size=10")
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().exists("X-Total-Count")
+            .expectBody()
+            .jsonPath("$").isArray
     }
 
     @Test
@@ -157,30 +159,40 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andReturn()
+        val spreadId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
-        val spreadId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
-
-        mockMvc
-            .perform(get("/api/v0.0.1/spreads/$spreadId"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.id").value(spreadId))
-            .andExpect(jsonPath("$.question").value("Test question"))
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.id").isEqualTo(spreadId)
+            .jsonPath("$.question").isEqualTo("Test question")
     }
 
     @Test
     fun `getSpread should return 404 when spread not found`() {
         val nonExistentId = UUID.randomUUID()
 
-        mockMvc
-            .perform(get("/api/v0.0.1/spreads/$nonExistentId"))
-            .andExpect(status().isNotFound)
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$nonExistentId")
+            .exchange()
+            .expectStatus().isNotFound
     }
 
     @Test
@@ -192,24 +204,30 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andReturn()
-
-        val spreadId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        val spreadId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
         val deleteRequest = DeleteRequest(userId = testUserId)
 
-        mockMvc
-            .perform(
-                delete("/api/v0.0.1/spreads/$spreadId")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(deleteRequest)),
-            ).andExpect(status().isNoContent)
+        webTestClient
+            .method(org.springframework.http.HttpMethod.DELETE)
+            .uri("/api/v0.0.1/spreads/$spreadId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deleteRequest)
+            .exchange()
+            .expectStatus().isNoContent
     }
 
     @Test
@@ -221,24 +239,30 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        val result =
-            mockMvc
-                .perform(
-                    post("/api/v0.0.1/spreads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andReturn()
-
-        val spreadId = objectMapper.readTree(result.response.contentAsString).get("id").asText()
+        val spreadId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody()
+                .jsonPath("$.id").exists()
+                .returnResult()
+                .responseBody?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
 
         val deleteRequest = DeleteRequest(userId = UUID.randomUUID())
 
-        mockMvc
-            .perform(
-                delete("/api/v0.0.1/spreads/$spreadId")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(deleteRequest)),
-            ).andExpect(status().isForbidden)
+        webTestClient
+            .method(org.springframework.http.HttpMethod.DELETE)
+            .uri("/api/v0.0.1/spreads/$spreadId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deleteRequest)
+            .exchange()
+            .expectStatus().isForbidden
     }
 
     @Test
@@ -250,15 +274,19 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 layoutTypeId = oneCardLayoutId,
             )
 
-        mockMvc.perform(
-            post("/api/v0.0.1/spreads")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)),
-        )
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
 
-        mockMvc
-            .perform(get("/api/v0.0.1/spreads/scroll?size=10"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$").isArray)
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/scroll?size=10")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$").isArray
     }
 }

@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.divinationservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.butvinmitmo.divinationservice.config.TestFeignConfiguration
 import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
@@ -8,21 +9,24 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
+@ActiveProfiles("test")
 @Testcontainers
+@Import(TestFeignConfiguration::class)
 abstract class BaseControllerIntegrationTest {
     @Autowired
-    protected lateinit var mockMvc: MockMvc
+    protected lateinit var webTestClient: WebTestClient
 
     @Autowired
     protected lateinit var objectMapper: ObjectMapper
@@ -43,9 +47,12 @@ abstract class BaseControllerIntegrationTest {
 
     @AfterEach
     fun cleanupDatabase() {
-        interpretationRepository.deleteAll()
-        spreadCardRepository.deleteAll()
-        spreadRepository.deleteAll()
+        Mono
+            .`when`(
+                interpretationRepository.deleteAll(),
+                spreadCardRepository.deleteAll(),
+                spreadRepository.deleteAll(),
+            ).block()
     }
 
     companion object {
@@ -74,13 +81,18 @@ abstract class BaseControllerIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
-            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
-            registry.add("spring.flyway.enabled") { "false" }
+            registry.add("spring.r2dbc.url") {
+                "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
+            }
+            registry.add("spring.r2dbc.username", postgres::getUsername)
+            registry.add("spring.r2dbc.password", postgres::getPassword)
+            registry.add("spring.flyway.enabled") { "true" }
+            registry.add("spring.flyway.url", postgres::getJdbcUrl)
+            registry.add("spring.flyway.user", postgres::getUsername)
+            registry.add("spring.flyway.password", postgres::getPassword)
             registry.add("services.user-service.url") { wireMock.baseUrl() }
             registry.add("services.tarot-service.url") { wireMock.baseUrl() }
+            registry.add("services.divination-service.url") { "http://localhost:8083" }
         }
     }
 }

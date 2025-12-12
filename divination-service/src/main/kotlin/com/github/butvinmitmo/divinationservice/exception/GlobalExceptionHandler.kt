@@ -8,20 +8,20 @@ import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableExcept
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
-import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import org.springframework.web.context.request.WebRequest
+import org.springframework.web.bind.support.WebExchangeBindException
+import org.springframework.web.server.ServerWebExchange
 import java.time.Instant
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-    @ExceptionHandler(MethodArgumentNotValidException::class)
+    @ExceptionHandler(WebExchangeBindException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleValidationExceptions(
-        ex: MethodArgumentNotValidException,
-        request: WebRequest,
+        ex: WebExchangeBindException,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ValidationErrorResponse> {
         val errors = mutableMapOf<String, String>()
 
@@ -36,7 +36,7 @@ class GlobalExceptionHandler {
                 error = "VALIDATION_ERROR",
                 message = "Validation failed",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
                 fieldErrors = errors,
             )
 
@@ -47,14 +47,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleNotFoundException(
         ex: NotFoundException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "NOT_FOUND",
                 message = ex.message ?: "Resource not found",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
     }
@@ -63,14 +63,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     fun handleConflictException(
         ex: ConflictException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "CONFLICT",
                 message = ex.message ?: "Conflict occurred",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.CONFLICT)
     }
@@ -79,14 +79,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleForbiddenException(
         ex: ForbiddenException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "FORBIDDEN",
                 message = ex.message ?: "Access forbidden",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
@@ -95,14 +95,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleFeignNotFoundException(
         ex: FeignException.NotFound,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "NOT_FOUND",
                 message = "Referenced resource not found",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
     }
@@ -110,14 +110,14 @@ class GlobalExceptionHandler {
     @ExceptionHandler(NoFallbackAvailableException::class)
     fun handleNoFallbackAvailableException(
         ex: NoFallbackAvailableException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         // Unwrap the cause and delegate to appropriate handler
         val cause = ex.cause
         return when (cause) {
-            is FeignException.NotFound -> handleFeignNotFoundException(cause, request)
-            is FeignException -> handleFeignException(cause, request)
-            else -> handleGenericException(ex, request)
+            is FeignException.NotFound -> handleFeignNotFoundException(cause, exchange)
+            is FeignException -> handleFeignException(cause, exchange)
+            else -> handleGenericException(ex, exchange)
         }
     }
 
@@ -125,14 +125,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     fun handleCircuitBreakerOpenException(
         ex: CallNotPermittedException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "SERVICE_UNAVAILABLE",
                 message = "Service temporarily unavailable. Please try again later.",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
     }
@@ -141,14 +141,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     fun handleFeignException(
         ex: FeignException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "BAD_GATEWAY",
                 message = "Error communicating with downstream service",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.BAD_GATEWAY)
     }
@@ -157,14 +157,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleGenericException(
         ex: Exception,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "INTERNAL_SERVER_ERROR",
                 message = "An unexpected error occurred",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR)
     }
