@@ -42,7 +42,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         )
 
         wireMock.stubFor(
-            wireMockGet(urlEqualTo("/api/internal/layout-types/$oneCardLayoutId"))
+            wireMockGet(urlEqualTo("/api/v0.0.1/layout-types/$oneCardLayoutId"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -60,7 +60,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         )
 
         wireMock.stubFor(
-            wireMockGet(urlEqualTo("/api/internal/layout-types/$threeCardsLayoutId"))
+            wireMockGet(urlEqualTo("/api/v0.0.1/layout-types/$threeCardsLayoutId"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -78,7 +78,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         )
 
         wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/internal/cards/random.*"))
+            wireMockGet(urlPathMatching("/api/v0.0.1/cards/random.*"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)

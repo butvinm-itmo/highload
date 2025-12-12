@@ -23,12 +23,12 @@ interface TarotServiceClient {
         @RequestParam(defaultValue = "50") size: Int = 50,
     ): ResponseEntity<List<LayoutTypeDto>>
 
-    @GetMapping("/api/internal/cards/random")
+    @GetMapping("/api/v0.0.1/cards/random")
     fun getRandomCards(
         @RequestParam count: Int,
     ): ResponseEntity<List<CardDto>>
 
-    @GetMapping("/api/internal/layout-types/{id}")
+    @GetMapping("/api/v0.0.1/layout-types/{id}")
     fun getLayoutTypeById(
         @PathVariable id: UUID,
     ): ResponseEntity<LayoutTypeDto>

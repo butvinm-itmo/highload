@@ -141,7 +141,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         )
 
         wireMock.stubFor(
-            wireMockGet(urlEqualTo("/api/internal/layout-types/$oneCardLayoutId"))
+            wireMockGet(urlEqualTo("/api/v0.0.1/layout-types/$oneCardLayoutId"))
                 .willReturn(
                     aResponse()
                         .withStatus(503)
