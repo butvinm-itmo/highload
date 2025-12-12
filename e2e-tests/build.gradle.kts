@@ -53,6 +53,16 @@ tasks.withType<Test> {
     systemProperty("junit.jupiter.execution.timeout.default", "10m")
     // Set working directory to project root for docker-compose.yml access
     workingDir = rootProject.projectDir
+
+    doFirst {
+        println("═══════════════════════════════════════════════════════════════════")
+        println("Running E2E tests with TestContainers...")
+        println("═══════════════════════════════════════════════════════════════════")
+        println("NOTE: If tests fail with startup timeouts, pre-build Docker images:")
+        println("  → docker compose build")
+        println("  → ./gradlew :e2e-tests:test")
+        println("═══════════════════════════════════════════════════════════════════")
+    }
 }
 
 ktlint {
