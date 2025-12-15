@@ -41,4 +41,29 @@ class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
             .jsonPath("$.length()")
             .isEqualTo(5)
     }
+
+    @Test
+    fun `GET cards random should return requested number of cards`() {
+        webTestClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/api/v0.0.1/cards/random")
+                    .queryParam("count", "3")
+                    .build()
+            }.exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$")
+            .isArray
+            .jsonPath("$.length()")
+            .isEqualTo(3)
+            .jsonPath("$[0].id")
+            .exists()
+            .jsonPath("$[0].name")
+            .exists()
+            .jsonPath("$[0].arcanaType")
+            .exists()
+    }
 }
