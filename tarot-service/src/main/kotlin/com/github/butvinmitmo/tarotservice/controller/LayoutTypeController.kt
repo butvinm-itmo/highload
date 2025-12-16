@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -34,9 +35,11 @@ class LayoutTypeController(
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "200", description = "Layout types retrieved successfully"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun getLayoutTypes(
+        @RequestHeader("X-User-Id") userId: UUID?,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -65,9 +68,11 @@ class LayoutTypeController(
         value = [
             ApiResponse(responseCode = "200", description = "Layout type found"),
             ApiResponse(responseCode = "404", description = "Layout type not found"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun getLayoutTypeById(
+        @RequestHeader("X-User-Id") userId: UUID?,
         @Parameter(description = "Layout Type ID", required = true)
         @PathVariable id: UUID,
     ): Mono<ResponseEntity<LayoutTypeDto>> =

@@ -26,3 +26,14 @@ spring:
 eureka:
   client:
     enabled: false
+
+jwt:
+  secret: testSecretKeyThatIsLongEnoughForHS256AlgorithmRequirements!!
+  expiration-hours: 24
+
+password:
+  min-length: 8
+  require-uppercase: true
+  require-lowercase: true
+  require-digit: true
+  require-special: true

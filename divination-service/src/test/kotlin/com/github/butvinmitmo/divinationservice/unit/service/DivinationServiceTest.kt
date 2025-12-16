@@ -68,7 +68,7 @@ class DivinationServiceTest {
     private val interpretationId = UUID.randomUUID()
     private val createdAt = Instant.now()
 
-    private val testUser = UserDto(id = userId, username = "testuser", createdAt = createdAt)
+    private val testUser = UserDto(id = userId, username = "testuser", role = "USER", createdAt = createdAt)
     private val testLayoutType = LayoutTypeDto(id = layoutTypeId, name = "THREE_CARDS", cardsCount = 3)
     private val testArcanaType = ArcanaTypeDto(id = UUID.randomUUID(), name = "MAJOR")
     private val testCards =

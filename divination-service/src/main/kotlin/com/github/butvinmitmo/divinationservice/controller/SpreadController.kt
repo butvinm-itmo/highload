@@ -3,7 +3,6 @@ package com.github.butvinmitmo.divinationservice.controller
 import com.github.butvinmitmo.divinationservice.service.DivinationService
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadResponse
-import com.github.butvinmitmo.shared.dto.DeleteRequest
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
 import io.swagger.v3.oas.annotations.Operation
@@ -26,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -51,13 +51,15 @@ class SpreadController(
             ApiResponse(responseCode = "201", description = "Spread created successfully, returns generated ID"),
             ApiResponse(responseCode = "404", description = "Author or layout type not found"),
             ApiResponse(responseCode = "400", description = "Invalid request data"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun createSpread(
+        @RequestHeader("X-User-Id") userId: UUID,
         @Valid @RequestBody request: CreateSpreadRequest,
     ): Mono<ResponseEntity<CreateSpreadResponse>> =
         divinationService
-            .createSpread(request)
+            .createSpread(request.copy(authorId = userId))
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @GetMapping
@@ -175,15 +177,16 @@ class SpreadController(
             ApiResponse(responseCode = "204", description = "Spread deleted successfully"),
             ApiResponse(responseCode = "404", description = "Spread not found"),
             ApiResponse(responseCode = "403", description = "User is not the author of the spread"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun deleteSpread(
         @Parameter(description = "Spread ID", required = true)
         @PathVariable
         id: UUID,
-        @RequestBody request: DeleteRequest,
+        @RequestHeader("X-User-Id") userId: UUID,
     ): Mono<ResponseEntity<Void>> =
         divinationService
-            .deleteSpread(id, request.userId)
+            .deleteSpread(id, userId)
             .then(Mono.just(ResponseEntity.noContent().build()))
 }

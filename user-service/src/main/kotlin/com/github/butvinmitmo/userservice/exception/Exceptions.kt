@@ -7,3 +7,11 @@ class NotFoundException(
 class ConflictException(
     message: String,
 ) : RuntimeException(message)
+
+class UnauthorizedException(
+    message: String,
+) : RuntimeException(message)
+
+class ForbiddenException(
+    message: String,
+) : RuntimeException(message)

@@ -3,7 +3,6 @@ package com.github.butvinmitmo.divinationservice.controller
 import com.github.butvinmitmo.divinationservice.service.DivinationService
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
-import com.github.butvinmitmo.shared.dto.DeleteRequest
 import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import io.swagger.v3.oas.annotations.Operation
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -106,16 +106,18 @@ class InterpretationController(
             ApiResponse(responseCode = "404", description = "Spread or author not found"),
             ApiResponse(responseCode = "409", description = "User already has an interpretation for this spread"),
             ApiResponse(responseCode = "400", description = "Invalid request data"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun addInterpretation(
         @Parameter(description = "Spread ID to add interpretation to", required = true)
         @PathVariable
         spreadId: UUID,
+        @RequestHeader("X-User-Id") userId: UUID,
         @Valid @RequestBody request: CreateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
         divinationService
-            .addInterpretation(spreadId, request)
+            .addInterpretation(spreadId, request.copy(authorId = userId))
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @PutMapping("/{id}")
@@ -129,6 +131,7 @@ class InterpretationController(
             ApiResponse(responseCode = "404", description = "Spread or interpretation not found"),
             ApiResponse(responseCode = "403", description = "User is not the author of the interpretation"),
             ApiResponse(responseCode = "400", description = "Invalid request data"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun updateInterpretation(
@@ -138,10 +141,11 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to update", required = true)
         @PathVariable
         id: UUID,
+        @RequestHeader("X-User-Id") userId: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
         divinationService
-            .updateInterpretation(spreadId, id, request.authorId, request)
+            .updateInterpretation(spreadId, id, userId, request)
             .map { updatedInterpretation -> ResponseEntity.ok(updatedInterpretation) }
 
     @DeleteMapping("/{id}")
@@ -154,6 +158,7 @@ class InterpretationController(
             ApiResponse(responseCode = "204", description = "Interpretation deleted successfully"),
             ApiResponse(responseCode = "404", description = "Spread or interpretation not found"),
             ApiResponse(responseCode = "403", description = "User is not the author of the interpretation"),
+            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
         ],
     )
     fun deleteInterpretation(
@@ -163,10 +168,10 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to delete", required = true)
         @PathVariable
         id: UUID,
-        @RequestBody request: DeleteRequest,
+        @RequestHeader("X-User-Id") userId: UUID,
     ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
         divinationService
-            .deleteInterpretation(spreadId, id, request.userId)
+            .deleteInterpretation(spreadId, id, userId)
             .then(
                 reactor.core.publisher.Mono
                     .just(ResponseEntity.noContent().build()),

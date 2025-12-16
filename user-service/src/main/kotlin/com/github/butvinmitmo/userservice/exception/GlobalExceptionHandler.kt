@@ -72,6 +72,38 @@ class GlobalExceptionHandler {
         return ResponseEntity(response, HttpStatus.CONFLICT)
     }
 
+    @ExceptionHandler(UnauthorizedException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    fun handleUnauthorizedException(
+        ex: UnauthorizedException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "UNAUTHORIZED",
+                message = ex.message ?: "Unauthorized",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.UNAUTHORIZED)
+    }
+
+    @ExceptionHandler(ForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleForbiddenException(
+        ex: ForbiddenException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = ex.message ?: "Forbidden",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleGenericException(

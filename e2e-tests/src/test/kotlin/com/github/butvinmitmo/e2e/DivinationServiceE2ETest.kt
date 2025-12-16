@@ -32,7 +32,10 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         // Create test user
         val userResponse =
             userClient.createUser(
-                CreateUserRequest(username = "e2e_divination_user_${System.currentTimeMillis()}"),
+                CreateUserRequest(
+                    username = "e2e_divination_user_${System.currentTimeMillis()}",
+                    password = "Test@123",
+                ),
             )
         testUserId = userResponse.body!!.id
 

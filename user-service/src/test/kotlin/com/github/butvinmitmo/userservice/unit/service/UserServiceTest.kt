@@ -3,11 +3,15 @@ package com.github.butvinmitmo.userservice.unit.service
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.userservice.TestEntityFactory
+import com.github.butvinmitmo.userservice.entity.Role
+import com.github.butvinmitmo.userservice.entity.RoleType
 import com.github.butvinmitmo.userservice.entity.User
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
 import com.github.butvinmitmo.userservice.mapper.UserMapper
+import com.github.butvinmitmo.userservice.repository.RoleRepository
 import com.github.butvinmitmo.userservice.repository.UserRepository
+import com.github.butvinmitmo.userservice.security.JwtUtil
 import com.github.butvinmitmo.userservice.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -24,6 +28,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
@@ -33,23 +38,35 @@ class UserServiceTest {
     @Mock
     private lateinit var userRepository: UserRepository
 
+    @Mock
+    private lateinit var roleRepository: RoleRepository
+
+    @Mock
+    private lateinit var passwordEncoder: PasswordEncoder
+
+    @Mock
+    private lateinit var jwtUtil: JwtUtil
+
     private lateinit var userService: UserService
     private val userMapper = UserMapper()
 
     private val userId = UUID.randomUUID()
     private val createdAt = Instant.now()
+    private val testUserRole = Role(id = RoleType.USER_ID, name = "USER")
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, userMapper)
+        userService = UserService(userRepository, roleRepository, userMapper, passwordEncoder, jwtUtil)
     }
 
     @Test
     fun `createUser should create new user successfully`() {
-        val request = CreateUserRequest(username = "testuser")
+        val request = CreateUserRequest(username = "testuser", password = "Test@123")
         val savedUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findByUsername("testuser")).thenReturn(null)
+        whenever(roleRepository.findByName("USER")).thenReturn(testUserRole)
+        whenever(passwordEncoder.encode("Test@123")).thenReturn("hashedPassword")
         whenever(userRepository.save(any())).thenReturn(savedUser)
 
         val result = userService.createUser(request)
@@ -64,7 +81,7 @@ class UserServiceTest {
 
     @Test
     fun `createUser should throw ConflictException when user already exists`() {
-        val request = CreateUserRequest(username = "testuser")
+        val request = CreateUserRequest(username = "testuser", password = "Test@123")
         val existingUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findByUsername("testuser")).thenReturn(existingUser)

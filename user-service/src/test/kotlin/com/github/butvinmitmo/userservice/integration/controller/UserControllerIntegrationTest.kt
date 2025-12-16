@@ -15,14 +15,16 @@ import java.util.UUID
 
 class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
     private val baseUrl = "/api/v0.0.1/users"
+    private val testAdminUserId = UUID.fromString("10000000-0000-0000-0000-000000000001")
 
     @Test
     fun `POST users should create user and return 201`() {
-        val request = CreateUserRequest(username = "newuser")
+        val request = CreateUserRequest(username = "newuser", password = "Test@123")
 
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isCreated)
@@ -31,11 +33,12 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `POST users should return 409 for duplicate username`() {
-        val request = CreateUserRequest(username = "duplicateuser")
+        val request = CreateUserRequest(username = "duplicateuser", password = "Test@123")
 
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isCreated)
@@ -43,6 +46,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isConflict)
@@ -50,28 +54,32 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `GET users should return paginated list with X-Total-Count header`() {
-        val request = CreateUserRequest(username = "listuser")
+        val request = CreateUserRequest(username = "listuser", password = "Test@123")
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
 
         mockMvc
-            .perform(get(baseUrl))
-            .andExpect(status().isOk)
+            .perform(
+                get(baseUrl)
+                    .header("X-User-Id", testAdminUserId.toString()),
+            ).andExpect(status().isOk)
             .andExpect(header().exists("X-Total-Count"))
             .andExpect(jsonPath("$").isArray)
     }
 
     @Test
     fun `GET users by id should return user`() {
-        val createRequest = CreateUserRequest(username = "getbyiduser")
+        val createRequest = CreateUserRequest(username = "getbyiduser", password = "Test@123")
         val createResult =
             mockMvc
                 .perform(
                     post(baseUrl)
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)),
                 ).andExpect(status().isCreated)
@@ -81,8 +89,10 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         val userId = objectMapper.readTree(responseJson).get("id").asText()
 
         mockMvc
-            .perform(get("$baseUrl/$userId"))
-            .andExpect(status().isOk)
+            .perform(
+                get("$baseUrl/$userId")
+                    .header("X-User-Id", testAdminUserId.toString()),
+            ).andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(userId))
             .andExpect(jsonPath("$.username").value("getbyiduser"))
     }
@@ -92,17 +102,20 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         val nonExistentId = UUID.randomUUID()
 
         mockMvc
-            .perform(get("$baseUrl/$nonExistentId"))
-            .andExpect(status().isNotFound)
+            .perform(
+                get("$baseUrl/$nonExistentId")
+                    .header("X-User-Id", testAdminUserId.toString()),
+            ).andExpect(status().isNotFound)
     }
 
     @Test
     fun `PUT users should update user`() {
-        val createRequest = CreateUserRequest(username = "originaluser")
+        val createRequest = CreateUserRequest(username = "originaluser", password = "Test@123")
         val createResult =
             mockMvc
                 .perform(
                     post(baseUrl)
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)),
                 ).andExpect(status().isCreated)
@@ -115,6 +128,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 put("$baseUrl/$userId")
+                    .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(updateRequest)),
             ).andExpect(status().isOk)
@@ -123,11 +137,12 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `DELETE users should delete user and return 204`() {
-        val createRequest = CreateUserRequest(username = "todelete")
+        val createRequest = CreateUserRequest(username = "todelete", password = "Test@123")
         val createResult =
             mockMvc
                 .perform(
                     post(baseUrl)
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)),
                 ).andExpect(status().isCreated)
@@ -137,12 +152,16 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         val userId = objectMapper.readTree(responseJson).get("id").asText()
 
         mockMvc
-            .perform(delete("$baseUrl/$userId"))
-            .andExpect(status().isNoContent)
+            .perform(
+                delete("$baseUrl/$userId")
+                    .header("X-User-Role", "ADMIN"),
+            ).andExpect(status().isNoContent)
 
         mockMvc
-            .perform(get("$baseUrl/$userId"))
-            .andExpect(status().isNotFound)
+            .perform(
+                get("$baseUrl/$userId")
+                    .header("X-User-Id", testAdminUserId.toString()),
+            ).andExpect(status().isNotFound)
     }
 
     @Test
@@ -150,7 +169,9 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         val nonExistentId = UUID.randomUUID()
 
         mockMvc
-            .perform(delete("$baseUrl/$nonExistentId"))
-            .andExpect(status().isNotFound)
+            .perform(
+                delete("$baseUrl/$nonExistentId")
+                    .header("X-User-Role", "ADMIN"),
+            ).andExpect(status().isNotFound)
     }
 }

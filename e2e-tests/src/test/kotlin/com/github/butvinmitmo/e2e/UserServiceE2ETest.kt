@@ -35,7 +35,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(2)
     fun `POST users should create new user`() {
-        val request = CreateUserRequest(username = testUsername)
+        val request = CreateUserRequest(username = testUsername, password = "Test@123")
         val response = userClient.createUser(request)
 
         assertEquals(201, response.statusCode.value())
@@ -66,7 +66,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(5)
     fun `POST users with duplicate username should return 409`() {
-        val request = CreateUserRequest(username = updatedUsername)
+        val request = CreateUserRequest(username = updatedUsername, password = "Test@123")
         assertThrowsWithStatus(409) { userClient.createUser(request) }
     }
 

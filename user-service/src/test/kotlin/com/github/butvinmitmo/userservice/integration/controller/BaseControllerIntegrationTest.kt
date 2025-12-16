@@ -53,6 +53,10 @@ abstract class BaseControllerIntegrationTest {
             registry.add("spring.datasource.username", postgres::getUsername)
             registry.add("spring.datasource.password", postgres::getPassword)
             registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
+
+            // JWT configuration for testing
+            registry.add("jwt.secret") { "testSecretKeyThatIsLongEnoughForHS256AlgorithmRequirements!!" }
+            registry.add("jwt.expiration-hours") { "24" }
         }
     }
 }
