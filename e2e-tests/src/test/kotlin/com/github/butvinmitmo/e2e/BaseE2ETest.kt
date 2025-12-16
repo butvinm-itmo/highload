@@ -1,9 +1,12 @@
 package com.github.butvinmitmo.e2e
 
+import com.github.butvinmitmo.e2e.config.AuthContext
 import com.github.butvinmitmo.shared.client.DivinationServiceClient
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
+import com.github.butvinmitmo.shared.dto.LoginRequest
 import feign.FeignException
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -118,6 +121,40 @@ abstract class BaseE2ETest {
             registry.add("services.tarot-service.url") { "http://$gatewayHost:$gatewayPort" }
             registry.add("services.divination-service.url") { "http://$gatewayHost:$gatewayPort" }
         }
+    }
+
+    /**
+     * Login with given credentials and set the JWT token in AuthContext
+     */
+    protected fun loginAndSetToken(
+        username: String,
+        password: String,
+    ): String {
+        val request = LoginRequest(username = username, password = password)
+        val response = userClient.login(request)
+        val token = response.body!!.token
+        AuthContext.setToken(token)
+        return token
+    }
+
+    /**
+     * Login as the default admin user
+     */
+    protected fun loginAsAdmin(): String = loginAndSetToken("admin", "Admin@123")
+
+    /**
+     * Clear the authentication token
+     */
+    protected fun clearAuth() {
+        AuthContext.clear()
+    }
+
+    /**
+     * Clean up authentication context after each test
+     */
+    @AfterEach
+    fun cleanupAuth() {
+        AuthContext.clear()
     }
 
     protected fun assertThrowsWithStatus(

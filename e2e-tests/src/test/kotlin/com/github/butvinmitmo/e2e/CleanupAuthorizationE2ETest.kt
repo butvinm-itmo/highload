@@ -25,6 +25,8 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
 
     @BeforeAll
     fun setupTestData() {
+        loginAsAdmin()
+
         // Create test user
         val userResponse =
             userClient.createUser(
@@ -71,6 +73,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Test
     @Order(1)
     fun `DELETE interpretation should succeed for author`() {
+        loginAsAdmin()
         val response =
             divinationClient.deleteInterpretation(
                 spreadId,
@@ -87,6 +90,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Test
     @Order(2)
     fun `DELETE spread should succeed for author`() {
+        loginAsAdmin()
         val response = divinationClient.deleteSpread(spreadId, DeleteRequest(testUserId))
         assertEquals(204, response.statusCode.value())
 
@@ -99,6 +103,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Test
     @Order(3)
     fun `DELETE spread by non-author should return 403`() {
+        loginAsAdmin()
         assertThrowsWithStatus(403) {
             divinationClient.deleteSpread(spreadId2, DeleteRequest(adminId))
         }
@@ -107,6 +112,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Test
     @Order(4)
     fun `DELETE second spread for cleanup should succeed`() {
+        loginAsAdmin()
         val response = divinationClient.deleteSpread(spreadId2, DeleteRequest(testUserId))
         assertEquals(204, response.statusCode.value())
     }
@@ -114,6 +120,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Test
     @Order(5)
     fun `DELETE user should succeed and verify deletion`() {
+        loginAsAdmin()
         val response = userClient.deleteUser(testUserId)
         assertEquals(204, response.statusCode.value())
 

@@ -1,7 +1,9 @@
 package com.github.butvinmitmo.shared.client
 
+import com.github.butvinmitmo.shared.dto.AuthTokenResponse
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.CreateUserResponse
+import com.github.butvinmitmo.shared.dto.LoginRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.shared.dto.UserDto
 import org.springframework.cloud.openfeign.FeignClient
@@ -17,6 +19,11 @@ import java.util.UUID
 
 @FeignClient(name = "user-service", url = "\${services.user-service.url:}")
 interface UserServiceClient {
+    @PostMapping("/api/v0.0.1/auth/login")
+    fun login(
+        @RequestBody request: LoginRequest,
+    ): ResponseEntity<AuthTokenResponse>
+
     @PostMapping("/api/v0.0.1/users")
     fun createUser(
         @RequestBody request: CreateUserRequest,

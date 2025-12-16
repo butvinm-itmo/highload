@@ -29,6 +29,8 @@ class DivinationServiceE2ETest : BaseE2ETest() {
 
     @BeforeAll
     fun setupTestData() {
+        loginAsAdmin()
+
         // Create test user
         val userResponse =
             userClient.createUser(
@@ -51,6 +53,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
 
     @AfterAll
     fun cleanup() {
+        loginAsAdmin()
         // Delete test user (cascades to spreads and interpretations)
         runCatching { userClient.deleteUser(testUserId) }
     }
@@ -58,6 +61,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(1)
     fun `POST spread should create spread via inter-service communication`() {
+        loginAsAdmin()
         val request =
             CreateSpreadRequest(
                 question = "E2E test question - What does the future hold?",
@@ -74,6 +78,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(2)
     fun `GET spread by id should return spread with cards and author`() {
+        loginAsAdmin()
         val response = divinationClient.getSpreadById(spreadId)
 
         assertEquals(200, response.statusCode.value())
@@ -87,6 +92,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(3)
     fun `POST spread with THREE_CARDS layout should create spread with 3 cards`() {
+        loginAsAdmin()
         val request =
             CreateSpreadRequest(
                 question = "E2E test - Past, Present, Future?",
@@ -105,6 +111,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(4)
     fun `GET spreads with pagination should return spreads list`() {
+        loginAsAdmin()
         val response = divinationClient.getSpreads(page = 0, size = 10)
 
         assertEquals(200, response.statusCode.value())
@@ -114,6 +121,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(5)
     fun `GET spreads with scroll pagination should return with X-After header when more items available`() {
+        loginAsAdmin()
         val response = divinationClient.getSpreadsScroll(after = null, size = 1)
 
         assertEquals(200, response.statusCode.value())
@@ -127,6 +135,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(6)
     fun `POST interpretation should create interpretation`() {
+        loginAsAdmin()
         val request =
             CreateInterpretationRequest(
                 text = "E2E test interpretation - The cards suggest great fortune ahead!",
@@ -142,6 +151,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(7)
     fun `GET spread should now include interpretation`() {
+        loginAsAdmin()
         val spread = divinationClient.getSpreadById(spreadId).body!!
         assertEquals(1, spread.interpretations.size, "Spread should have 1 interpretation")
     }
@@ -149,6 +159,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(8)
     fun `POST duplicate interpretation by same author should return 409`() {
+        loginAsAdmin()
         val request =
             CreateInterpretationRequest(
                 text = "Another interpretation attempt by same author",
@@ -162,6 +173,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(9)
     fun `PUT interpretation should update text`() {
+        loginAsAdmin()
         val request =
             UpdateInterpretationRequest(
                 text = "Updated E2E interpretation - Even better fortune!",
@@ -176,6 +188,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(10)
     fun `PUT interpretation by non-author should return 403`() {
+        loginAsAdmin()
         val request =
             UpdateInterpretationRequest(
                 text = "Malicious update attempt",
@@ -189,6 +202,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(11)
     fun `POST spread with non-existent user should return 404`() {
+        loginAsAdmin()
         val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         val request =
             CreateSpreadRequest(
@@ -204,6 +218,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(12)
     fun `POST spread with non-existent layout type should return 404`() {
+        loginAsAdmin()
         val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         val request =
             CreateSpreadRequest(

@@ -4,15 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tarology Web Service** - A Kotlin/Spring Boot microservices application for Tarot card readings and interpretations. Users can create spreads, view others' spreads, and add interpretations without authentication (user ID-based identification).
+**Tarology Web Service** - A Kotlin/Spring Boot microservices application for Tarot card readings and interpretations. Users authenticate via JWT tokens to create spreads, view others' spreads, and add interpretations.
 
 **Architecture:** Microservices with Feign Clients for inter-service communication.
 
 Key features:
+- JWT-based authentication with role-based authorization (USER, ADMIN)
 - Create tarot spreads with different layouts (one card, three cards, cross/five cards)
 - View all spreads in chronological feed
-- Add/edit/delete interpretations for spreads
-- User management with transactional deletion
+- Add/edit/delete interpretations for spreads (author-only modifications)
+- User management with transactional deletion (ADMIN-only)
 
 ## Microservices Architecture
 
@@ -80,6 +81,122 @@ resilience4j:
   timelimiter:
     timeoutDuration: 3s
 ```
+
+## Authentication & Authorization
+
+The application uses JWT-based authentication with centralized validation at the gateway level.
+
+### Authentication Flow
+
+1. **Login**: User sends credentials to `POST /api/v0.0.1/auth/login`
+2. **Token Generation**: user-service validates credentials and generates JWT (24h expiration)
+3. **Token Usage**: Client includes JWT in `Authorization: Bearer <token>` header
+4. **Gateway Validation**: gateway-service validates JWT and extracts userId + role
+5. **Header Propagation**: Gateway adds `X-User-Id` and `X-User-Role` headers to backend requests
+6. **Backend Authorization**: Backend services trust gateway headers for authorization checks
+
+### Architecture
+
+**JWT Generation (user-service):**
+- BCrypt password hashing (10 rounds)
+- HS256 signing algorithm
+- 24-hour token expiration
+- Includes username and role in token payload
+
+**JWT Validation (gateway-service):**
+- Validates all requests except public paths
+- Public paths: `/api/v0.0.1/auth/login`, `/actuator/health`
+- Returns 401 for missing/invalid tokens
+- Adds `X-User-Id` and `X-User-Role` headers after validation
+
+**Authorization Model:**
+- **USER role**: Default role for all users, can create spreads and interpretations
+- **ADMIN role**: Can manage users (create, update, delete)
+- **Author-only operations**: Users can only delete/update their own spreads/interpretations
+- **Public read endpoints**: All spreads and cards are publicly readable (authentication still required)
+
+### Default Admin Credentials
+
+**⚠️ FOR DEVELOPMENT ONLY - Change in production!**
+
+```
+Username: admin
+Password: Admin@123
+Role: ADMIN
+ID: 10000000-0000-0000-0000-000000000001
+```
+
+After first deployment, change the admin password immediately in production environments.
+
+### Password Requirements
+
+All user passwords must meet these requirements:
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one digit
+- At least one special character (@$!%*?&#)
+
+Example valid passwords: `Admin@123`, `Pass@word1`, `Test@1234`
+
+### Environment Variables
+
+**JWT_SECRET** - Secret key for JWT signing/validation
+- Required by: user-service, gateway-service
+- Default (dev): `my-secret-key-for-development-only-change-in-production`
+- Production: Set via environment variable or external config
+
+```bash
+# docker-compose.yml includes JWT_SECRET for both services
+docker compose up -d
+
+# Override in production
+export JWT_SECRET="your-secure-production-secret-key"
+```
+
+**Configuration locations:**
+- `highload-config/user-service.yml` - JWT expiration, password regex
+- `highload-config/gateway-service.yml` - JWT secret, public paths
+
+### Testing with Authentication
+
+**E2E Tests:**
+- E2E tests automatically handle authentication via `loginAsAdmin()` helper
+- Tests use ThreadLocal `AuthContext` to manage JWT tokens
+- All Feign requests automatically include `Authorization` header
+
+**Manual Testing:**
+
+```bash
+# 1. Login to get JWT token
+curl -X POST http://localhost:8080/api/v0.0.1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"Admin@123"}'
+
+# Response: {"token":"eyJhbGc...", "expiresAt":"2025-12-17T...", "username":"admin", "role":"ADMIN"}
+
+# 2. Use token in subsequent requests
+TOKEN="<token-from-login-response>"
+
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/v0.0.1/users
+
+# 3. Test protected endpoint without token (should return 401)
+curl -v http://localhost:8080/api/v0.0.1/users
+```
+
+**Integration Tests:**
+- Backend services use `@MockBean` for Feign clients (no real authentication)
+- Tests add `X-User-Id` and `X-User-Role` headers directly to requests
+- Gateway is bypassed in integration tests (services tested in isolation)
+
+### Security Notes
+
+- JWT secret must be at least 256 bits (32 characters) for HS256
+- Tokens are stateless - no server-side session storage
+- Backend services do NOT validate JWT (trust gateway headers)
+- All password storage uses BCrypt with salt
+- HTTPS should be used in production to protect tokens in transit
 
 ## Configuration Management
 
@@ -510,13 +627,19 @@ All paginated endpoints enforce `@Max(50)` on the `size` parameter. Requesting `
 
 Base path: `/api/v0.0.1`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/users` | Create user (409 if username exists) |
-| GET | `/users?page=N&size=M` | List users (X-Total-Count header) |
-| GET | `/users/{id}` | Get user by ID |
-| PUT | `/users/{id}` | Update user |
-| DELETE | `/users/{id}` | Delete user and all associated data |
+**Authentication:**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/auth/login` | Login with credentials, returns JWT token | No (public) |
+
+**Users:**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/users` | Create user (409 if username exists) | Yes (ADMIN) |
+| GET | `/users?page=N&size=M` | List users (X-Total-Count header) | Yes |
+| GET | `/users/{id}` | Get user by ID | Yes |
+| PUT | `/users/{id}` | Update user | Yes (ADMIN) |
+| DELETE | `/users/{id}` | Delete user and all associated data | Yes (ADMIN) |
 
 ### tarot-service (port 8082)
 

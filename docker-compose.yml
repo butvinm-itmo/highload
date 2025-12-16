@@ -40,6 +40,7 @@ services:
     environment:
       CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_URL: http://eureka-server:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET:-my-secret-key-for-development-only-change-in-production}
     depends_on:
       config-server:
         condition: service_healthy
@@ -82,6 +83,7 @@ services:
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
       EUREKA_URL: http://eureka-server:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET:-my-secret-key-for-development-only-change-in-production}
     depends_on:
       config-server:
         condition: service_healthy

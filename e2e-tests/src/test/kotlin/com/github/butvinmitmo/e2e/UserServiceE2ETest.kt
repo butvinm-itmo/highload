@@ -22,6 +22,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(1)
     fun `GET users should return list with admin user`() {
+        loginAsAdmin()
         val response = userClient.getUsers()
 
         assertEquals(200, response.statusCode.value())
@@ -35,6 +36,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(2)
     fun `POST users should create new user`() {
+        loginAsAdmin()
         val request = CreateUserRequest(username = testUsername, password = "Test@123")
         val response = userClient.createUser(request)
 
@@ -46,6 +48,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(3)
     fun `GET users by id should return user`() {
+        loginAsAdmin()
         val response = userClient.getUserById(testUserId)
 
         assertEquals(200, response.statusCode.value())
@@ -56,6 +59,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(4)
     fun `PUT users should update user`() {
+        loginAsAdmin()
         val request = UpdateUserRequest(username = updatedUsername)
         val response = userClient.updateUser(testUserId, request)
 
@@ -66,6 +70,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(5)
     fun `POST users with duplicate username should return 409`() {
+        loginAsAdmin()
         val request = CreateUserRequest(username = updatedUsername, password = "Test@123")
         assertThrowsWithStatus(409) { userClient.createUser(request) }
     }
@@ -73,6 +78,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(6)
     fun `GET users with non-existent id should return 404`() {
+        loginAsAdmin()
         val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         assertThrowsWithStatus(404) { userClient.getUserById(fakeId) }
     }
@@ -80,6 +86,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(100)
     fun `DELETE user should succeed and cleanup`() {
+        loginAsAdmin()
         val response = userClient.deleteUser(testUserId)
         assertEquals(204, response.statusCode.value())
 
