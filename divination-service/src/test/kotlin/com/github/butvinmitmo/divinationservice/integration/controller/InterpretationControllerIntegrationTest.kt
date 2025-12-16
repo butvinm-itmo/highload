@@ -2,7 +2,6 @@ package com.github.butvinmitmo.divinationservice.integration.controller
 
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
-import com.github.butvinmitmo.shared.dto.DeleteRequest
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -89,6 +88,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         return webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -112,6 +112,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -130,6 +131,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -137,6 +139,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -152,6 +155,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -180,6 +184,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -197,6 +202,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .get()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .header("X-User-Id", testUserId.toString())
             .exchange()
             .expectStatus()
             .isOk
@@ -216,6 +222,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -235,6 +242,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .put()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updateRequest)
             .exchange()
@@ -254,6 +262,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -273,6 +282,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         webTestClient
             .put()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updateRequest)
             .exchange()
@@ -289,6 +299,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -303,13 +314,11 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val deleteRequest = DeleteRequest(userId = testUserId)
-
         webTestClient
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(deleteRequest)
             .exchange()
             .expectStatus()
             .isNoContent
@@ -324,6 +333,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -338,13 +348,13 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val deleteRequest = DeleteRequest(userId = UUID.randomUUID())
+        val differentUserId = UUID.randomUUID()
 
         webTestClient
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(deleteRequest)
             .exchange()
             .expectStatus()
             .isForbidden
