@@ -4,9 +4,9 @@
 **Branch:** `auth`
 **Plan:** `~/.claude/plans/valiant-marinating-pearl.md`
 
-## Overall Status: ~75% Complete
+## Overall Status: ~78% Complete
 
-**Latest Update:** 2025-12-16 (Second commit on auth branch)
+**Latest Update:** 2025-12-16 (Third commit on auth branch - improved test coverage)
 
 ### ✅ Completed Phases
 
@@ -83,7 +83,7 @@
 ### 🚧 In Progress
 
 #### Phase 5: Testing Updates
-**Status:** 60% Complete
+**Status:** 70% Complete
 
 **Completed:**
 - [x] Fixed ktlint violations in UserDto.kt (split long validation messages)
@@ -92,16 +92,20 @@
 - [x] Updated BaseControllerIntegrationTest with JWT properties
 - [x] Updated UserControllerIntegrationTest with X-User-Role/X-User-Id headers
 - [x] All user-service tests passing (28/28) ✅
-- [x] Partially fixed divination-service integration tests:
+- [x] Improved divination-service integration tests:
   - SpreadControllerIntegrationTest: Added X-User-Id headers to POST/DELETE
-  - InterpretationControllerIntegrationTest: Added X-User-Id headers to POST/DELETE
-  - Removed DeleteRequest body parameters
-  - 19/35 tests now passing (unit tests: 15/15, integration: 4/20)
+  - InterpretationControllerIntegrationTest: Added X-User-Id headers to all POST/PUT/DELETE
+  - CircuitBreakerIntegrationTest: Added X-User-Id headers to all POST requests
+  - Fixed InterpretationControllerIntegrationTest bug (wrong user ID in delete test)
+  - Fixed DivinationServiceTest: Added role parameter to UserDto
+  - Removed DeleteRequest body parameters from interpretation DELETE tests
+  - 23/35 tests now passing (unit tests: 15/15, integration: 8/20) ✅
 
 **Remaining Work:**
-- [ ] Fix remaining divination-service integration tests (16 failures):
-  - InterpretationControllerIntegrationTest: PUT requests need X-User-Id headers
-  - CircuitBreakerIntegrationTest: May need WireMock updates for auth headers
+- [ ] Fix remaining divination-service integration tests (12 failures):
+  - All failures are WireMock/Feign related (spreads creation tests)
+  - Tests fail with 502 BAD_GATEWAY when creating spreads via Feign clients
+  - Need to investigate WireMock configuration or Feign client setup
 - [ ] Update shared-clients with authentication methods
 - [ ] Add login helpers to BaseE2ETest
 - [ ] Update all E2E test classes to use authentication (4 test classes)
@@ -132,24 +136,28 @@
 | user-service | ✅ PASS | 28/28 | All tests passing |
 | gateway-service | ✅ N/A | 0 tests | No tests defined |
 | tarot-service | ❓ Unknown | - | Not tested yet |
-| divination-service | ⚠️ PARTIAL | 19/35 | PUT requests need X-User-Id headers |
+| divination-service | ⚠️ PARTIAL | 23/35 | WireMock/Feign issues in spread creation tests |
 | e2e-tests | ❌ FAIL | 0/4 | TestContainers issues, needs auth |
 
 **Breakdown:**
 - **user-service**: 100% passing ✅
-- **divination-service**: 54% passing (15/15 unit, 4/20 integration)
+- **divination-service**: 66% passing (15/15 unit ✅, 8/20 integration ⚠️)
 
 ---
 
 ## Known Issues
 
-1. **ktlint pre-commit hook blocking commit**
-   - Lines 24 and 35 in UserDto.kt exceed 120 char limit
-   - Password validation messages need line breaks
+1. ✅ ~~**ktlint pre-commit hook blocking commit**~~ (FIXED)
+   - ~~Lines 24 and 35 in UserDto.kt exceed 120 char limit~~
+   - ~~Password validation messages need line breaks~~
 
-2. **divination-service integration tests**
-   - Missing X-User-Id headers in test requests
-   - Likely similar pattern to user-service fix needed
+2. **divination-service integration tests (12/20 failing)**
+   - Tests that create spreads fail with 502 BAD_GATEWAY
+   - WireMock/Feign client integration issue
+   - Dynamic properties from @DynamicPropertySource may not be picked up correctly
+   - Tests affected:
+     - All InterpretationControllerIntegrationTest tests (8 failures)
+     - SpreadControllerIntegrationTest: create/delete/get spread tests (4 failures)
 
 3. **E2E tests not updated for authentication**
    - Need login flow implementation

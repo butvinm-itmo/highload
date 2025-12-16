@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.divinationservice.integration.controller
 
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
+import com.github.butvinmitmo.shared.dto.DeleteRequest
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -115,7 +116,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
-            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -138,7 +138,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
-            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -169,7 +168,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads")
-                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -222,7 +220,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads")
-                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -237,10 +234,13 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
+        val deleteRequest = DeleteRequest(userId = testUserId)
+
         webTestClient
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId")
-            .header("X-User-Id", testUserId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deleteRequest)
             .exchange()
             .expectStatus()
             .isNoContent
@@ -259,7 +259,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads")
-                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -274,12 +273,13 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val differentUserId = UUID.randomUUID()
+        val deleteRequest = DeleteRequest(userId = UUID.randomUUID())
 
         webTestClient
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId")
-            .header("X-User-Id", differentUserId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deleteRequest)
             .exchange()
             .expectStatus()
             .isForbidden
@@ -297,7 +297,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
-            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()

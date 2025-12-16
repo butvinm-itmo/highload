@@ -50,6 +50,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -97,6 +98,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 .build()
                 .post()
                 .uri("/api/v0.0.1/spreads")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -130,6 +132,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -180,6 +183,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -212,6 +216,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
