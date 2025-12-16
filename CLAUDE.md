@@ -246,6 +246,25 @@ docker compose restart config-server
 # Run ktlint for specific service
 ./gradlew :user-service:ktlintCheck
 ./gradlew :tarot-service:ktlintFormat
+
+# Pre-commit hooks (automatic formatting before commit)
+.venv/bin/pre-commit install              # Install hooks (one-time setup)
+.venv/bin/pre-commit run --all-files      # Manually run on all files
+```
+
+**Pre-commit Setup:**
+The project uses [pre-commit](https://pre-commit.com/) to automatically run ktlint format before each commit.
+
+- Configuration: `.pre-commit-config.yaml`
+- Virtual environment: `.venv/` (Python venv with pre-commit installed)
+- Hook automatically runs `./gradlew ktlintFormat` on staged Kotlin files
+- Files are auto-formatted and re-staged if needed
+
+First-time setup:
+```bash
+python -m venv .venv
+.venv/bin/pip install pre-commit
+.venv/bin/pre-commit install
 ```
 
 ### Docker Commands

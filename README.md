@@ -164,6 +164,19 @@ Coverage reports are located at:
 
 # Auto-format code
 ./gradlew ktlintFormat
+
+# Pre-commit hooks (automatic formatting before commit)
+.venv/bin/pre-commit install              # Install hooks (one-time setup)
+.venv/bin/pre-commit run --all-files      # Manually run on all files
+```
+
+**Pre-commit hooks:** The project uses [pre-commit](https://pre-commit.com/) to automatically run ktlint format before each commit.
+
+First-time setup:
+```bash
+python -m venv .venv
+.venv/bin/pip install pre-commit
+.venv/bin/pre-commit install
 ```
 
 ### Running with Docker
