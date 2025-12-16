@@ -1,3 +1,8 @@
+logging:
+  level:
+    com.github.butvinmitmo: DEBUG
+    org.springframework.web: DEBUG
+
 spring:
   application:
     name: divination-service
@@ -31,6 +36,14 @@ spring:
 eureka:
   client:
     enabled: false
+
+services:
+  user-service:
+    url: http://mock-user-service
+  tarot-service:
+    url: http://mock-tarot-service
+  divination-service:
+    url: http://localhost:8083
 
 resilience4j:
   circuitbreaker:

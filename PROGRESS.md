@@ -4,9 +4,9 @@
 **Branch:** `auth`
 **Plan:** `~/.claude/plans/valiant-marinating-pearl.md`
 
-## Overall Status: ~82% Complete
+## Overall Status: ~85% Complete
 
-**Latest Update:** 2025-12-16 (Fourth commit on auth branch - all runnable tests passing)
+**Latest Update:** 2025-12-16 (Fifth commit on auth branch - ALL tests passing including previously disabled ones)
 
 ### ✅ Completed Phases
 
@@ -96,16 +96,14 @@
   - Fixed InterpretationControllerIntegrationTest bug (wrong user ID in delete test)
   - Fixed DivinationServiceTest: Added role parameter to UserDto
   - Removed DeleteRequest body parameters from interpretation DELETE tests
-  - Marked 12 WireMock/Feign integration tests as @Disabled with TODO comments
-  - All runnable tests now passing: 23/23 ✅ (unit: 15/15, integration: 8/8)
-  - 12 tests disabled due to known WireMock/Feign integration issue
-
-**Deferred Work:**
-- [ ] Fix WireMock/Feign integration (12 disabled tests):
-  - Issue: Feign clients not picking up WireMock URL from @DynamicPropertySource
-  - Affects: Tests requiring spread creation (uses Feign calls to mock services)
-  - Workaround: Tests marked as @Disabled with clear TODO comments
-  - Can be addressed in future iteration
+  - **All divination-service tests now passing: 35/35 ✅** (unit: 15/15, integration: 20/20)
+- [x] Fixed WireMock/Feign integration issue:
+  - **Solution:** Replaced WireMock with @MockBean for Feign clients
+  - Added @MockBean annotations for UserServiceClient and TarotServiceClient in BaseControllerIntegrationTest
+  - Updated all test methods to use Mockito mocks with lenient() stubbing for reactive compatibility
+  - Fixed missing X-User-Id headers in all integration test requests
+  - Adjusted CircuitBreakerIntegrationTest timeout test (4s sleep, 8s WebTestClient timeout)
+  - All 12 previously @Disabled tests now re-enabled and passing ✅
 
 ---
 
@@ -132,13 +130,13 @@
 | user-service | ✅ PASS | 28/28 | All tests passing |
 | gateway-service | ✅ N/A | 0 tests | No tests defined |
 | tarot-service | ✅ PASS | All passing | All tests passing |
-| divination-service | ✅ PASS | 23/23 runnable | 12 tests @Disabled (WireMock/Feign issue) |
+| divination-service | ✅ PASS | 35/35 | **ALL tests passing** (WireMock issue fixed!) |
 | e2e-tests | ⏳ TODO | 0/4 | Needs authentication update |
 
 **Breakdown:**
 - **user-service**: 100% passing ✅ (28/28)
 - **tarot-service**: 100% passing ✅
-- **divination-service**: 100% runnable tests passing ✅ (23/23), 12 disabled
+- **divination-service**: 100% passing ✅ (35/35 - all previously disabled tests now enabled and passing!)
 
 ---
 
@@ -146,15 +144,9 @@
 
 1. ✅ ~~**ktlint pre-commit hook blocking commit**~~ (FIXED)
 
-2. **divination-service WireMock/Feign integration (12 tests disabled)**
-   - **Issue**: Feign clients not picking up WireMock URL from @DynamicPropertySource
-   - **Root Cause**: Spring Cloud OpenFeign caches client beans with URLs evaluated at bean creation time
-   - **Impact**: Tests requiring spread creation (Feign calls to mock services) cannot run
-   - **Workaround**: Tests marked as @Disabled with clear TODO comments
-   - **Tests Affected**:
-     - InterpretationControllerIntegrationTest: All 8 tests (depend on createSpread)
-     - SpreadControllerIntegrationTest: 4 tests (createSpread, getSpread, deleteSpread x2)
-   - **Future Fix**: Consider @MockBean approach or MockWebServer instead of WireMock+Feign
+2. ✅ ~~**divination-service WireMock/Feign integration (12 tests disabled)**~~ (FIXED)
+   - **Solution**: Replaced WireMock with @MockBean for Feign clients
+   - All 12 previously disabled tests now enabled and passing
 
 3. **E2E tests not updated for authentication** (Phase 6)
    - Need login flow implementation
@@ -213,9 +205,7 @@ ID: 10000000-0000-0000-0000-000000000001
 
 1. ✅ ~~Fix ktlint violations in UserDto.kt~~ (DONE)
 2. ✅ ~~Commit Phase 1-4 implementation~~ (DONE - commit e96b7ef)
-3. ⚠️ **Fix remaining divination-service integration tests** (19/35 passing)
-   - Add X-User-Id headers to PUT requests in InterpretationControllerIntegrationTest
-   - Fix CircuitBreakerIntegrationTest (may need WireMock auth header updates)
+3. ✅ ~~Fix divination-service integration tests~~ (DONE - all 35/35 passing)
 4. **Update E2E tests** with authentication flow
    - Add login() method to shared-clients UserServiceClient
    - Create login helpers in BaseE2ETest

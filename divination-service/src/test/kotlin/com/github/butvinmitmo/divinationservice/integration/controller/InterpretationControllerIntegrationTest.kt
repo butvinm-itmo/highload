@@ -1,84 +1,54 @@
 package com.github.butvinmitmo.divinationservice.integration.controller
 
+import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
+import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
+import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
+import com.github.butvinmitmo.shared.dto.UserDto
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.`when`
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import java.time.Instant
 import java.util.UUID
-import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ActiveProfiles("test")
 class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() {
-    @BeforeEach
-    fun setupWireMock() {
-        // WireMock reset handled by BaseControllerIntegrationTest.resetWireMockBase()
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                            """
-                            {
-                                "id": "$testUserId",
-                                "username": "admin",
-                                "createdAt": "2024-01-01T00:00:00Z"
-                            }
-                            """.trimIndent(),
-                        ),
-                ),
-        )
+    private fun setupMocks() {
+        // Mock user service response
+        val userDto =
+            UserDto(
+                id = testUserId,
+                username = "admin",
+                createdAt = Instant.parse("2024-01-01T00:00:00Z"),
+                role = "USER",
+            )
+        `when`(userServiceClient.getUserById(testUserId)).thenReturn(ResponseEntity.ok(userDto))
 
-        wireMock.stubFor(
-            wireMockGet(urlEqualTo("/api/v0.0.1/layout-types/$oneCardLayoutId"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                            """
-                            {
-                                "id": "$oneCardLayoutId",
-                                "name": "ONE_CARD",
-                                "cardsCount": 1
-                            }
-                            """.trimIndent(),
-                        ),
-                ),
-        )
+        // Mock layout type response
+        val layoutTypeDto = LayoutTypeDto(id = oneCardLayoutId, name = "ONE_CARD", cardsCount = 1)
+        `when`(tarotServiceClient.getLayoutTypeById(oneCardLayoutId)).thenReturn(ResponseEntity.ok(layoutTypeDto))
 
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/cards/random.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                            """
-                            [
-                                {
-                                    "id": "00000000-0000-0000-0000-000000000030",
-                                    "name": "The Fool",
-                                    "arcanaType": {"id": "00000000-0000-0000-0000-000000000010", "name": "MAJOR"}
-                                }
-                            ]
-                            """.trimIndent(),
-                        ),
+        // Mock random cards response
+        val arcanaType = ArcanaTypeDto(id = UUID.fromString("00000000-0000-0000-0000-000000000010"), name = "MAJOR")
+        val cards =
+            listOf(
+                CardDto(
+                    id = UUID.fromString("00000000-0000-0000-0000-000000000030"),
+                    name = "The Fool",
+                    arcanaType = arcanaType,
                 ),
-        )
+            )
+        `when`(tarotServiceClient.getRandomCards(1)).thenReturn(ResponseEntity.ok(cards))
     }
 
     private fun createSpread(): String {
+        setupMocks()
         val request =
             CreateSpreadRequest(
                 question = "Test question",
@@ -105,7 +75,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             }!!
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `addInterpretation should create interpretation and return 201`() {
         val spreadId = createSpread()
@@ -125,7 +94,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .exists()
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `addInterpretation should return 409 when user already has interpretation`() {
         val spreadId = createSpread()
@@ -150,7 +118,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .isEqualTo(409)
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `getInterpretations should return paginated interpretations`() {
         val spreadId = createSpread()
@@ -179,7 +146,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .isEqualTo("Test interpretation")
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `getInterpretation should return interpretation details`() {
         val spreadId = createSpread()
@@ -189,6 +155,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -216,7 +183,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .isEqualTo("Test interpretation")
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `updateInterpretation should update interpretation when user is author`() {
         val spreadId = createSpread()
@@ -226,6 +192,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -256,7 +223,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .isEqualTo("Updated text")
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `updateInterpretation should return 403 when user is not author`() {
         val spreadId = createSpread()
@@ -266,6 +232,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -293,7 +260,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .isForbidden
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `deleteInterpretation should delete interpretation when user is author`() {
         val spreadId = createSpread()
@@ -303,6 +269,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
@@ -326,7 +293,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .isNoContent
     }
 
-    @Disabled("TODO: Fix WireMock/Feign integration - depends on createSpread which uses Feign")
     @Test
     fun `deleteInterpretation should return 403 when user is not author`() {
         val spreadId = createSpread()
@@ -336,6 +302,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             webTestClient
                 .post()
                 .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createRequest)
                 .exchange()
