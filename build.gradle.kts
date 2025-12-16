@@ -1,90 +1,40 @@
+import org.gradle.api.tasks.testing.Test
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
-    kotlin("jvm") version "2.2.10"
-    kotlin("plugin.spring") version "2.2.10"
-    kotlin("plugin.jpa") version "2.2.10"
-    id("org.springframework.boot") version "3.5.6"
-    id("io.spring.dependency-management") version "1.1.7"
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
-    jacoco
+    kotlin("jvm") version "2.2.10" apply false
+    kotlin("plugin.spring") version "2.2.10" apply false
+    kotlin("plugin.jpa") version "2.2.10" apply false
+    id("org.springframework.boot") version "3.5.6" apply false
+    id("io.spring.dependency-management") version "1.1.7" apply false
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
+    id("jacoco")
 }
 
 group = "com.github.butvinmitmo"
-version = "0.0.1-SNAPSHOT"
-description = "Highload systems course"
+version = "0.1.0-SNAPSHOT"
+description = "Tarology Web Service"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+allprojects {
+    repositories {
+        mavenCentral()
     }
 }
 
-repositories {
-    mavenCentral()
-}
+subprojects {
+    apply(plugin = "jacoco")
 
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
-    runtimeOnly("org.postgresql:postgresql")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
-    testImplementation("org.mockito:mockito-junit-jupiter")
-    testImplementation("org.testcontainers:testcontainers:1.19.8")
-    testImplementation("org.testcontainers:postgresql:1.19.8")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.8")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
-    }
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
-ktlint {
-    version.set("1.5.0")
-}
-
-jacoco {
-    toolVersion = "0.8.12"
-}
-
-tasks.withType<JacocoReport> {
-    dependsOn(tasks.test)
-
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-        csv.required.set(false)
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events("passed", "failed", "skipped")
+        }
+        finalizedBy("jacocoTestReport")
     }
 
-    // Only include production code in coverage
-    classDirectories.setFrom(
-        files(
-            classDirectories.files.map {
-                fileTree(it) {
-                    exclude(
-                        "**/HighloadApplication.class",
-                        "**/HighloadApplicationKt.class",
-                    )
-                }
-            },
-        ),
-    )
-}
-
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
+    tasks.withType<JacocoReport>().configureEach {
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+    }
 }

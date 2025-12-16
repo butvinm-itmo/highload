@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: divination-service
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    config:
+      enabled: false
+    compatibility-verifier:
+      enabled: false
+    openfeign:
+      circuitbreaker:
+        enabled: false
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/test_db
+    username: test_user
+    password: test_password
+    pool:
+      initial-size: 5
+      max-size: 20
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_divination
+    baseline-on-migrate: true
+    baseline-version: 0
+    url: jdbc:postgresql://localhost:5432/test_db
+    user: test_user
+    password: test_password
+
+eureka:
+  client:
+    enabled: false
+
+services:
+  user-service:
+    url: http://localhost:8081
+  tarot-service:
+    url: http://localhost:8082
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 100
+        failureRateThreshold: 100
+        registerHealthIndicator: false
+    instances:
+      user-service:
+        baseConfig: default
+      tarot-service:
+        baseConfig: default
