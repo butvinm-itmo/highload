@@ -32,12 +32,6 @@ eureka:
   client:
     enabled: false
 
-services:
-  user-service:
-    url: http://localhost:8081
-  tarot-service:
-    url: http://localhost:8082
-
 resilience4j:
   circuitbreaker:
     configs:
