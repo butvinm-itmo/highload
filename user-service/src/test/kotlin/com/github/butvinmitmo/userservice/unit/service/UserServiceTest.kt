@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.userservice.unit.service
 
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
+import com.github.butvinmitmo.shared.dto.LoginRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.userservice.TestEntityFactory
 import com.github.butvinmitmo.userservice.entity.Role
@@ -8,6 +9,7 @@ import com.github.butvinmitmo.userservice.entity.RoleType
 import com.github.butvinmitmo.userservice.entity.User
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
+import com.github.butvinmitmo.userservice.exception.UnauthorizedException
 import com.github.butvinmitmo.userservice.mapper.UserMapper
 import com.github.butvinmitmo.userservice.repository.RoleRepository
 import com.github.butvinmitmo.userservice.repository.UserRepository
@@ -205,5 +207,58 @@ class UserServiceTest {
 
         assertNotNull(result)
         assertEquals(0, result.content.size)
+    }
+
+    @Test
+    fun `authenticate should return token for valid credentials`() {
+        val request = LoginRequest(username = "testuser", password = "Test@123")
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
+        val expiresAt = Instant.now().plusSeconds(86400)
+
+        whenever(userRepository.findByUsername("testuser")).thenReturn(user)
+        whenever(passwordEncoder.matches("Test@123", user.passwordHash)).thenReturn(true)
+        whenever(jwtUtil.generateToken(user)).thenReturn(Pair("mock-jwt-token", expiresAt))
+
+        val result = userService.authenticate(request)
+
+        assertNotNull(result)
+        assertEquals("mock-jwt-token", result.token)
+        assertEquals(expiresAt, result.expiresAt)
+        assertEquals("testuser", result.username)
+        assertEquals("USER", result.role)
+        verify(jwtUtil).generateToken(user)
+    }
+
+    @Test
+    fun `authenticate should throw UnauthorizedException for invalid username`() {
+        val request = LoginRequest(username = "nonexistent", password = "Test@123")
+
+        whenever(userRepository.findByUsername("nonexistent")).thenReturn(null)
+
+        val exception =
+            assertThrows<UnauthorizedException> {
+                userService.authenticate(request)
+            }
+        assertEquals("Invalid username or password", exception.message)
+
+        verify(passwordEncoder, never()).matches(any(), any())
+        verify(jwtUtil, never()).generateToken(any())
+    }
+
+    @Test
+    fun `authenticate should throw UnauthorizedException for invalid password`() {
+        val request = LoginRequest(username = "testuser", password = "WrongPassword")
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
+
+        whenever(userRepository.findByUsername("testuser")).thenReturn(user)
+        whenever(passwordEncoder.matches("WrongPassword", user.passwordHash)).thenReturn(false)
+
+        val exception =
+            assertThrows<UnauthorizedException> {
+                userService.authenticate(request)
+            }
+        assertEquals("Invalid username or password", exception.message)
+
+        verify(jwtUtil, never()).generateToken(any())
     }
 }
