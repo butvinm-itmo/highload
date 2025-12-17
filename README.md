@@ -50,10 +50,10 @@ curl http://localhost:8080/api/v0.0.1/users
 curl http://localhost:8080/api/v0.0.1/cards
 curl http://localhost:8080/api/v0.0.1/spreads
 
-# Run E2E tests (TestContainers automatically manages service lifecycle)
-# NOTE: Pre-build Docker images first to avoid timeout failures
-docker compose build
+# Run E2E tests (requires services to be running)
+docker compose up -d
 ./gradlew :e2e-tests:test
+docker compose down
 ```
 
 ## API Overview
@@ -236,29 +236,41 @@ docker compose up -d config-server eureka-server gateway-service postgres
 
 ### E2E Testing
 
-The `e2e-tests` module uses TestContainers to automatically manage service lifecycle:
+E2E tests run against a pre-running application. Services must be started before running tests.
 
+**Local Development:**
 ```bash
-# TestContainers automatically starts and stops all services
-# IMPORTANT: Pre-build Docker images first to avoid timeout failures
-docker compose build
+# 1. Start all services (required)
+docker compose up -d
+
+# 2. Run E2E tests
 ./gradlew :e2e-tests:test
+
+# 3. Stop services when done
+docker compose down
 ```
 
-**Test coverage (30 tests):**
-- All tests route through the gateway-service (simulating external client access)
-- User CRUD, duplicate username (409), not found (404)
-- Cards pagination (78 total cards), layout types
+**Custom Gateway URL:**
+```bash
+# Via environment variable
+GATEWAY_URL=http://localhost:8080 ./gradlew :e2e-tests:test
+
+# Via system property
+./gradlew :e2e-tests:test -DGATEWAY_URL=http://localhost:8080
+```
+
+**Test coverage (31 tests):**
+- All tests route through gateway-service (simulating external client access)
+- User CRUD, duplicate username (409), not found (404), authentication
+- Cards pagination (78 total cards), layout types, random cards
 - Spreads with inter-service Feign calls, interpretations CRUD
 - Delete operations, authorization verification (403)
 
-TestContainers automatically:
-- Starts all services from `docker-compose.yml` (including gateway)
-- Waits for health checks (5-minute startup timeout)
-- Uses dynamic port mapping to avoid conflicts
-- Stops containers after tests complete
-
-**Note:** TestContainers may time out during the first run if Docker images aren't pre-built. Running `docker compose build` beforehand ensures faster startup and prevents timeout failures.
+**Health Check:**
+- Tests verify gateway health before execution (GET /actuator/health)
+- 3 retry attempts with 1-second delays
+- Fail-fast with clear error message if services aren't running
+- Error message includes `docker compose up -d` command
 
 ## Project Structure
 
@@ -273,7 +285,7 @@ highload/
 ├── user-service/         # User management (port 8081)
 ├── tarot-service/        # Cards & Layouts (port 8082)
 ├── divination-service/   # Spreads & Interpretations (port 8083)
-├── e2e-tests/            # End-to-end tests with TestContainers
+├── e2e-tests/            # End-to-end tests (requires pre-running services)
 ├── docker-compose.yml    # Docker orchestration
 ├── settings.gradle.kts   # Multi-project Gradle config
 └── CLAUDE.md            # Project instructions for Claude Code
@@ -292,6 +304,6 @@ highload/
 - **Configuration:** Spring Cloud Config Server (Git backend)
 - **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
 - **Resilience:** Resilience4j (circuit breaker, retry, time limiter)
-- **Testing:** TestContainers 1.19.8 for E2E tests
+- **Testing:** Spring Boot Test for E2E tests (pre-running services)
 - **API Docs:** SpringDoc OpenAPI (Swagger)
 - **Code Style:** ktlint 1.5.0

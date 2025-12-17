@@ -36,8 +36,6 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.testcontainers:testcontainers:1.19.8")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.8")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -49,18 +47,44 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-    // Set longer timeout for container startup
-    systemProperty("junit.jupiter.execution.timeout.default", "10m")
-    // Set working directory to project root for docker-compose.yml access
-    workingDir = rootProject.projectDir
+
+    // Pass GATEWAY_URL system property/env var to tests
+    systemProperty(
+        "GATEWAY_URL",
+        System.getProperty("GATEWAY_URL") ?: System.getenv("GATEWAY_URL") ?: "http://localhost:8080",
+    )
 
     doFirst {
         println("═══════════════════════════════════════════════════════════════════")
-        println("Running E2E tests with TestContainers...")
+        println("E2E Tests - Pre-Running Application Mode")
         println("═══════════════════════════════════════════════════════════════════")
-        println("NOTE: If tests fail with startup timeouts, pre-build Docker images:")
-        println("  → docker compose build")
-        println("  → ./gradlew :e2e-tests:test")
+        println("Gateway URL: ${systemProperties["GATEWAY_URL"]}")
+        println("")
+        println("⚠ IMPORTANT: Services must be running before tests execute!")
+        println("")
+        println("To start services:")
+        println("  → docker compose up -d")
+        println("")
+        println("If you modified code, rebuild containers first:")
+        println("  → docker compose up -d --build")
+        println("")
+        println("To stop services after testing:")
+        println("  → docker compose down")
+        println("═══════════════════════════════════════════════════════════════════")
+        println("")
+    }
+
+    doLast {
+        println("")
+        println("═══════════════════════════════════════════════════════════════════")
+        println("E2E Tests Completed")
+        println("═══════════════════════════════════════════════════════════════════")
+        println("")
+        println("⚠ REMINDER: If you modified code, rebuild containers before next run:")
+        println("  → docker compose up -d --build")
+        println("")
+        println("To stop services:")
+        println("  → docker compose down")
         println("═══════════════════════════════════════════════════════════════════")
     }
 }

@@ -8,25 +8,20 @@ import com.github.butvinmitmo.shared.dto.LoginRequest
 import feign.FeignException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.ComposeContainer
-import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.junit.jupiter.Testcontainers
-import java.io.File
-import java.time.Duration
+import org.springframework.web.client.RestTemplate
 
 /**
  * Base class for E2E tests.
  *
- * Uses TestContainers to automatically start all services via docker compose.
+ * Tests require services to be running before execution.
+ * Start services with: docker compose up -d
  */
 @SpringBootTest(classes = [E2ETestApplication::class])
-@Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseE2ETest {
     @Autowired
@@ -39,87 +34,73 @@ abstract class BaseE2ETest {
     protected lateinit var divinationClient: DivinationServiceClient
 
     companion object {
-        private const val CONFIG_SERVER = "config-server"
-        private const val EUREKA_SERVER = "eureka-server"
-        private const val GATEWAY_SERVICE = "gateway-service"
-        private const val POSTGRES = "postgres"
-        private const val USER_SERVICE = "user-service"
-        private const val TAROT_SERVICE = "tarot-service"
-        private const val DIVINATION_SERVICE = "divination-service"
-
-        private const val CONFIG_SERVER_PORT = 8888
-        private const val EUREKA_SERVER_PORT = 8761
-        private const val GATEWAY_PORT = 8080
-        private const val POSTGRES_PORT = 5432
-        private const val USER_SERVICE_PORT = 8081
-        private const val TAROT_SERVICE_PORT = 8082
-        private const val DIVINATION_SERVICE_PORT = 8083
-
-        private val STARTUP_TIMEOUT: Duration = Duration.ofMinutes(5)
+        private const val DEFAULT_GATEWAY_URL = "http://localhost:8080"
+        private const val HEALTH_CHECK_TIMEOUT_MS = 5000L
+        private const val HEALTH_CHECK_MAX_RETRIES = 3
+        private const val RETRY_DELAY_MS = 1000L
 
         @JvmStatic
-        val compose: ComposeContainer =
-            ComposeContainer(File("docker-compose.yml"))
-                .withLocalCompose(true)
-                .withExposedService(
-                    CONFIG_SERVER,
-                    CONFIG_SERVER_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    EUREKA_SERVER,
-                    EUREKA_SERVER_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    GATEWAY_SERVICE,
-                    GATEWAY_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    POSTGRES,
-                    POSTGRES_PORT,
-                    Wait
-                        .forListeningPort()
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    USER_SERVICE,
-                    USER_SERVICE_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    TAROT_SERVICE,
-                    TAROT_SERVICE_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    DIVINATION_SERVICE,
-                    DIVINATION_SERVICE_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).apply { start() }
+        @BeforeAll
+        fun verifyServicesRunning() {
+            val gatewayUrl =
+                System.getProperty("GATEWAY_URL")
+                    ?: System.getenv("GATEWAY_URL")
+                    ?: DEFAULT_GATEWAY_URL
 
-        @JvmStatic
-        @DynamicPropertySource
-        fun configureProperties(registry: DynamicPropertyRegistry) {
-            val gatewayHost = compose.getServiceHost(GATEWAY_SERVICE, GATEWAY_PORT)
-            val gatewayPort = compose.getServicePort(GATEWAY_SERVICE, GATEWAY_PORT)
+            println("═══════════════════════════════════════════════════════════════════")
+            println("E2E Tests - Pre-Running Application Mode")
+            println("═══════════════════════════════════════════════════════════════════")
+            println("Gateway URL: $gatewayUrl")
+            println("Checking if services are running...")
+            println("═══════════════════════════════════════════════════════════════════")
 
-            registry.add("services.user-service.url") { "http://$gatewayHost:$gatewayPort" }
-            registry.add("services.tarot-service.url") { "http://$gatewayHost:$gatewayPort" }
-            registry.add("services.divination-service.url") { "http://$gatewayHost:$gatewayPort" }
+            val restTemplate = RestTemplate()
+            var lastException: Exception? = null
+
+            for (attempt in 1..HEALTH_CHECK_MAX_RETRIES) {
+                try {
+                    val response =
+                        restTemplate.getForEntity(
+                            "$gatewayUrl/actuator/health",
+                            String::class.java,
+                        )
+
+                    if (response.statusCode.is2xxSuccessful) {
+                        println("✓ Gateway health check passed")
+                        println("═══════════════════════════════════════════════════════════════════")
+                        return
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                    if (attempt < HEALTH_CHECK_MAX_RETRIES) {
+                        println("⚠ Health check attempt $attempt/$HEALTH_CHECK_MAX_RETRIES failed, retrying...")
+                        Thread.sleep(RETRY_DELAY_MS)
+                    }
+                }
+            }
+
+            // All retries failed
+            println("✗ Gateway health check failed after $HEALTH_CHECK_MAX_RETRIES attempts")
+            println("═══════════════════════════════════════════════════════════════════")
+            println("ERROR: Services are not running!")
+            println("")
+            println("To start services, run:")
+            println("  docker compose up -d")
+            println("")
+            println("Or with build:")
+            println("  docker compose up -d --build")
+            println("")
+            println("To check service status:")
+            println("  docker compose ps")
+            println("  curl $gatewayUrl/actuator/health")
+            println("═══════════════════════════════════════════════════════════════════")
+
+            throw IllegalStateException(
+                "Gateway is not accessible at $gatewayUrl/actuator/health. " +
+                    "Please start services with 'docker compose up -d'. " +
+                    "Last error: ${lastException?.message}",
+                lastException,
+            )
         }
     }
 

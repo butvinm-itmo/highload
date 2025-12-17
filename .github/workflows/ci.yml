@@ -38,8 +38,29 @@ jobs:
       - name: Run unit and integration tests with coverage
         run: ./gradlew test jacocoTestReport -x :e2e-tests:test
 
+      - name: Build Docker images for E2E tests
+        run: docker compose build
+
+      - name: Start services for E2E tests
+        run: docker compose up -d --wait
+        timeout-minutes: 5
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for gateway to be healthy..."
+          timeout 120s bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 2; done'
+          echo "Gateway is ready!"
+
       - name: Run E2E tests
         run: ./gradlew :e2e-tests:test
+
+      - name: Show service logs on E2E test failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop services after E2E tests
+        if: always()
+        run: docker compose down -v
 
       - name: Build application
         run: ./gradlew build -x test
