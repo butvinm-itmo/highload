@@ -3,7 +3,6 @@ package com.github.butvinmitmo.e2e
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
-import com.github.butvinmitmo.shared.dto.DeleteRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -78,7 +77,6 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
             divinationClient.deleteInterpretation(
                 spreadId,
                 interpretationId,
-                DeleteRequest(testUserId),
             )
         assertEquals(204, response.statusCode.value())
 
@@ -91,7 +89,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Order(2)
     fun `DELETE spread should succeed for author`() {
         loginAsAdmin()
-        val response = divinationClient.deleteSpread(spreadId, DeleteRequest(testUserId))
+        val response = divinationClient.deleteSpread(spreadId)
         assertEquals(204, response.statusCode.value())
 
         // Verify spread is deleted
@@ -105,7 +103,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     fun `DELETE spread by non-author should return 403`() {
         loginAsAdmin()
         assertThrowsWithStatus(403) {
-            divinationClient.deleteSpread(spreadId2, DeleteRequest(adminId))
+            divinationClient.deleteSpread(spreadId2)
         }
     }
 
@@ -113,7 +111,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     @Order(4)
     fun `DELETE second spread for cleanup should succeed`() {
         loginAsAdmin()
-        val response = divinationClient.deleteSpread(spreadId2, DeleteRequest(testUserId))
+        val response = divinationClient.deleteSpread(spreadId2)
         assertEquals(204, response.statusCode.value())
     }
 
