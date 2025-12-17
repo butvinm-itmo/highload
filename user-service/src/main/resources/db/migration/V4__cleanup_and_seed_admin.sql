@@ -3,13 +3,13 @@
 DELETE FROM "user";
 
 -- Insert admin user with BCrypt hash for "Admin@123"
--- Hash: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- Hash: $2a$10$tCj/mvaQRu9jcd3TA0r2meeCpBXdWSeQqB25ni3LKIZ5g66kZ2226
 -- role_id references ADMIN role (00000000-0000-0000-0000-000000000002)
 INSERT INTO "user" (id, username, password_hash, role_id, created_at)
 VALUES (
     '10000000-0000-0000-0000-000000000001',
     'admin',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$tCj/mvaQRu9jcd3TA0r2meeCpBXdWSeQqB25ni3LKIZ5g66kZ2226',
     '00000000-0000-0000-0000-000000000002',
     CURRENT_TIMESTAMP
 );
