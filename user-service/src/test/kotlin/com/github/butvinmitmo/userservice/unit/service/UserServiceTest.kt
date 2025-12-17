@@ -206,28 +206,4 @@ class UserServiceTest {
         assertNotNull(result)
         assertEquals(0, result.content.size)
     }
-
-    @Test
-    fun `getUserEntity should return user when found`() {
-        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
-
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-
-        val result = userService.getUserEntity(userId)
-
-        assertNotNull(result)
-        assertEquals(userId, result.id)
-        assertEquals("testuser", result.username)
-    }
-
-    @Test
-    fun `getUserEntity should throw NotFoundException when user not found`() {
-        whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
-
-        val exception =
-            assertThrows<NotFoundException> {
-                userService.getUserEntity(userId)
-            }
-        assertEquals("User not found", exception.message)
-    }
 }

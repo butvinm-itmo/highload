@@ -121,9 +121,4 @@ class UserService(
 
         userRepository.deleteById(id)
     }
-
-    fun getUserEntity(id: UUID): User =
-        userRepository
-            .findById(id)
-            .orElseThrow { NotFoundException("User not found") }
 }
