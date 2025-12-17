@@ -582,8 +582,7 @@ highload/
 │       ├── SpreadDto.kt, SpreadSummaryDto.kt, ...
 │       ├── InterpretationDto.kt, ...
 │       ├── PageResponse.kt, ScrollResponse.kt
-│       ├── ErrorResponse.kt, ValidationErrorResponse.kt
-│       └── DeleteRequest.kt
+│       └── ErrorResponse.kt, ValidationErrorResponse.kt
 │
 ├── shared-clients/                # Shared Feign clients module
 │   └── src/main/kotlin/.../shared/
@@ -712,28 +711,30 @@ Base path: `/api/v0.0.1`
 
 ## Important API Details
 
-### DeleteRequest DTO
+### Authentication and Request Identity
 
-**IMPORTANT:** Delete endpoints use `userId` field, NOT `authorId`:
+All create and update operations automatically use the authenticated user's ID from the JWT token.
 
-```kotlin
-// DeleteRequest.kt
-data class DeleteRequest(
-    val userId: UUID,  // NOT authorId
-)
+**Request DTOs do NOT include authorId:**
+- `CreateSpreadRequest`: Only requires `question` and `layoutTypeId`
+- `CreateInterpretationRequest`: Only requires `text`
+- `UpdateInterpretationRequest`: Only requires `text`
+
+The controller extracts `X-User-Id` from the JWT-validated request header (added by gateway) and passes it to the service layer as the author ID. This ensures users cannot impersonate others.
+
+**DELETE operations:**
+- No request body required
+- Authorization checks use `X-User-Id` from JWT header
+- Service layer verifies: `resource.authorId == authenticatedUserId`
+
+**Example Flow:**
 ```
-
-This differs from create/update requests which use `authorId`.
-
-### Request/Response DTOs
-
-**Create requests use `authorId`:**
-- `CreateSpreadRequest.authorId`
-- `CreateInterpretationRequest.authorId`
-- `UpdateInterpretationRequest.authorId`
-
-**Delete requests use `userId`:**
-- `DeleteRequest.userId`
+1. Client → Gateway: Authorization: Bearer <JWT>
+2. Gateway validates JWT → adds X-User-Id header
+3. Gateway → Backend Service: X-User-Id + X-User-Role headers
+4. Controller extracts userId from headers
+5. Service uses userId for authorization and resource ownership
+```
 
 ### Entity ID Storage in divination-service
 
@@ -1002,9 +1003,9 @@ Use `Mono<T>` for single results, `Flux<T>` for multiple results.
 
 ```kotlin
 @Transactional
-fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
+fun createSpread(request: CreateSpreadRequest, authorId: UUID): Mono<CreateSpreadResponse> {
     return Mono
-        .fromCallable { userServiceClient.getUserById(request.authorId) }
+        .fromCallable { userServiceClient.getUserById(authorId) }
         .subscribeOn(Schedulers.boundedElastic())  // Execute on bounded elastic thread pool
         .flatMap { user ->
             Mono.fromCallable { tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!! }
@@ -1016,6 +1017,8 @@ fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
         }
 }
 ```
+
+**Note:** The controller extracts `authorId` from the `X-User-Id` header and passes it as a separate parameter to the service.
 
 **Why this works:**
 - `Schedulers.boundedElastic()` - Dedicated thread pool for blocking operations
