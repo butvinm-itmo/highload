@@ -117,7 +117,7 @@ class InterpretationController(
         @Valid @RequestBody request: CreateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
         divinationService
-            .addInterpretation(spreadId, request.copy(authorId = userId))
+            .addInterpretation(spreadId, request, userId)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @PutMapping("/{id}")

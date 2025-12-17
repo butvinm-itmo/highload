@@ -59,7 +59,7 @@ class SpreadController(
         @Valid @RequestBody request: CreateSpreadRequest,
     ): Mono<ResponseEntity<CreateSpreadResponse>> =
         divinationService
-            .createSpread(request.copy(authorId = userId))
+            .createSpread(request, userId)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @GetMapping

@@ -48,14 +48,14 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
         spreadId =
             divinationClient
                 .createSpread(
-                    CreateSpreadRequest("Cleanup test spread 1", oneCardLayoutId, testUserId),
+                    CreateSpreadRequest("Cleanup test spread 1", oneCardLayoutId),
                 ).body!!
                 .id
 
         spreadId2 =
             divinationClient
                 .createSpread(
-                    CreateSpreadRequest("Cleanup test spread 2", oneCardLayoutId, testUserId),
+                    CreateSpreadRequest("Cleanup test spread 2", oneCardLayoutId),
                 ).body!!
                 .id
 
@@ -64,7 +64,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
             divinationClient
                 .createInterpretation(
                     spreadId,
-                    CreateInterpretationRequest("Cleanup test interpretation", testUserId),
+                    CreateInterpretationRequest("Cleanup test interpretation"),
                 ).body!!
                 .id
     }

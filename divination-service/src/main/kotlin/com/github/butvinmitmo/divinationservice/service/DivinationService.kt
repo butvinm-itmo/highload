@@ -43,10 +43,13 @@ class DivinationService(
     private val interpretationMapper: InterpretationMapper,
 ) {
     @Transactional
-    fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
+    fun createSpread(
+        request: CreateSpreadRequest,
+        authorId: UUID,
+    ): Mono<CreateSpreadResponse> {
         // Validate user exists via Feign (blocking call on boundedElastic)
         return Mono
-            .fromCallable { userServiceClient.getUserById(request.authorId) }
+            .fromCallable { userServiceClient.getUserById(authorId) }
             .subscribeOn(Schedulers.boundedElastic())
             .flatMap {
                 // Validate layout type exists via Feign (blocking call on boundedElastic)
@@ -57,7 +60,7 @@ class DivinationService(
                 val spread =
                     Spread(
                         question = request.question,
-                        authorId = request.authorId,
+                        authorId = authorId,
                         layoutTypeId = request.layoutTypeId,
                     )
                 spreadRepository
@@ -212,15 +215,16 @@ class DivinationService(
     fun addInterpretation(
         spreadId: UUID,
         request: CreateInterpretationRequest,
+        authorId: UUID,
     ): Mono<CreateInterpretationResponse> =
         getSpreadEntity(spreadId)
             .flatMap {
                 // Validate user exists via Feign (blocking call on boundedElastic)
                 Mono
-                    .fromCallable { userServiceClient.getUserById(request.authorId) }
+                    .fromCallable { userServiceClient.getUserById(authorId) }
                     .subscribeOn(Schedulers.boundedElastic())
             }.flatMap {
-                interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)
+                interpretationRepository.existsByAuthorAndSpread(authorId, spreadId)
             }.flatMap { exists ->
                 if (exists) {
                     Mono.error(ConflictException("You already have an interpretation for this spread"))
@@ -228,7 +232,7 @@ class DivinationService(
                     val interpretation =
                         Interpretation(
                             text = request.text,
-                            authorId = request.authorId,
+                            authorId = authorId,
                             spreadId = spreadId,
                         )
                     interpretationRepository

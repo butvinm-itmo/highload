@@ -51,7 +51,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -74,7 +73,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -129,7 +127,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -207,7 +204,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -269,7 +265,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -308,7 +303,6 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 

@@ -52,7 +52,6 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -78,7 +77,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `addInterpretation should create interpretation and return 201`() {
         val spreadId = createSpread()
-        val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
+        val request = CreateInterpretationRequest(text = "Test interpretation")
 
         webTestClient
             .post()
@@ -97,7 +96,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `addInterpretation should return 409 when user already has interpretation`() {
         val spreadId = createSpread()
-        val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
+        val request = CreateInterpretationRequest(text = "Test interpretation")
 
         webTestClient
             .post()
@@ -121,7 +120,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `getInterpretations should return paginated interpretations`() {
         val spreadId = createSpread()
-        val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
+        val request = CreateInterpretationRequest(text = "Test interpretation")
 
         webTestClient
             .post()
@@ -149,7 +148,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `getInterpretation should return interpretation details`() {
         val spreadId = createSpread()
-        val request = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
+        val request = CreateInterpretationRequest(text = "Test interpretation")
 
         val interpretationId =
             webTestClient
@@ -186,7 +185,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `updateInterpretation should update interpretation when user is author`() {
         val spreadId = createSpread()
-        val createRequest = CreateInterpretationRequest(text = "Original text", authorId = testUserId)
+        val createRequest = CreateInterpretationRequest(text = "Original text")
 
         val interpretationId =
             webTestClient
@@ -207,12 +206,12 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = testUserId)
+        val updateRequest = UpdateInterpretationRequest(text = "Updated text")
 
         webTestClient
             .put()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
-            .header("X-User-Id", updateRequest.authorId.toString())
+            .header("X-User-Id", testUserId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updateRequest)
             .exchange()
@@ -226,7 +225,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `updateInterpretation should return 403 when user is not author`() {
         val spreadId = createSpread()
-        val createRequest = CreateInterpretationRequest(text = "Original text", authorId = testUserId)
+        val createRequest = CreateInterpretationRequest(text = "Original text")
 
         val interpretationId =
             webTestClient
@@ -247,12 +246,12 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val updateRequest = UpdateInterpretationRequest(text = "Updated text", authorId = UUID.randomUUID())
+        val updateRequest = UpdateInterpretationRequest(text = "Updated text")
 
         webTestClient
             .put()
             .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
-            .header("X-User-Id", updateRequest.authorId.toString())
+            .header("X-User-Id", UUID.randomUUID().toString())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updateRequest)
             .exchange()
@@ -263,7 +262,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `deleteInterpretation should delete interpretation when user is author`() {
         val spreadId = createSpread()
-        val createRequest = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
+        val createRequest = CreateInterpretationRequest(text = "Test interpretation")
 
         val interpretationId =
             webTestClient
@@ -296,7 +295,7 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
     @Test
     fun `deleteInterpretation should return 403 when user is not author`() {
         val spreadId = createSpread()
-        val createRequest = CreateInterpretationRequest(text = "Test interpretation", authorId = testUserId)
+        val createRequest = CreateInterpretationRequest(text = "Test interpretation")
 
         val interpretationId =
             webTestClient

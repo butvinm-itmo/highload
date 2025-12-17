@@ -94,7 +94,7 @@ class DivinationServiceTest {
 
     @Test
     fun `createSpread should create new spread successfully`() {
-        val request = CreateSpreadRequest(question = "Test question", authorId = userId, layoutTypeId = layoutTypeId)
+        val request = CreateSpreadRequest(question = "Test question", layoutTypeId = layoutTypeId)
         val savedSpread =
             TestEntityFactory.createSpread(
                 id = spreadId,
@@ -123,7 +123,7 @@ class DivinationServiceTest {
                 .ok(testCards),
         )
 
-        val result = divinationService.createSpread(request).block()
+        val result = divinationService.createSpread(request, userId).block()
 
         assertNotNull(result)
         assertEquals(spreadId, result!!.id)
@@ -136,8 +136,8 @@ class DivinationServiceTest {
     fun `getSpreads should return paginated spreads`() {
         val spreads =
             listOf(
-                TestEntityFactory.createSpread(id = UUID.randomUUID(), authorId = userId, layoutTypeId = layoutTypeId),
-                TestEntityFactory.createSpread(id = UUID.randomUUID(), authorId = userId, layoutTypeId = layoutTypeId),
+                TestEntityFactory.createSpread(id = UUID.randomUUID(), layoutTypeId = layoutTypeId),
+                TestEntityFactory.createSpread(id = UUID.randomUUID(), layoutTypeId = layoutTypeId),
             )
 
         whenever(spreadRepository.count()).thenReturn(Mono.just(2L))
@@ -163,7 +163,7 @@ class DivinationServiceTest {
 
     @Test
     fun `deleteSpread should delete spread when user is author`() {
-        val spread = TestEntityFactory.createSpread(id = spreadId, authorId = userId, layoutTypeId = layoutTypeId)
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId, authorId = userId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
         whenever(spreadRepository.deleteById(spreadId)).thenReturn(Mono.empty())
@@ -176,7 +176,7 @@ class DivinationServiceTest {
     @Test
     fun `deleteSpread should throw ForbiddenException when user is not author`() {
         val otherUserId = UUID.randomUUID()
-        val spread = TestEntityFactory.createSpread(id = spreadId, authorId = otherUserId, layoutTypeId = layoutTypeId)
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
 
@@ -204,8 +204,8 @@ class DivinationServiceTest {
 
     @Test
     fun `addInterpretation should create new interpretation successfully`() {
-        val spread = TestEntityFactory.createSpread(id = spreadId, authorId = userId, layoutTypeId = layoutTypeId)
-        val request = CreateInterpretationRequest(text = "Test interpretation", authorId = userId)
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
+        val request = CreateInterpretationRequest(text = "Test interpretation")
         val savedInterpretation =
             TestEntityFactory.createInterpretation(
                 id = interpretationId,
@@ -223,7 +223,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
 
-        val result = divinationService.addInterpretation(spreadId, request).block()
+        val result = divinationService.addInterpretation(spreadId, request, userId).block()
 
         assertNotNull(result)
         assertEquals(interpretationId, result!!.id)
@@ -231,8 +231,8 @@ class DivinationServiceTest {
 
     @Test
     fun `addInterpretation should throw ConflictException when user already has interpretation`() {
-        val spread = TestEntityFactory.createSpread(id = spreadId, authorId = userId, layoutTypeId = layoutTypeId)
-        val request = CreateInterpretationRequest(text = "Test interpretation", authorId = userId)
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
+        val request = CreateInterpretationRequest(text = "Test interpretation")
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
         whenever(userServiceClient.getUserById(userId)).thenReturn(
@@ -243,7 +243,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ConflictException> {
-                divinationService.addInterpretation(spreadId, request).block()
+                divinationService.addInterpretation(spreadId, request, userId).block()
             }
         assertEquals("You already have an interpretation for this spread", exception.message)
 
@@ -260,7 +260,7 @@ class DivinationServiceTest {
                 spreadId = spreadId,
                 createdAt = createdAt,
             )
-        val request = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
+        val request = UpdateInterpretationRequest(text = "Updated text")
 
         val interpretationDto = InterpretationDto(interpretationId, "Updated text", createdAt, testUser, spreadId)
 
@@ -284,7 +284,7 @@ class DivinationServiceTest {
                 spreadId = spreadId,
                 createdAt = createdAt,
             )
-        val request = UpdateInterpretationRequest(text = "Updated text", authorId = userId)
+        val request = UpdateInterpretationRequest(text = "Updated text")
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
 
@@ -383,11 +383,11 @@ class DivinationServiceTest {
 
     @Test
     fun `getInterpretations should return paginated interpretations`() {
-        val spread = TestEntityFactory.createSpread(id = spreadId, authorId = userId, layoutTypeId = layoutTypeId)
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
         val interpretations =
             listOf(
-                TestEntityFactory.createInterpretation(id = UUID.randomUUID(), authorId = userId, spreadId = spreadId),
-                TestEntityFactory.createInterpretation(id = UUID.randomUUID(), authorId = userId, spreadId = spreadId),
+                TestEntityFactory.createInterpretation(id = UUID.randomUUID(), spreadId = spreadId),
+                TestEntityFactory.createInterpretation(id = UUID.randomUUID(), spreadId = spreadId),
             )
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))

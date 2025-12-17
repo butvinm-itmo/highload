@@ -66,7 +66,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
             CreateSpreadRequest(
                 question = "E2E test question - What does the future hold?",
                 layoutTypeId = oneCardLayoutId,
-                authorId = testUserId,
             )
         val response = divinationClient.createSpread(request)
 
@@ -97,7 +96,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
             CreateSpreadRequest(
                 question = "E2E test - Past, Present, Future?",
                 layoutTypeId = threeCardsLayoutId,
-                authorId = testUserId,
             )
         val response = divinationClient.createSpread(request)
 
@@ -139,7 +137,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         val request =
             CreateInterpretationRequest(
                 text = "E2E test interpretation - The cards suggest great fortune ahead!",
-                authorId = testUserId,
             )
         val response = divinationClient.createInterpretation(spreadId, request)
 
@@ -163,7 +160,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         val request =
             CreateInterpretationRequest(
                 text = "Another interpretation attempt by same author",
-                authorId = testUserId,
             )
         assertThrowsWithStatus(409) {
             divinationClient.createInterpretation(spreadId, request)
@@ -177,7 +173,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         val request =
             UpdateInterpretationRequest(
                 text = "Updated E2E interpretation - Even better fortune!",
-                authorId = testUserId,
             )
         val response = divinationClient.updateInterpretation(spreadId, interpretationId, request)
 
@@ -192,7 +187,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         val request =
             UpdateInterpretationRequest(
                 text = "Malicious update attempt",
-                authorId = adminId,
             )
         assertThrowsWithStatus(403) {
             divinationClient.updateInterpretation(spreadId, interpretationId, request)
@@ -208,7 +202,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
             CreateSpreadRequest(
                 question = "This should fail",
                 layoutTypeId = oneCardLayoutId,
-                authorId = fakeId,
             )
         assertThrowsWithStatus(404) {
             divinationClient.createSpread(request)
@@ -224,7 +217,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
             CreateSpreadRequest(
                 question = "This should fail",
                 layoutTypeId = fakeId,
-                authorId = testUserId,
             )
         assertThrowsWithStatus(404) {
             divinationClient.createSpread(request)

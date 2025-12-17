@@ -63,7 +63,6 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -99,7 +98,6 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -133,7 +131,6 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -170,7 +167,6 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
@@ -197,7 +193,6 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
