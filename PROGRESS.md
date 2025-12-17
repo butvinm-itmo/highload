@@ -2,7 +2,7 @@
 
 **Date**: 2025-12-17
 **Branch**: `auth`
-**Status**: Phase 4/5 Complete ✅
+**Status**: Phase 5/5 Complete ✅ - All Implementation Done!
 
 ---
 
@@ -149,55 +149,85 @@ E2E tests were failing due to fundamental API mismatches between Feign clients a
 
 ---
 
-## Remaining Work
+### ✅ Phase 5: Update Documentation
+**Commit**: `b0ddadd` - "Update documentation to reflect API changes (remove authorId, DeleteRequest)"
 
-### ⏳ Phase 5: Update Documentation
+**Changes to CLAUDE.md:**
 
-**Goal**: Update `CLAUDE.md` to reflect API changes.
+1. **Removed "DeleteRequest DTO" section** (lines 715-726)
+   - Deleted entire section explaining DeleteRequest.userId vs authorId
+   - DTO no longer exists in codebase
 
-**Changes Needed:**
+2. **Replaced "Request/Response DTOs" section** with **"Authentication and Request Identity"**
+   - Documented that request DTOs do NOT include authorId fields
+   - Explained JWT-based authentication flow:
+     - Client → Gateway: `Authorization: Bearer <JWT>`
+     - Gateway validates JWT → adds `X-User-Id` header
+     - Controller extracts userId from headers → passes to service
+   - Clarified DELETE operations require no request body
+   - Service layer verifies resource ownership
 
-1. **Section: "Important API Details"** (around line 305-320)
-   - Remove "DeleteRequest DTO" subsection entirely
-   - Remove "Create requests use authorId" section
-   - Add new section: "Authentication and Request Identity"
+3. **Updated reactive code example** (line 1006)
+   - Changed `createSpread(request: CreateSpreadRequest)` to `createSpread(request: CreateSpreadRequest, authorId: UUID)`
+   - Updated Feign call from `getUserById(request.authorId)` to `getUserById(authorId)`
+   - Added note explaining controller extracts authorId from headers
 
-2. **Section: "API Endpoints"**
-   - Update request body examples to remove `authorId`
-   - Clarify DELETE operations require no request body
+4. **Removed DeleteRequest.kt from project structure** (line 586)
+   - Cleaned up shared-dto file list
 
-3. **Section: "Request/Response DTOs"**
-   - Remove mentions of `authorId` fields in create/update requests
-   - Document that author identity comes from JWT only
-
-**New Documentation Section:**
-```markdown
-### Authentication and Request Identity
-
-All create and update operations automatically use the authenticated user's ID from the JWT token.
-
-**Controllers override author identity:**
-- `CreateSpreadRequest`: Only requires `question` and `layoutTypeId`
-- `CreateInterpretationRequest`: Only requires `text`
-- `UpdateInterpretationRequest`: Only requires `text`
-
-The controller extracts `X-User-Id` from the JWT-validated request header and uses it as the author ID.
-This ensures users cannot impersonate others.
-
-**DELETE operations:**
-- No request body required
-- Authorization checks use `X-User-Id` from JWT header
-- Service layer verifies: `resource.authorId == authenticatedUserId`
-```
-
-**Files to Modify:**
+**Files Modified:**
 - `CLAUDE.md`
 
 **Verification:**
 ```bash
-cat CLAUDE.md | grep -A 5 "authorId"  # Should find no inappropriate references
-cat CLAUDE.md | grep "DeleteRequest"  # Should return nothing
+grep -n "DeleteRequest" CLAUDE.md
+# ✅ No results - all references removed
+
+grep -n "CreateSpreadRequest.authorId" CLAUDE.md
+# ✅ No results - no inappropriate references
 ```
+
+**Documentation now accurately reflects:**
+- JWT-based authentication architecture
+- No authorId in request DTOs
+- Controllers pass userId from headers to services
+- DELETE operations use headers only (no request body)
+
+---
+
+## All Phases Complete! 🎉
+
+All 5 phases of the API mismatch fix have been successfully implemented:
+1. ✅ Fixed DELETE endpoint Feign client signatures
+2. ✅ Removed unused DeleteRequest DTO
+3. ✅ Removed authorId from request DTOs
+4. ✅ Fixed E2E authorization tests (multi-user JWT testing)
+5. ✅ Updated documentation
+
+---
+
+## Final Verification Steps
+
+Before merging to master, complete these verification steps:
+
+1. **Run E2E Tests** (when services are available):
+   ```bash
+   docker compose up -d --build
+   ./gradlew :e2e-tests:test
+   # Expected: 32 tests passing
+   ```
+
+2. **Full Build Verification**:
+   ```bash
+   ./gradlew clean build
+   # Expected: All modules build successfully
+   ```
+
+3. **Review Commit History**:
+   ```bash
+   git log --oneline auth
+   # Should show 6 commits (3 implementation + 2 progress + 1 doc)
+   ```
 
 ---
 
@@ -271,23 +301,18 @@ git log --oneline -3
 
 ## Next Steps
 
-1. **Implement Phase 5**: Update documentation
-   - Update `CLAUDE.md` API sections
-   - Remove all references to `DeleteRequest` and request body `authorId` fields
-   - Document JWT-based authentication flow
+✅ All implementation phases complete!
 
-3. **Final Verification**:
-   ```bash
-   ./gradlew clean build  # Full rebuild
-   docker compose up -d --build  # Start services
-   ./gradlew :e2e-tests:test  # All E2E tests should pass
-   ```
+**To merge to master:**
 
-4. **Merge to master** (after all tests pass)
+1. Ensure E2E tests pass (requires running services)
+2. Review all commits one final time
+3. Merge `auth` branch to `master`
+4. Tag the release (optional): `git tag -a v0.0.2-auth-fix -m "Fix API authentication flow"`
 
 ---
 
-**Last Updated**: 2025-12-17 (Phase 4 complete)
+**Last Updated**: 2025-12-17 (All phases complete! 🎉)
 **Branch**: `auth`
-**Completed Phases**: 4/5
-**Total Commits**: 4
+**Completed Phases**: 5/5 ✅
+**Total Commits**: 6 (3 implementation + 2 progress tracking + 1 documentation)
