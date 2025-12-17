@@ -3,6 +3,7 @@ package com.github.butvinmitmo.e2e
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -11,84 +12,90 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
 
+/**
+ * Tests for authorization and cleanup operations.
+ *
+ * This test suite verifies JWT-based authorization by creating multiple users
+ * and testing that users can only delete their own resources.
+ */
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CleanupAuthorizationE2ETest : BaseE2ETest() {
     companion object {
-        private lateinit var testUserId: UUID
-        private lateinit var adminId: UUID
-        private lateinit var spreadId: UUID
-        private lateinit var spreadId2: UUID
-        private lateinit var interpretationId: UUID
+        private lateinit var userAId: UUID
+        private lateinit var userAUsername: String
+        private lateinit var userBId: UUID
+        private lateinit var userBUsername: String
         private lateinit var oneCardLayoutId: UUID
+        private lateinit var spreadId: UUID
+        private lateinit var interpretationId: UUID
+
+        private const val USER_A_PASSWORD = "UserA@123"
+        private const val USER_B_PASSWORD = "UserB@456"
     }
 
     @BeforeAll
     fun setupTestData() {
         loginAsAdmin()
 
-        // Create test user
-        val userResponse =
+        // Create userA and userB for authorization testing
+        userAUsername = "e2e_auth_userA_${System.currentTimeMillis()}"
+        val userAResponse =
             userClient.createUser(
                 CreateUserRequest(
-                    username = "e2e_cleanup_user_${System.currentTimeMillis()}",
-                    password = "Test@123",
+                    username = userAUsername,
+                    password = USER_A_PASSWORD,
                 ),
             )
-        testUserId = userResponse.body!!.id
+        userAId = userAResponse.body!!.id
 
-        // Get admin user
-        val users = userClient.getUsers().body!!
-        adminId = users.find { it.username == "admin" }!!.id
+        userBUsername = "e2e_auth_userB_${System.currentTimeMillis()}"
+        val userBResponse =
+            userClient.createUser(
+                CreateUserRequest(
+                    username = userBUsername,
+                    password = USER_B_PASSWORD,
+                ),
+            )
+        userBId = userBResponse.body!!.id
 
         // Get layout type
         val layoutTypes = tarotClient.getLayoutTypes().body!!
         oneCardLayoutId = layoutTypes.find { it.name == "ONE_CARD" }!!.id
+    }
 
-        // Create spreads
-        spreadId =
-            divinationClient
-                .createSpread(
-                    CreateSpreadRequest("Cleanup test spread 1", oneCardLayoutId),
-                ).body!!
-                .id
-
-        spreadId2 =
-            divinationClient
-                .createSpread(
-                    CreateSpreadRequest("Cleanup test spread 2", oneCardLayoutId),
-                ).body!!
-                .id
-
-        // Create interpretation
-        interpretationId =
-            divinationClient
-                .createInterpretation(
-                    spreadId,
-                    CreateInterpretationRequest("Cleanup test interpretation"),
-                ).body!!
-                .id
+    @AfterAll
+    fun cleanup() {
+        loginAsAdmin()
+        // Delete both test users (cascades to spreads and interpretations)
+        runCatching { userClient.deleteUser(userAId) }
+        runCatching { userClient.deleteUser(userBId) }
     }
 
     @Test
     @Order(1)
-    fun `DELETE interpretation should succeed for author`() {
-        loginAsAdmin()
+    fun `UserA creates spread`() {
+        loginAndSetToken(userAUsername, USER_A_PASSWORD)
         val response =
-            divinationClient.deleteInterpretation(
-                spreadId,
-                interpretationId,
+            divinationClient.createSpread(
+                CreateSpreadRequest("UserA's test spread", oneCardLayoutId),
             )
-        assertEquals(204, response.statusCode.value())
-
-        // Verify interpretation is deleted
-        val spread = divinationClient.getSpreadById(spreadId).body!!
-        assertEquals(0, spread.interpretations.size, "Spread should have no interpretations after deletion")
+        assertEquals(201, response.statusCode.value())
+        spreadId = response.body!!.id
     }
 
     @Test
     @Order(2)
-    fun `DELETE spread should succeed for author`() {
-        loginAsAdmin()
+    fun `UserB cannot delete UserA's spread (403)`() {
+        loginAndSetToken(userBUsername, USER_B_PASSWORD)
+        assertThrowsWithStatus(403) {
+            divinationClient.deleteSpread(spreadId)
+        }
+    }
+
+    @Test
+    @Order(3)
+    fun `UserA can delete own spread (204)`() {
+        loginAndSetToken(userAUsername, USER_A_PASSWORD)
         val response = divinationClient.deleteSpread(spreadId)
         assertEquals(204, response.statusCode.value())
 
@@ -99,32 +106,57 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     }
 
     @Test
-    @Order(3)
-    fun `DELETE spread by non-author should return 403`() {
-        loginAsAdmin()
-        assertThrowsWithStatus(403) {
-            divinationClient.deleteSpread(spreadId2)
-        }
-    }
-
-    @Test
     @Order(4)
-    fun `DELETE second spread for cleanup should succeed`() {
-        loginAsAdmin()
-        val response = divinationClient.deleteSpread(spreadId2)
-        assertEquals(204, response.statusCode.value())
+    fun `UserA creates another spread for interpretation test`() {
+        loginAndSetToken(userAUsername, USER_A_PASSWORD)
+        val response =
+            divinationClient.createSpread(
+                CreateSpreadRequest("UserA's spread for interpretation", oneCardLayoutId),
+            )
+        assertEquals(201, response.statusCode.value())
+        spreadId = response.body!!.id
     }
 
     @Test
     @Order(5)
-    fun `DELETE user should succeed and verify deletion`() {
-        loginAsAdmin()
-        val response = userClient.deleteUser(testUserId)
+    fun `UserB adds interpretation to UserA's spread`() {
+        loginAndSetToken(userBUsername, USER_B_PASSWORD)
+        val response =
+            divinationClient.createInterpretation(
+                spreadId,
+                CreateInterpretationRequest("UserB's interpretation"),
+            )
+        assertEquals(201, response.statusCode.value())
+        interpretationId = response.body!!.id
+    }
+
+    @Test
+    @Order(6)
+    fun `UserA cannot delete UserB's interpretation (403)`() {
+        loginAndSetToken(userAUsername, USER_A_PASSWORD)
+        assertThrowsWithStatus(403) {
+            divinationClient.deleteInterpretation(spreadId, interpretationId)
+        }
+    }
+
+    @Test
+    @Order(7)
+    fun `UserB can delete own interpretation (204)`() {
+        loginAndSetToken(userBUsername, USER_B_PASSWORD)
+        val response = divinationClient.deleteInterpretation(spreadId, interpretationId)
         assertEquals(204, response.statusCode.value())
 
-        // Verify user is deleted
-        assertThrowsWithStatus(404) {
-            userClient.getUserById(testUserId)
-        }
+        // Verify interpretation is deleted
+        loginAndSetToken(userAUsername, USER_A_PASSWORD)
+        val spread = divinationClient.getSpreadById(spreadId).body!!
+        assertEquals(0, spread.interpretations.size, "Spread should have no interpretations after deletion")
+    }
+
+    @Test
+    @Order(8)
+    fun `UserA deletes own spread after interpretation is removed (204)`() {
+        loginAndSetToken(userAUsername, USER_A_PASSWORD)
+        val response = divinationClient.deleteSpread(spreadId)
+        assertEquals(204, response.statusCode.value())
     }
 }

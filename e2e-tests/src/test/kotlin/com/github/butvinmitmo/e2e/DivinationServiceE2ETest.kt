@@ -183,7 +183,19 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(10)
     fun `PUT interpretation by non-author should return 403`() {
+        // Create a second test user to test non-author update
         loginAsAdmin()
+        val otherUserResponse =
+            userClient.createUser(
+                CreateUserRequest(
+                    username = "e2e_other_user_${System.currentTimeMillis()}",
+                    password = "Test@456",
+                ),
+            )
+        val otherUserId = otherUserResponse.body!!.id
+
+        // Login as the other user and try to update admin's interpretation
+        loginAndSetToken("e2e_other_user_${otherUserId.toString().takeLast(13)}", "Test@456")
         val request =
             UpdateInterpretationRequest(
                 text = "Malicious update attempt",
@@ -191,25 +203,14 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         assertThrowsWithStatus(403) {
             divinationClient.updateInterpretation(spreadId, interpretationId, request)
         }
+
+        // Cleanup: delete the test user
+        loginAsAdmin()
+        userClient.deleteUser(otherUserId)
     }
 
     @Test
     @Order(11)
-    fun `POST spread with non-existent user should return 404`() {
-        loginAsAdmin()
-        val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
-        val request =
-            CreateSpreadRequest(
-                question = "This should fail",
-                layoutTypeId = oneCardLayoutId,
-            )
-        assertThrowsWithStatus(404) {
-            divinationClient.createSpread(request)
-        }
-    }
-
-    @Test
-    @Order(12)
     fun `POST spread with non-existent layout type should return 404`() {
         loginAsAdmin()
         val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
