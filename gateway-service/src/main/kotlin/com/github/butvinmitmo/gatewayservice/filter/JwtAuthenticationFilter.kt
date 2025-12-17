@@ -1,7 +1,7 @@
 package com.github.butvinmitmo.gatewayservice.filter
 
+import com.github.butvinmitmo.gatewayservice.config.SecurityProperties
 import com.github.butvinmitmo.gatewayservice.security.JwtUtil
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.core.Ordered
@@ -13,8 +13,7 @@ import reactor.core.publisher.Mono
 @Component
 class JwtAuthenticationFilter(
     private val jwtUtil: JwtUtil,
-    @Value("\${security.public-paths}")
-    private val publicPaths: List<String>,
+    private val securityProperties: SecurityProperties,
 ) : GlobalFilter,
     Ordered {
     override fun filter(
@@ -24,7 +23,7 @@ class JwtAuthenticationFilter(
         val path = exchange.request.path.value()
 
         // Skip public paths
-        if (publicPaths.any { path.startsWith(it) }) {
+        if (securityProperties.publicPaths.any { path.startsWith(it) }) {
             return chain.filter(exchange)
         }
 
