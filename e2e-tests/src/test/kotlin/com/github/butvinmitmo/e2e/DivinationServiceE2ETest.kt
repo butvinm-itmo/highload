@@ -185,17 +185,18 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     fun `PUT interpretation by non-author should return 403`() {
         // Create a second test user to test non-author update
         loginAsAdmin()
+        val otherUsername = "e2e_other_user_${System.currentTimeMillis()}"
         val otherUserResponse =
             userClient.createUser(
                 CreateUserRequest(
-                    username = "e2e_other_user_${System.currentTimeMillis()}",
+                    username = otherUsername,
                     password = "Test@456",
                 ),
             )
         val otherUserId = otherUserResponse.body!!.id
 
         // Login as the other user and try to update admin's interpretation
-        loginAndSetToken("e2e_other_user_${otherUserId.toString().takeLast(13)}", "Test@456")
+        loginAndSetToken(otherUsername, "Test@456")
         val request =
             UpdateInterpretationRequest(
                 text = "Malicious update attempt",
