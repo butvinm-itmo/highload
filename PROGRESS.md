@@ -242,14 +242,19 @@ Before merging to master, complete these verification steps:
 - ✅ DivinationServiceTest (unit): 14/14 passing
 - **Total: 35/35 tests passing** ✅
 
-**E2E Tests** (Phase 4 complete):
-- ✅ CleanupAuthorizationE2ETest: 8 tests (rewritten for JWT-based auth)
-- ✅ DivinationServiceE2ETest: 11 tests (fixed authorization test, removed impossible test)
-- ✅ UserServiceE2ETest: 7 tests
-- ✅ TarotServiceE2ETest: 6 tests
-- **Total: 32 tests** (need services running to verify: `docker compose up -d`)
+**E2E Tests** (All passing! ✅):
+- ✅ CleanupAuthorizationE2ETest: 8/8 passing (rewritten for JWT-based auth)
+- ✅ DivinationServiceE2ETest: 11/11 passing (fixed authorization test, removed impossible test)
+- ✅ UserServiceE2ETest: 7/7 passing
+- ✅ TarotServiceE2ETest: 6/6 passing
+- **Total: 32/32 tests passing** ✅
 
-**Note:** E2E tests require running services. Build verification successful (`./gradlew build -x test`).
+**Verification:**
+```bash
+docker compose up -d --wait
+./gradlew :e2e-tests:test --rerun-tasks
+# ✅ BUILD SUCCESSFUL - All 32 tests passed
+```
 
 ---
 
