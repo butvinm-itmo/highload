@@ -3,7 +3,6 @@ package com.github.butvinmitmo.divinationservice.integration.controller
 import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
-import com.github.butvinmitmo.shared.dto.DeleteRequest
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.shared.dto.UserDto
 import org.junit.jupiter.api.Test
@@ -231,14 +230,10 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val deleteRequest = DeleteRequest(userId = testUserId)
-
         webTestClient
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId")
-            .header("X-User-Id", deleteRequest.userId.toString())
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(deleteRequest)
+            .header("X-User-Id", testUserId.toString())
             .exchange()
             .expectStatus()
             .isNoContent
@@ -297,14 +292,12 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     objectMapper.readTree(body).get("id").asText()
                 }!!
 
-        val deleteRequest = DeleteRequest(userId = UUID.randomUUID())
+        val nonAuthorUserId = UUID.randomUUID()
 
         webTestClient
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId")
-            .header("X-User-Id", deleteRequest.userId.toString())
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(deleteRequest)
+            .header("X-User-Id", nonAuthorUserId.toString())
             .exchange()
             .expectStatus()
             .isForbidden
