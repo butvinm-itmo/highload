@@ -224,4 +224,32 @@ class DivinationServiceE2ETest : BaseE2ETest() {
             divinationClient.createSpread(request)
         }
     }
+
+    @Test
+    @Order(12)
+    fun `POST interpretation as USER should return 403`() {
+        // Create regular USER
+        loginAsAdmin()
+        val userUsername = "e2e_regular_user_${System.currentTimeMillis()}"
+        val userResponse =
+            userClient.createUser(
+                CreateUserRequest(username = userUsername, password = "User@123"),
+            )
+        val regularUserId = userResponse.body!!.id
+
+        // Login as regular user (has USER role by default)
+        loginAndSetToken(userUsername, "User@123")
+
+        val request =
+            CreateInterpretationRequest(
+                text = "This should fail - USER cannot create interpretations",
+            )
+        assertThrowsWithStatus(403) {
+            divinationClient.createInterpretation(spreadId, request)
+        }
+
+        // Cleanup
+        loginAsAdmin()
+        userClient.deleteUser(regularUserId)
+    }
 }

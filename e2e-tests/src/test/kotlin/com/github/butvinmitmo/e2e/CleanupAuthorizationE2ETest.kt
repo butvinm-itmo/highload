@@ -119,12 +119,13 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
 
     @Test
     @Order(5)
-    fun `UserB adds interpretation to UserA's spread`() {
-        loginAndSetToken(userBUsername, USER_B_PASSWORD)
+    fun `Admin adds interpretation to UserA's spread`() {
+        // TODO: In Phase 4, create userB as MEDIUM role and use userB here instead of admin
+        loginAsAdmin()
         val response =
             divinationClient.createInterpretation(
                 spreadId,
-                CreateInterpretationRequest("UserB's interpretation"),
+                CreateInterpretationRequest("Admin interpretation on UserA's spread"),
             )
         assertEquals(201, response.statusCode.value())
         interpretationId = response.body!!.id
@@ -132,7 +133,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
 
     @Test
     @Order(6)
-    fun `UserA cannot delete UserB's interpretation (403)`() {
+    fun `UserA cannot delete admin's interpretation (403)`() {
         loginAndSetToken(userAUsername, USER_A_PASSWORD)
         assertThrowsWithStatus(403) {
             divinationClient.deleteInterpretation(spreadId, interpretationId)
@@ -141,8 +142,8 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
 
     @Test
     @Order(7)
-    fun `UserB can delete own interpretation (204)`() {
-        loginAndSetToken(userBUsername, USER_B_PASSWORD)
+    fun `Admin can delete own interpretation (204)`() {
+        loginAsAdmin()
         val response = divinationClient.deleteInterpretation(spreadId, interpretationId)
         assertEquals(204, response.statusCode.value())
 
