@@ -9,10 +9,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Architecture:** Microservices with Feign Clients for inter-service communication.
 
 Key features:
-- JWT-based authentication with role-based authorization (USER, ADMIN)
+- JWT-based authentication with 3-role authorization model (USER, MEDIUM, ADMIN)
 - Create tarot spreads with different layouts (one card, three cards, cross/five cards)
 - View all spreads in chronological feed
-- Add/edit/delete interpretations for spreads (author-only modifications)
+- Add/edit/delete interpretations for spreads (MEDIUM/ADMIN only for creation, author-only for modifications)
 - User management with transactional deletion (ADMIN-only)
 
 ## Microservices Architecture
@@ -109,11 +109,20 @@ The application uses JWT-based authentication with centralized validation at the
 - Returns 401 for missing/invalid tokens
 - Adds `X-User-Id` and `X-User-Role` headers after validation
 
-**Authorization Model:**
-- **USER role**: Default role for all users, can create spreads and interpretations
-- **ADMIN role**: Can manage users (create, update, delete)
-- **Author-only operations**: Users can only delete/update their own spreads/interpretations
-- **Public read endpoints**: All spreads and cards are publicly readable (authentication still required)
+**Authorization Model (3-Role System):**
+
+| Role | Spreads | Interpretations | Users |
+|------|---------|-----------------|-------|
+| **USER** | Create, read, delete own | Read only (CANNOT create) | Read only |
+| **MEDIUM** | Create, read, delete own | Create, read, update/delete own | Read only |
+| **ADMIN** | Full access (bypass author checks) | Full access (bypass author checks) | Full CRUD |
+
+- **USER role**: Default role for new users. Can create spreads, read spreads/interpretations, get users list
+- **MEDIUM role**: All USER permissions + create interpretations on any spread
+- **ADMIN role**: Complete system access - user CRUD, create spreads/interpretations, bypass author-only checks for delete/update
+- **Author-only operations**: Non-ADMIN users can only delete/update their own spreads/interpretations
+- **ADMIN bypass**: ADMIN can delete/update ANY spread or interpretation regardless of author
+- **Public read endpoints**: All spreads and cards are readable by any authenticated user
 
 ### Default Admin Credentials
 
@@ -692,22 +701,22 @@ Base path: `/api/v0.0.1`
 Base path: `/api/v0.0.1`
 
 **Spreads:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/spreads` | Create spread |
-| GET | `/spreads?page=N&size=M` | List spreads (X-Total-Count header) |
-| GET | `/spreads/scroll?after=ID&size=N` | Scroll spreads (X-After header) |
-| GET | `/spreads/{id}` | Get spread with cards and interpretations |
-| DELETE | `/spreads/{id}` | Delete spread (author only) |
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| POST | `/spreads` | Create spread | Any |
+| GET | `/spreads?page=N&size=M` | List spreads (X-Total-Count header) | Any |
+| GET | `/spreads/scroll?after=ID&size=N` | Scroll spreads (X-After header) | Any |
+| GET | `/spreads/{id}` | Get spread with cards and interpretations | Any |
+| DELETE | `/spreads/{id}` | Delete spread | Author or ADMIN |
 
 **Interpretations:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/spreads/{spreadId}/interpretations` | List interpretations |
-| GET | `/spreads/{spreadId}/interpretations/{id}` | Get interpretation |
-| POST | `/spreads/{spreadId}/interpretations` | Add interpretation (409 if duplicate) |
-| PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation (author only) |
-| DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation (author only) |
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| GET | `/spreads/{spreadId}/interpretations` | List interpretations | Any |
+| GET | `/spreads/{spreadId}/interpretations/{id}` | Get interpretation | Any |
+| POST | `/spreads/{spreadId}/interpretations` | Add interpretation (409 if duplicate) | MEDIUM, ADMIN |
+| PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation | Author or ADMIN |
+| DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation | Author or ADMIN |
 
 ## Important API Details
 
@@ -821,7 +830,8 @@ e2e-tests/src/test/kotlin/.../e2e/
 ├── UserServiceE2ETest.kt              # User CRUD tests (7 tests)
 ├── TarotServiceE2ETest.kt             # Cards & layout types tests (6 tests)
 ├── DivinationServiceE2ETest.kt        # Spreads & interpretations tests (12 tests)
-└── CleanupAuthorizationE2ETest.kt     # Delete & authorization tests (6 tests)
+├── CleanupAuthorizationE2ETest.kt     # Delete & authorization tests (8 tests)
+└── RoleAuthorizationE2ETest.kt        # Comprehensive 3-role model tests (19 tests)
 ```
 
 **Architecture:**
@@ -858,11 +868,12 @@ docker compose down
 - `project(":shared-clients")` - Feign clients for all services
 - `project(":shared-dto")` - Request/response DTOs
 
-**Test coverage (31 tests):**
+**Test coverage (52 E2E tests):**
 - User CRUD, duplicate username (409), not found (404), authentication
 - Cards pagination (78 total cards), layout types, random cards, layout type by ID
 - Spreads with inter-service Feign calls, interpretations CRUD
 - Delete operations, authorization verification (403), cleanup
+- Comprehensive 3-role authorization (USER, MEDIUM, ADMIN permission boundaries)
 
 ## Code Style Guidelines
 
