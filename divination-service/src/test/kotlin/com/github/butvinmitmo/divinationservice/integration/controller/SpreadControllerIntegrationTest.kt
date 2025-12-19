@@ -230,6 +230,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isNoContent
@@ -293,6 +294,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .method(org.springframework.http.HttpMethod.DELETE)
             .uri("/api/v0.0.1/spreads/$spreadId")
             .header("X-User-Id", nonAuthorUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isForbidden

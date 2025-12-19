@@ -256,8 +256,11 @@ class SpreadController(
         @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
         userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
     ): Mono<ResponseEntity<Void>> =
         divinationService
-            .deleteSpread(id, userId)
+            .deleteSpread(id, userId, role)
             .then(Mono.just(ResponseEntity.noContent().build()))
 }

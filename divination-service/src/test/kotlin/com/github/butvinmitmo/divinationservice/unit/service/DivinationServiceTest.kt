@@ -168,7 +168,7 @@ class DivinationServiceTest {
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
         whenever(spreadRepository.deleteById(spreadId)).thenReturn(Mono.empty())
 
-        divinationService.deleteSpread(spreadId, userId).block()
+        divinationService.deleteSpread(spreadId, userId, "USER").block()
 
         verify(spreadRepository).deleteById(spreadId)
     }
@@ -182,7 +182,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ForbiddenException> {
-                divinationService.deleteSpread(spreadId, userId).block()
+                divinationService.deleteSpread(spreadId, userId, "USER").block()
             }
         assertEquals("You can only delete your own spreads", exception.message)
 
@@ -195,7 +195,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<NotFoundException> {
-                divinationService.deleteSpread(spreadId, userId).block()
+                divinationService.deleteSpread(spreadId, userId, "USER").block()
             }
         assertEquals("Spread not found", exception.message)
 
@@ -268,7 +268,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation))
         whenever(interpretationMapper.toDto(any())).thenReturn(interpretationDto)
 
-        divinationService.updateInterpretation(spreadId, interpretationId, userId, request).block()
+        divinationService.updateInterpretation(spreadId, interpretationId, userId, "USER", request).block()
 
         verify(interpretationRepository).save(any())
     }
@@ -290,7 +290,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ForbiddenException> {
-                divinationService.updateInterpretation(spreadId, interpretationId, userId, request).block()
+                divinationService.updateInterpretation(spreadId, interpretationId, userId, "USER", request).block()
             }
         assertEquals("You can only edit your own interpretations", exception.message)
 
@@ -311,7 +311,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(interpretationRepository.deleteById(interpretationId)).thenReturn(Mono.empty())
 
-        divinationService.deleteInterpretation(spreadId, interpretationId, userId).block()
+        divinationService.deleteInterpretation(spreadId, interpretationId, userId, "USER").block()
 
         verify(interpretationRepository).deleteById(interpretationId)
     }
@@ -332,7 +332,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ForbiddenException> {
-                divinationService.deleteInterpretation(spreadId, interpretationId, userId).block()
+                divinationService.deleteInterpretation(spreadId, interpretationId, userId, "USER").block()
             }
         assertEquals("You can only delete your own interpretations", exception.message)
 

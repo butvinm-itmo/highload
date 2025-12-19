@@ -194,12 +194,13 @@ class DivinationService(
     fun deleteSpread(
         id: UUID,
         userId: UUID,
+        role: String,
     ): Mono<Void> =
         spreadRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Spread not found")))
             .flatMap { spread ->
-                if (spread.authorId != userId) {
+                if (spread.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only delete your own spreads"))
                 } else {
                     spreadRepository.deleteById(id)
@@ -246,13 +247,14 @@ class DivinationService(
         spreadId: UUID,
         id: UUID,
         userId: UUID,
+        role: String,
         request: UpdateInterpretationRequest,
     ): Mono<InterpretationDto> =
         interpretationRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
             .flatMap { interpretation ->
-                if (interpretation.authorId != userId) {
+                if (interpretation.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only edit your own interpretations"))
                 } else {
                     interpretation.text = request.text
@@ -267,12 +269,13 @@ class DivinationService(
         spreadId: UUID,
         id: UUID,
         userId: UUID,
+        role: String,
     ): Mono<Void> =
         interpretationRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
             .flatMap { interpretation ->
-                if (interpretation.authorId != userId) {
+                if (interpretation.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only delete your own interpretations"))
                 } else {
                     interpretationRepository.deleteById(id)

@@ -281,10 +281,13 @@ class InterpretationController(
         @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
         userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Valid @RequestBody request: UpdateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
         divinationService
-            .updateInterpretation(spreadId, id, userId, request)
+            .updateInterpretation(spreadId, id, userId, role, request)
             .map { updatedInterpretation -> ResponseEntity.ok(updatedInterpretation) }
 
     @DeleteMapping("/{id}")
@@ -334,9 +337,12 @@ class InterpretationController(
         @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
         userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
     ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
         divinationService
-            .deleteInterpretation(spreadId, id, userId)
+            .deleteInterpretation(spreadId, id, userId, role)
             .then(
                 reactor.core.publisher.Mono
                     .just(ResponseEntity.noContent().build()),
