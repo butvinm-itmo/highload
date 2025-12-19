@@ -97,4 +97,75 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
         assertTrue(result.content.size >= 2)
     }
+
+    @Test
+    fun `createUser should create user with MEDIUM role when specified`() {
+        val request = CreateUserRequest(username = "mediumuser", password = "Test@123", role = "MEDIUM")
+
+        val response = userService.createUser(request)
+
+        assertNotNull(response.id)
+        val savedUser = userRepository.findById(response.id).orElse(null)
+        assertNotNull(savedUser)
+        assertEquals("mediumuser", savedUser.username)
+        assertEquals("MEDIUM", savedUser.role.name)
+    }
+
+    @Test
+    fun `createUser should create user with ADMIN role when specified`() {
+        val request = CreateUserRequest(username = "adminuser", password = "Test@123", role = "ADMIN")
+
+        val response = userService.createUser(request)
+
+        assertNotNull(response.id)
+        val savedUser = userRepository.findById(response.id).orElse(null)
+        assertNotNull(savedUser)
+        assertEquals("adminuser", savedUser.username)
+        assertEquals("ADMIN", savedUser.role.name)
+    }
+
+    @Test
+    fun `createUser should default to USER role when role not specified`() {
+        val request = CreateUserRequest(username = "defaultroleuser", password = "Test@123")
+
+        val response = userService.createUser(request)
+
+        assertNotNull(response.id)
+        val savedUser = userRepository.findById(response.id).orElse(null)
+        assertNotNull(savedUser)
+        assertEquals("defaultroleuser", savedUser.username)
+        assertEquals("USER", savedUser.role.name)
+    }
+
+    @Test
+    fun `createUser should throw NotFoundException for invalid role`() {
+        val request = CreateUserRequest(username = "invalidroleuser", password = "Test@123", role = "INVALID")
+
+        assertThrows<NotFoundException> {
+            userService.createUser(request)
+        }
+    }
+
+    @Test
+    fun `updateUser should update user role`() {
+        val createResponse = userService.createUser(CreateUserRequest(username = "roleupdate", password = "Test@123"))
+
+        val updated = userService.updateUser(createResponse.id, UpdateUserRequest(role = "MEDIUM"))
+
+        assertEquals("MEDIUM", updated.role)
+        val savedUser = userRepository.findById(createResponse.id).orElse(null)
+        assertEquals("MEDIUM", savedUser.role.name)
+    }
+
+    @Test
+    fun `updateUser should throw NotFoundException for invalid role`() {
+        val createResponse =
+            userService.createUser(
+                CreateUserRequest(username = "invalidupdate", password = "Test@123"),
+            )
+
+        assertThrows<NotFoundException> {
+            userService.updateUser(createResponse.id, UpdateUserRequest(role = "INVALID"))
+        }
+    }
 }

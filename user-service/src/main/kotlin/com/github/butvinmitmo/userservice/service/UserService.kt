@@ -25,6 +25,7 @@ import java.util.UUID
 class UserService(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
+    private val roleService: RoleService,
     private val userMapper: UserMapper,
     private val passwordEncoder: PasswordEncoder,
     private val jwtUtil: JwtUtil,
@@ -55,9 +56,7 @@ class UserService(
             throw ConflictException("User with this username already exists")
         }
 
-        val userRole =
-            roleRepository.findByName("USER")
-                ?: throw IllegalStateException("USER role not found in database")
+        val userRole = roleService.getRoleByName(request.role)
 
         val user =
             User(
@@ -108,6 +107,7 @@ class UserService(
 
         request.username?.let { user.username = it }
         request.password?.let { user.passwordHash = passwordEncoder.encode(it) }
+        request.role?.let { user.role = roleService.getRoleByName(it) }
 
         val updated = userRepository.save(user)
         return userMapper.toDto(updated)

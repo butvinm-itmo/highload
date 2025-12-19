@@ -26,6 +26,11 @@ data class CreateUserRequest(
                 "one digit, and one special character (@\$!%*?&#)",
     )
     val password: String,
+    @field:Pattern(
+        regexp = "^(USER|MEDIUM|ADMIN)$",
+        message = "Role must be one of: USER, MEDIUM, ADMIN",
+    )
+    val role: String? = null,
 )
 
 data class UpdateUserRequest(
@@ -39,6 +44,11 @@ data class UpdateUserRequest(
                 "one digit, and one special character",
     )
     val password: String? = null,
+    @field:Pattern(
+        regexp = "^(USER|MEDIUM|ADMIN)$",
+        message = "Role must be one of: USER, MEDIUM, ADMIN",
+    )
+    val role: String? = null,
 )
 
 data class CreateUserResponse(

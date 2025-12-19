@@ -14,6 +14,7 @@ import com.github.butvinmitmo.userservice.mapper.UserMapper
 import com.github.butvinmitmo.userservice.repository.RoleRepository
 import com.github.butvinmitmo.userservice.repository.UserRepository
 import com.github.butvinmitmo.userservice.security.JwtUtil
+import com.github.butvinmitmo.userservice.service.RoleService
 import com.github.butvinmitmo.userservice.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -44,6 +45,9 @@ class UserServiceTest {
     private lateinit var roleRepository: RoleRepository
 
     @Mock
+    private lateinit var roleService: RoleService
+
+    @Mock
     private lateinit var passwordEncoder: PasswordEncoder
 
     @Mock
@@ -58,7 +62,7 @@ class UserServiceTest {
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, roleRepository, userMapper, passwordEncoder, jwtUtil)
+        userService = UserService(userRepository, roleRepository, roleService, userMapper, passwordEncoder, jwtUtil)
     }
 
     @Test
@@ -67,7 +71,7 @@ class UserServiceTest {
         val savedUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findByUsername("testuser")).thenReturn(null)
-        whenever(roleRepository.findByName("USER")).thenReturn(testUserRole)
+        whenever(roleService.getRoleByName(null)).thenReturn(testUserRole)
         whenever(passwordEncoder.encode("Test@123")).thenReturn("hashedPassword")
         whenever(userRepository.save(any())).thenReturn(savedUser)
 
