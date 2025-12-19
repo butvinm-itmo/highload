@@ -190,28 +190,74 @@ Fixed inter-service Feign client communication by making X-User-Id header option
 
 ---
 
-## Pending Phases
+### ✅ Phase 4: Role Management for ADMIN
 
-### ⏳ Phase 4: Role Management for ADMIN
-**Status**: Not Started
+**Status**: Complete ✅
+**Commit**: `a582c5a` - "Add role management for ADMIN users"
 
 **Goal:** Allow ADMIN to create users with MEDIUM role and update user roles.
 
-**Planned Changes:**
-- Add optional `role: String?` field to CreateUserRequest and UpdateUserRequest DTOs
-- Create RoleService for centralized role lookup
-- Update UserService to support role parameter (defaults to USER)
-- Add integration tests for role creation and updates
-- Update E2E tests to create MEDIUM users
+**Changes:**
 
-**Files to Modify:**
+1. **Updated DTOs** (`shared-dto/src/main/kotlin/com/github/butvinmitmo/shared/dto/UserDto.kt`)
+   - Added optional `role: String?` field to `CreateUserRequest` (defaults to null → USER)
+   - Added optional `role: String?` field to `UpdateUserRequest` (defaults to null → no change)
+   - Added pattern validation: `^(USER|MEDIUM|ADMIN)$`
+
+2. **Created RoleService** (`user-service/src/main/kotlin/com/github/butvinmitmo/userservice/service/RoleService.kt`)
+   - Centralized role lookup by name
+   - `getRoleByName(roleName: String?)` - defaults to USER when roleName is null
+   - `getRoleByType(roleType: RoleType)` - lookup by enum
+   - Throws `NotFoundException` for invalid roles
+
+3. **Updated UserService** (`user-service/src/main/kotlin/com/github/butvinmitmo/userservice/service/UserService.kt`)
+   - Injected RoleService
+   - `createUser()` - accepts optional role parameter (defaults to USER via RoleService)
+   - `updateUser()` - accepts optional role parameter
+   - Uses RoleService for all role lookups
+
+4. **Integration Tests** (`user-service/src/test/kotlin/com/github/butvinmitmo/userservice/integration/service/UserServiceIntegrationTest.kt`)
+   - Added 6 new tests for role management:
+     - `createUser should create user with MEDIUM role when specified`
+     - `createUser should create user with ADMIN role when specified`
+     - `createUser should default to USER role when role not specified`
+     - `createUser should throw NotFoundException for invalid role`
+     - `updateUser should update user role`
+     - `updateUser should throw NotFoundException for invalid role`
+
+5. **Unit Tests** (`user-service/src/test/kotlin/com/github/butvinmitmo/userservice/unit/service/UserServiceTest.kt`)
+   - Added RoleService mock
+   - Updated UserService instantiation to include RoleService
+   - Updated createUser test to mock RoleService.getRoleByName()
+
+6. **E2E Tests** (`e2e-tests/src/test/kotlin/com/github/butvinmitmo/e2e/CleanupAuthorizationE2ETest.kt`)
+   - Updated userB creation to specify `role = "MEDIUM"`
+   - Changed test to use userB (MEDIUM) instead of admin for creating interpretations
+   - Updated test descriptions:
+     - `UserB (MEDIUM) adds interpretation to UserA's spread`
+     - `UserA cannot delete UserB's interpretation (403)`
+     - `UserB can delete own interpretation (204)`
+
+**Files Modified:**
 - `shared-dto/src/main/kotlin/com/github/butvinmitmo/shared/dto/UserDto.kt`
 - `user-service/src/main/kotlin/com/github/butvinmitmo/userservice/service/RoleService.kt` (NEW)
 - `user-service/src/main/kotlin/com/github/butvinmitmo/userservice/service/UserService.kt`
-- Integration tests
-- E2E tests
+- `user-service/src/test/kotlin/com/github/butvinmitmo/userservice/integration/service/UserServiceIntegrationTest.kt`
+- `user-service/src/test/kotlin/com/github/butvinmitmo/userservice/unit/service/UserServiceTest.kt`
+- `e2e-tests/src/test/kotlin/com/github/butvinmitmo/e2e/CleanupAuthorizationE2ETest.kt`
+
+**Testing:**
+```bash
+./gradlew :user-service:test
+# ✅ All 46 tests passing (was 40/40, added 6 new tests)
+
+./gradlew :e2e-tests:test
+# ✅ All 33 E2E tests passing
+```
 
 ---
+
+## Pending Phases
 
 ### ⏳ Phase 5: Comprehensive Testing and Documentation
 **Status**: Not Started
@@ -251,6 +297,12 @@ Fixed inter-service Feign client communication by making X-User-Id header option
 - Divination Service: 36/36 ✅ (all tests updated with X-User-Role headers)
   - Integration tests: Added X-User-Role headers to PUT/DELETE requests
   - Unit tests: Updated service method calls to include role parameter
+
+**Phase 4 Test Results:**
+- User Service: 46/46 ✅ (was 40/40, added 6 new role management tests)
+  - Integration tests: Added 6 new role management tests
+  - Unit tests: Updated with RoleService mock
+- E2E Tests: 33/33 ✅ (CleanupAuthorizationE2ETest now uses MEDIUM user)
 
 **Expected Final Test Count (Phase 5):**
 - ~47 tests total (33 E2E + ~14 new role authorization tests)
@@ -300,5 +352,5 @@ Each phase is:
 
 **Last Updated**: 2025-12-19
 **Branch**: `auth`
-**Completed Phases**: 3/5 ✅
-**Next Phase**: Phase 4 - Role Management for ADMIN
+**Completed Phases**: 4/5 ✅
+**Next Phase**: Phase 5 - Comprehensive Testing and Documentation
