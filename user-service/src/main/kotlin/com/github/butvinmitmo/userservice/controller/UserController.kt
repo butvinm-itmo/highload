@@ -197,9 +197,9 @@ class UserController(
         ],
     )
     fun getUser(
-        @Parameter(description = "User ID from JWT", required = true)
+        @Parameter(description = "User ID from JWT", required = false)
         @RequestHeader("X-User-Id")
-        userId: UUID,
+        userId: UUID?,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,

@@ -119,9 +119,9 @@ class CardController(
         ],
     )
     fun getRandomCards(
-        @Parameter(description = "User ID from JWT", required = true)
+        @Parameter(description = "User ID from JWT", required = false)
         @RequestHeader("X-User-Id")
-        userId: UUID,
+        userId: UUID?,
         @Parameter(description = "Number of random cards to retrieve (1-78)", example = "3")
         @RequestParam
         @Min(1)

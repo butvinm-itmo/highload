@@ -62,9 +62,9 @@ class LayoutTypeController(
         ],
     )
     fun getLayoutTypes(
-        @Parameter(description = "User ID from JWT", required = true)
+        @Parameter(description = "User ID from JWT", required = false)
         @RequestHeader("X-User-Id")
-        userId: UUID,
+        userId: UUID?,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -117,9 +117,9 @@ class LayoutTypeController(
         ],
     )
     fun getLayoutTypeById(
-        @Parameter(description = "User ID from JWT", required = true)
+        @Parameter(description = "User ID from JWT", required = false)
         @RequestHeader("X-User-Id")
-        userId: UUID,
+        userId: UUID?,
         @Parameter(description = "Layout Type ID", required = true)
         @PathVariable id: UUID,
     ): Mono<ResponseEntity<LayoutTypeDto>> =
