@@ -48,14 +48,47 @@ class SpreadController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "201", description = "Spread created successfully, returns generated ID"),
-            ApiResponse(responseCode = "404", description = "Author or layout type not found"),
-            ApiResponse(responseCode = "400", description = "Invalid request data"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "201",
+                description = "Spread created successfully, returns generated ID",
+                content = [Content(schema = Schema(implementation = CreateSpreadResponse::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Author or layout type not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data",
+                content = [
+                    Content(
+                        schema =
+                            Schema(
+                                implementation = com.github.butvinmitmo.shared.dto.ValidationErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun createSpread(
-        @RequestHeader("X-User-Id") userId: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Valid @RequestBody request: CreateSpreadRequest,
     ): Mono<ResponseEntity<CreateSpreadResponse>> =
         divinationService
@@ -76,7 +109,7 @@ class SpreadController(
                     Header(
                         name = "X-Total-Count",
                         description = "Total number of spreads",
-                        schema = Schema(type = "integer"),
+                        schema = Schema(type = "integer", implementation = Int::class),
                     ),
                 ],
                 content = [Content(array = ArraySchema(schema = Schema(implementation = SpreadSummaryDto::class)))],
@@ -119,7 +152,7 @@ class SpreadController(
                     Header(
                         name = "X-After",
                         description = "Cursor for next page (only present if more items exist)",
-                        schema = Schema(type = "string", format = "uuid"),
+                        schema = Schema(type = "string", format = "uuid", implementation = String::class),
                     ),
                 ],
                 content = [Content(array = ArraySchema(schema = Schema(implementation = SpreadSummaryDto::class)))],
@@ -154,8 +187,20 @@ class SpreadController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Spread found"),
-            ApiResponse(responseCode = "404", description = "Spread not found"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Spread found",
+                content = [Content(schema = Schema(implementation = SpreadDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Spread not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getSpread(
@@ -175,16 +220,42 @@ class SpreadController(
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "204", description = "Spread deleted successfully"),
-            ApiResponse(responseCode = "404", description = "Spread not found"),
-            ApiResponse(responseCode = "403", description = "User is not the author of the spread"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "404",
+                description = "Spread not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not the author of the spread",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun deleteSpread(
         @Parameter(description = "Spread ID", required = true)
         @PathVariable
         id: UUID,
-        @RequestHeader("X-User-Id") userId: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
     ): Mono<ResponseEntity<Void>> =
         divinationService
             .deleteSpread(id, userId)

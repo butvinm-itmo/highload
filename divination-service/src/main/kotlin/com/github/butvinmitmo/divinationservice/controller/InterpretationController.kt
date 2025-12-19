@@ -7,6 +7,10 @@ import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.headers.Header
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -43,8 +47,27 @@ class InterpretationController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Interpretations retrieved successfully"),
-            ApiResponse(responseCode = "404", description = "Spread not found"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Interpretations retrieved successfully",
+                headers = [
+                    Header(
+                        name = "X-Total-Count",
+                        description = "Total number of interpretations",
+                        schema = Schema(type = "integer", implementation = Int::class),
+                    ),
+                ],
+                content = [Content(array = ArraySchema(schema = Schema(implementation = InterpretationDto::class)))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Spread not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getInterpretations(
@@ -77,8 +100,20 @@ class InterpretationController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Interpretation found"),
-            ApiResponse(responseCode = "404", description = "Interpretation or spread not found"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Interpretation found",
+                content = [Content(schema = Schema(implementation = InterpretationDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Interpretation or spread not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getInterpretation(
@@ -102,18 +137,59 @@ class InterpretationController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "201", description = "Interpretation added successfully, returns generated ID"),
-            ApiResponse(responseCode = "404", description = "Spread or author not found"),
-            ApiResponse(responseCode = "409", description = "User already has an interpretation for this spread"),
-            ApiResponse(responseCode = "400", description = "Invalid request data"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "201",
+                description = "Interpretation added successfully, returns generated ID",
+                content = [Content(schema = Schema(implementation = CreateInterpretationResponse::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Spread or author not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "User already has an interpretation for this spread",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data",
+                content = [
+                    Content(
+                        schema =
+                            Schema(
+                                implementation = com.github.butvinmitmo.shared.dto.ValidationErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun addInterpretation(
         @Parameter(description = "Spread ID to add interpretation to", required = true)
         @PathVariable
         spreadId: UUID,
-        @RequestHeader("X-User-Id") userId: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Valid @RequestBody request: CreateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
         divinationService
@@ -127,11 +203,50 @@ class InterpretationController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Interpretation updated successfully"),
-            ApiResponse(responseCode = "404", description = "Spread or interpretation not found"),
-            ApiResponse(responseCode = "403", description = "User is not the author of the interpretation"),
-            ApiResponse(responseCode = "400", description = "Invalid request data"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Interpretation updated successfully",
+                content = [Content(schema = Schema(implementation = InterpretationDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Spread or interpretation not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not the author of the interpretation",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data",
+                content = [
+                    Content(
+                        schema =
+                            Schema(
+                                implementation = com.github.butvinmitmo.shared.dto.ValidationErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun updateInterpretation(
@@ -141,7 +256,9 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to update", required = true)
         @PathVariable
         id: UUID,
-        @RequestHeader("X-User-Id") userId: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
         divinationService
@@ -156,9 +273,33 @@ class InterpretationController(
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "204", description = "Interpretation deleted successfully"),
-            ApiResponse(responseCode = "404", description = "Spread or interpretation not found"),
-            ApiResponse(responseCode = "403", description = "User is not the author of the interpretation"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "404",
+                description = "Spread or interpretation not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not the author of the interpretation",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun deleteInterpretation(
@@ -168,7 +309,9 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to delete", required = true)
         @PathVariable
         id: UUID,
-        @RequestHeader("X-User-Id") userId: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
     ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
         divinationService
             .deleteInterpretation(spreadId, id, userId)

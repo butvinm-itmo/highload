@@ -4,6 +4,10 @@ import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.tarotservice.service.TarotService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.headers.Header
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -34,12 +38,33 @@ class LayoutTypeController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Layout types retrieved successfully"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Layout types retrieved successfully",
+                headers = [
+                    Header(
+                        name = "X-Total-Count",
+                        description = "Total number of layout types",
+                        schema = Schema(type = "integer"),
+                    ),
+                ],
+                content = [Content(array = ArraySchema(schema = Schema(implementation = LayoutTypeDto::class)))],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getLayoutTypes(
-        @RequestHeader("X-User-Id") userId: UUID?,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -66,13 +91,35 @@ class LayoutTypeController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Layout type found"),
-            ApiResponse(responseCode = "404", description = "Layout type not found"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Layout type found",
+                content = [Content(schema = Schema(implementation = LayoutTypeDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Layout type not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getLayoutTypeById(
-        @RequestHeader("X-User-Id") userId: UUID?,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "Layout Type ID", required = true)
         @PathVariable id: UUID,
     ): Mono<ResponseEntity<LayoutTypeDto>> =

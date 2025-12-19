@@ -8,6 +8,10 @@ import com.github.butvinmitmo.userservice.exception.ForbiddenException
 import com.github.butvinmitmo.userservice.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.headers.Header
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -52,14 +56,56 @@ class UserController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "201", description = "User created successfully, returns generated ID"),
-            ApiResponse(responseCode = "409", description = "User with this username already exists"),
-            ApiResponse(responseCode = "403", description = "User is not ADMIN"),
-            ApiResponse(responseCode = "400", description = "Invalid request data or weak password"),
+            ApiResponse(
+                responseCode = "201",
+                description = "User created successfully, returns generated ID",
+                content = [Content(schema = Schema(implementation = CreateUserResponse::class))],
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "User with this username already exists",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not ADMIN",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data or weak password",
+                content = [
+                    Content(
+                        schema =
+                            Schema(
+                                implementation = com.github.butvinmitmo.shared.dto.ValidationErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun createUser(
-        @RequestHeader("X-User-Role") role: String?,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Valid @RequestBody request: CreateUserRequest,
     ): ResponseEntity<CreateUserResponse> {
         requireAdmin(role)
@@ -74,12 +120,33 @@ class UserController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
-            ApiResponse(responseCode = "401", description = "Not authenticated"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Users retrieved successfully",
+                headers = [
+                    Header(
+                        name = "X-Total-Count",
+                        description = "Total number of users",
+                        schema = Schema(type = "integer"),
+                    ),
+                ],
+                content = [Content(array = ArraySchema(schema = Schema(implementation = UserDto::class)))],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Not authenticated",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getUsers(
-        @RequestHeader("X-User-Id") userId: UUID?,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -104,13 +171,35 @@ class UserController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "User found"),
-            ApiResponse(responseCode = "404", description = "User not found"),
-            ApiResponse(responseCode = "401", description = "Not authenticated"),
+            ApiResponse(
+                responseCode = "200",
+                description = "User found",
+                content = [Content(schema = Schema(implementation = UserDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "User not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Not authenticated",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getUser(
-        @RequestHeader("X-User-Id") userId: UUID?,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
@@ -126,14 +215,56 @@ class UserController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "User updated successfully"),
-            ApiResponse(responseCode = "404", description = "User not found"),
-            ApiResponse(responseCode = "403", description = "User is not ADMIN"),
-            ApiResponse(responseCode = "400", description = "Invalid request data"),
+            ApiResponse(
+                responseCode = "200",
+                description = "User updated successfully",
+                content = [Content(schema = Schema(implementation = UserDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "User not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not ADMIN",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data",
+                content = [
+                    Content(
+                        schema =
+                            Schema(
+                                implementation = com.github.butvinmitmo.shared.dto.ValidationErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun updateUser(
-        @RequestHeader("X-User-Role") role: String?,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
@@ -152,12 +283,39 @@ class UserController(
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "204", description = "User deleted successfully"),
-            ApiResponse(responseCode = "404", description = "User not found"),
-            ApiResponse(responseCode = "403", description = "User is not ADMIN"),
+            ApiResponse(
+                responseCode = "404",
+                description = "User not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not ADMIN",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun deleteUser(
-        @RequestHeader("X-User-Role") role: String?,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,

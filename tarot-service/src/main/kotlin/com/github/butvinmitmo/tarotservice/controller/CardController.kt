@@ -4,6 +4,10 @@ import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.tarotservice.service.TarotService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.headers.Header
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -33,12 +37,33 @@ class CardController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Cards retrieved successfully"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Cards retrieved successfully",
+                headers = [
+                    Header(
+                        name = "X-Total-Count",
+                        description = "Total number of cards",
+                        schema = Schema(type = "integer"),
+                    ),
+                ],
+                content = [Content(array = ArraySchema(schema = Schema(implementation = CardDto::class)))],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getCards(
-        @RequestHeader("X-User-Id") userId: UUID?,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -65,13 +90,38 @@ class CardController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Random cards retrieved successfully"),
-            ApiResponse(responseCode = "400", description = "Invalid count parameter"),
-            ApiResponse(responseCode = "401", description = "Missing or invalid authentication"),
+            ApiResponse(
+                responseCode = "200",
+                description = "Random cards retrieved successfully",
+                content = [Content(array = ArraySchema(schema = Schema(implementation = CardDto::class)))],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid count parameter",
+                content = [
+                    Content(
+                        schema =
+                            Schema(
+                                implementation = com.github.butvinmitmo.shared.dto.ValidationErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Missing or invalid authentication",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
         ],
     )
     fun getRandomCards(
-        @RequestHeader("X-User-Id") userId: UUID?,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "Number of random cards to retrieve (1-78)", example = "3")
         @RequestParam
         @Min(1)
