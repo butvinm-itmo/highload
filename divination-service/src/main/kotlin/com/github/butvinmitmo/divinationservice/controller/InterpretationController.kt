@@ -214,7 +214,7 @@ class InterpretationController(
     ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> {
         requireMediumOrAdmin(role)
         return divinationService
-            .addInterpretation(spreadId, request, userId)
+            .addInterpretation(spreadId, request, userId, role)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
     }
 

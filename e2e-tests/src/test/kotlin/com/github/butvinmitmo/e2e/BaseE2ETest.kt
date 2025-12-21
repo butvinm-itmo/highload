@@ -33,6 +33,14 @@ abstract class BaseE2ETest {
     @Autowired
     protected lateinit var divinationClient: DivinationServiceClient
 
+    // Admin user context for Feign header parameters
+    protected val adminUserId: java.util.UUID = java.util.UUID.fromString("10000000-0000-0000-0000-000000000001")
+    protected val adminRole: String = "ADMIN"
+
+    // Current logged-in user context (set by login methods)
+    protected var currentUserId: java.util.UUID = adminUserId
+    protected var currentRole: String = adminRole
+
     companion object {
         private const val DEFAULT_GATEWAY_URL = "http://localhost:8080"
         private const val HEALTH_CHECK_TIMEOUT_MS = 5000L
@@ -105,7 +113,8 @@ abstract class BaseE2ETest {
     }
 
     /**
-     * Login with given credentials and set the JWT token in AuthContext
+     * Login with given credentials and set the JWT token in AuthContext.
+     * Also extracts and stores userId and role from the token response.
      */
     protected fun loginAndSetToken(
         username: String,
@@ -113,15 +122,29 @@ abstract class BaseE2ETest {
     ): String {
         val request = LoginRequest(username = username, password = password)
         val response = userClient.login(request)
-        val token = response.body!!.token
-        AuthContext.setToken(token)
-        return token
+        val tokenResponse = response.body!!
+        AuthContext.setToken(tokenResponse.token)
+
+        // Extract user context from token response
+        currentRole = tokenResponse.role
+        // Get user ID from the users list (token doesn't contain userId directly in our implementation)
+        val users = userClient.getUsers(adminUserId, adminRole).body!!
+        val user = users.find { it.username == username }
+        if (user != null) {
+            currentUserId = user.id
+        }
+
+        return tokenResponse.token
     }
 
     /**
      * Login as the default admin user
      */
-    protected fun loginAsAdmin(): String = loginAndSetToken("admin", "Admin@123")
+    protected fun loginAsAdmin(): String {
+        currentUserId = adminUserId
+        currentRole = adminRole
+        return loginAndSetToken("admin", "Admin@123")
+    }
 
     /**
      * Clear the authentication token

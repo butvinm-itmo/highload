@@ -24,6 +24,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
@@ -38,6 +39,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
@@ -46,6 +48,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
@@ -58,6 +61,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 post(baseUrl)
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
@@ -66,7 +70,8 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 get(baseUrl)
-                    .header("X-User-Id", testAdminUserId.toString()),
+                    .header("X-User-Id", testAdminUserId.toString())
+                    .header("X-User-Role", "ADMIN"),
             ).andExpect(status().isOk)
             .andExpect(header().exists("X-Total-Count"))
             .andExpect(jsonPath("$").isArray)
@@ -79,6 +84,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
             mockMvc
                 .perform(
                     post(baseUrl)
+                        .header("X-User-Id", testAdminUserId.toString())
                         .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)),
@@ -91,7 +97,8 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 get("$baseUrl/$userId")
-                    .header("X-User-Id", testAdminUserId.toString()),
+                    .header("X-User-Id", testAdminUserId.toString())
+                    .header("X-User-Role", "ADMIN"),
             ).andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(userId))
             .andExpect(jsonPath("$.username").value("getbyiduser"))
@@ -104,7 +111,8 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 get("$baseUrl/$nonExistentId")
-                    .header("X-User-Id", testAdminUserId.toString()),
+                    .header("X-User-Id", testAdminUserId.toString())
+                    .header("X-User-Role", "ADMIN"),
             ).andExpect(status().isNotFound)
     }
 
@@ -115,6 +123,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
             mockMvc
                 .perform(
                     post(baseUrl)
+                        .header("X-User-Id", testAdminUserId.toString())
                         .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)),
@@ -128,6 +137,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 put("$baseUrl/$userId")
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(updateRequest)),
@@ -142,6 +152,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
             mockMvc
                 .perform(
                     post(baseUrl)
+                        .header("X-User-Id", testAdminUserId.toString())
                         .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)),
@@ -154,13 +165,15 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 delete("$baseUrl/$userId")
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN"),
             ).andExpect(status().isNoContent)
 
         mockMvc
             .perform(
                 get("$baseUrl/$userId")
-                    .header("X-User-Id", testAdminUserId.toString()),
+                    .header("X-User-Id", testAdminUserId.toString())
+                    .header("X-User-Role", "ADMIN"),
             ).andExpect(status().isNotFound)
     }
 
@@ -171,6 +184,7 @@ class UserControllerIntegrationTest : BaseControllerIntegrationTest() {
         mockMvc
             .perform(
                 delete("$baseUrl/$nonExistentId")
+                    .header("X-User-Id", testAdminUserId.toString())
                     .header("X-User-Role", "ADMIN"),
             ).andExpect(status().isNotFound)
     }

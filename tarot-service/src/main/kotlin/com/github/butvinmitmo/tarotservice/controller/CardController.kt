@@ -64,6 +64,9 @@ class CardController(
         @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
         userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -119,9 +122,12 @@ class CardController(
         ],
     )
     fun getRandomCards(
-        @Parameter(description = "User ID from JWT", required = false)
+        @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
-        userId: UUID?,
+        userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Parameter(description = "Number of random cards to retrieve (1-78)", example = "3")
         @RequestParam
         @Min(1)

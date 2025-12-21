@@ -12,6 +12,7 @@ class LayoutTypeControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/layout-types")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -38,6 +39,7 @@ class LayoutTypeControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/layout-types/$oneCardLayoutId")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -58,6 +60,7 @@ class LayoutTypeControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/layout-types/$nonExistentId")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isNotFound

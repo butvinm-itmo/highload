@@ -8,10 +8,12 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.util.UUID
 
 class AuthControllerIntegrationTest : BaseControllerIntegrationTest() {
     private val authUrl = "/api/v0.0.1/auth/login"
     private val usersUrl = "/api/v0.0.1/users"
+    private val testAdminUserId = UUID.fromString("10000000-0000-0000-0000-000000000001")
 
     @BeforeEach
     fun setup() {
@@ -19,6 +21,7 @@ class AuthControllerIntegrationTest : BaseControllerIntegrationTest() {
         val createRequest = CreateUserRequest(username = "authuser", password = "Test@123")
         mockMvc.perform(
             post(usersUrl)
+                .header("X-User-Id", testAdminUserId.toString())
                 .header("X-User-Role", "ADMIN")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createRequest)),

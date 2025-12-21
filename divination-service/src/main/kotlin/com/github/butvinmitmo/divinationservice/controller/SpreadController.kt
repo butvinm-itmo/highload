@@ -89,10 +89,13 @@ class SpreadController(
         @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
         userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Valid @RequestBody request: CreateSpreadRequest,
     ): Mono<ResponseEntity<CreateSpreadResponse>> =
         divinationService
-            .createSpread(request, userId)
+            .createSpread(request, userId, role)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @GetMapping

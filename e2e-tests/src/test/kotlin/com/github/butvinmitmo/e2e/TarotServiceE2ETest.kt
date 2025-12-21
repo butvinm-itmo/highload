@@ -19,7 +19,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
     @Order(1)
     fun `GET cards should return paginated list with 50 cards per page`() {
         loginAsAdmin()
-        val response = tarotClient.getCards(page = 0, size = 50)
+        val response = tarotClient.getCards(adminUserId, adminRole, page = 0, size = 50)
 
         assertEquals(200, response.statusCode.value())
         val cards = response.body!!
@@ -30,8 +30,8 @@ class TarotServiceE2ETest : BaseE2ETest() {
     @Order(2)
     fun `Total cards across pages should be 78`() {
         loginAsAdmin()
-        val page1 = tarotClient.getCards(page = 0, size = 50).body!!
-        val page2 = tarotClient.getCards(page = 1, size = 50).body!!
+        val page1 = tarotClient.getCards(adminUserId, adminRole, page = 0, size = 50).body!!
+        val page2 = tarotClient.getCards(adminUserId, adminRole, page = 1, size = 50).body!!
 
         assertEquals(78, page1.size + page2.size, "Total tarot cards should be 78")
     }
@@ -40,7 +40,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
     @Order(3)
     fun `Cards should have proper structure with name and arcana type`() {
         loginAsAdmin()
-        val cards = tarotClient.getCards(page = 0, size = 1).body!!
+        val cards = tarotClient.getCards(adminUserId, adminRole, page = 0, size = 1).body!!
         val card = cards.first()
 
         assertNotNull(card.id, "Card should have an ID")
@@ -53,7 +53,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
     @Order(4)
     fun `GET layout types should return at least 3 types`() {
         loginAsAdmin()
-        val response = tarotClient.getLayoutTypes()
+        val response = tarotClient.getLayoutTypes(adminUserId, adminRole)
 
         assertEquals(200, response.statusCode.value())
         val layoutTypes = response.body!!
@@ -68,7 +68,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
     @Order(5)
     fun `GET random cards should return requested count`() {
         loginAsAdmin()
-        val response = tarotClient.getRandomCards(count = 3)
+        val response = tarotClient.getRandomCards(adminUserId, adminRole, count = 3)
 
         assertEquals(200, response.statusCode.value())
         assertEquals(3, response.body?.size, "Should return exactly 3 random cards")
@@ -78,7 +78,7 @@ class TarotServiceE2ETest : BaseE2ETest() {
     @Order(6)
     fun `GET layout type by id should return correct type`() {
         loginAsAdmin()
-        val response = tarotClient.getLayoutTypeById(oneCardLayoutId)
+        val response = tarotClient.getLayoutTypeById(adminUserId, adminRole, oneCardLayoutId)
 
         assertEquals(200, response.statusCode.value())
         assertEquals("ONE_CARD", response.body?.name)

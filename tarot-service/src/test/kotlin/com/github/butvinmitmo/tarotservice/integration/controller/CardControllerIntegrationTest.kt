@@ -12,6 +12,7 @@ class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
             .get()
             .uri("/api/v0.0.1/cards")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -39,6 +40,7 @@ class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
                     .queryParam("size", "5")
                     .build()
             }.header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -57,6 +59,7 @@ class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
                     .queryParam("count", "3")
                     .build()
             }.header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk

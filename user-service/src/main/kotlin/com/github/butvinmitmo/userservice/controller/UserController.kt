@@ -103,6 +103,9 @@ class UserController(
         ],
     )
     fun createUser(
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "User role from JWT", required = true)
         @RequestHeader("X-User-Role")
         role: String,
@@ -147,6 +150,9 @@ class UserController(
         @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
         userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -197,9 +203,12 @@ class UserController(
         ],
     )
     fun getUser(
-        @Parameter(description = "User ID from JWT", required = false)
+        @Parameter(description = "User ID from JWT", required = true)
         @RequestHeader("X-User-Id")
-        userId: UUID?,
+        userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
@@ -262,6 +271,9 @@ class UserController(
         ],
     )
     fun updateUser(
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "User role from JWT", required = true)
         @RequestHeader("X-User-Role")
         role: String,
@@ -313,6 +325,9 @@ class UserController(
         ],
     )
     fun deleteUser(
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
         @Parameter(description = "User role from JWT", required = true)
         @RequestHeader("X-User-Role")
         role: String,

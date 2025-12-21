@@ -34,6 +34,8 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         // Create test user
         val userResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = "e2e_divination_user_${System.currentTimeMillis()}",
                     password = "Test@123",
@@ -42,11 +44,11 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         testUserId = userResponse.body!!.id
 
         // Get admin user
-        val users = userClient.getUsers().body!!
+        val users = userClient.getUsers(currentUserId, currentRole).body!!
         adminId = users.find { it.username == "admin" }!!.id
 
         // Get layout types
-        val layoutTypes = tarotClient.getLayoutTypes().body!!
+        val layoutTypes = tarotClient.getLayoutTypes(currentUserId, currentRole).body!!
         oneCardLayoutId = layoutTypes.find { it.name == "ONE_CARD" }!!.id
         threeCardsLayoutId = layoutTypes.find { it.name == "THREE_CARDS" }!!.id
     }
@@ -55,7 +57,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     fun cleanup() {
         loginAsAdmin()
         // Delete test user (cascades to spreads and interpretations)
-        runCatching { userClient.deleteUser(testUserId) }
+        runCatching { userClient.deleteUser(currentUserId, currentRole, testUserId) }
     }
 
     @Test
@@ -188,6 +190,8 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         val otherUsername = "e2e_other_user_${System.currentTimeMillis()}"
         val otherUserResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = otherUsername,
                     password = "Test@456",
@@ -207,7 +211,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
 
         // Cleanup: delete the test user
         loginAsAdmin()
-        userClient.deleteUser(otherUserId)
+        userClient.deleteUser(currentUserId, currentRole, otherUserId)
     }
 
     @Test
@@ -233,6 +237,8 @@ class DivinationServiceE2ETest : BaseE2ETest() {
         val userUsername = "e2e_regular_user_${System.currentTimeMillis()}"
         val userResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(username = userUsername, password = "User@123"),
             )
         val regularUserId = userResponse.body!!.id
@@ -250,6 +256,6 @@ class DivinationServiceE2ETest : BaseE2ETest() {
 
         // Cleanup
         loginAsAdmin()
-        userClient.deleteUser(regularUserId)
+        userClient.deleteUser(currentUserId, currentRole, regularUserId)
     }
 }

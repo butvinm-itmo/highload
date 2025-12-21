@@ -48,6 +48,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         userUsername = "e2e_role_user_${System.currentTimeMillis()}"
         val userResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = userUsername,
                     password = USER_PASSWORD,
@@ -59,6 +61,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         mediumUsername = "e2e_role_medium_${System.currentTimeMillis()}"
         val mediumResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = mediumUsername,
                     password = MEDIUM_PASSWORD,
@@ -68,15 +72,15 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         mediumId = mediumResponse.body!!.id
 
         // Get layout type
-        val layoutTypes = tarotClient.getLayoutTypes().body!!
+        val layoutTypes = tarotClient.getLayoutTypes(currentUserId, currentRole).body!!
         oneCardLayoutId = layoutTypes.find { it.name == "ONE_CARD" }!!.id
     }
 
     @AfterAll
     fun cleanup() {
         loginAsAdmin()
-        runCatching { userClient.deleteUser(userId) }
-        runCatching { userClient.deleteUser(mediumId) }
+        runCatching { userClient.deleteUser(currentUserId, currentRole, userId) }
+        runCatching { userClient.deleteUser(currentUserId, currentRole, mediumId) }
     }
 
     // ============================================
@@ -120,7 +124,7 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
     @Order(4)
     fun `USER can get users list`() {
         loginAndSetToken(userUsername, USER_PASSWORD)
-        val response = userClient.getUsers()
+        val response = userClient.getUsers(currentUserId, currentRole)
         assertEquals(200, response.statusCode.value())
         assertTrue(response.body!!.isNotEmpty())
     }
@@ -131,6 +135,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         loginAndSetToken(userUsername, USER_PASSWORD)
         assertThrowsWithStatus(403) {
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = "should_not_exist_${System.currentTimeMillis()}",
                     password = "Test@123",
@@ -145,6 +151,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         loginAndSetToken(userUsername, USER_PASSWORD)
         assertThrowsWithStatus(403) {
             userClient.updateUser(
+                currentUserId,
+                currentRole,
                 mediumId,
                 UpdateUserRequest(username = "hacked_username"),
             )
@@ -156,7 +164,7 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
     fun `USER cannot delete users (403)`() {
         loginAndSetToken(userUsername, USER_PASSWORD)
         assertThrowsWithStatus(403) {
-            userClient.deleteUser(mediumId)
+            userClient.deleteUser(currentUserId, currentRole, mediumId)
         }
     }
 
@@ -226,6 +234,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         loginAndSetToken(mediumUsername, MEDIUM_PASSWORD)
         assertThrowsWithStatus(403) {
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = "should_not_exist_${System.currentTimeMillis()}",
                     password = "Test@123",
@@ -240,6 +250,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         loginAndSetToken(mediumUsername, MEDIUM_PASSWORD)
         assertThrowsWithStatus(403) {
             userClient.updateUser(
+                currentUserId,
+                currentRole,
                 userId,
                 UpdateUserRequest(username = "hacked_username"),
             )
@@ -251,7 +263,7 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
     fun `MEDIUM cannot delete users (403)`() {
         loginAndSetToken(mediumUsername, MEDIUM_PASSWORD)
         assertThrowsWithStatus(403) {
-            userClient.deleteUser(userId)
+            userClient.deleteUser(currentUserId, currentRole, userId)
         }
     }
 
@@ -267,6 +279,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         // Create USER
         val userResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = "e2e_admin_created_user_${System.currentTimeMillis()}",
                     password = "Test@123",
@@ -274,12 +288,14 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
                 ),
             )
         assertEquals(201, userResponse.statusCode.value())
-        val createdUser = userClient.getUserById(userResponse.body!!.id).body!!
+        val createdUser = userClient.getUserById(currentUserId, currentRole, userResponse.body!!.id).body!!
         assertEquals("USER", createdUser.role)
 
         // Create MEDIUM
         val mediumResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = "e2e_admin_created_medium_${System.currentTimeMillis()}",
                     password = "Test@123",
@@ -287,12 +303,12 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
                 ),
             )
         assertEquals(201, mediumResponse.statusCode.value())
-        val createdMedium = userClient.getUserById(mediumResponse.body!!.id).body!!
+        val createdMedium = userClient.getUserById(currentUserId, currentRole, mediumResponse.body!!.id).body!!
         assertEquals("MEDIUM", createdMedium.role)
 
         // Cleanup
-        userClient.deleteUser(userResponse.body!!.id)
-        userClient.deleteUser(mediumResponse.body!!.id)
+        userClient.deleteUser(currentUserId, currentRole, userResponse.body!!.id)
+        userClient.deleteUser(currentUserId, currentRole, mediumResponse.body!!.id)
     }
 
     @Test
@@ -303,6 +319,8 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         // Create a USER
         val createResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = "e2e_role_change_${System.currentTimeMillis()}",
                     password = "Test@123",
@@ -310,12 +328,14 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
                 ),
             )
         val createdUserId = createResponse.body!!.id
-        val createdUserRole = userClient.getUserById(createdUserId).body!!.role
+        val createdUserRole = userClient.getUserById(currentUserId, currentRole, createdUserId).body!!.role
         assertEquals("USER", createdUserRole)
 
         // Update to MEDIUM
         val updateResponse =
             userClient.updateUser(
+                currentUserId,
+                currentRole,
                 createdUserId,
                 UpdateUserRequest(role = "MEDIUM"),
             )
@@ -323,7 +343,7 @@ class RoleAuthorizationE2ETest : BaseE2ETest() {
         assertEquals("MEDIUM", updateResponse.body!!.role)
 
         // Cleanup
-        userClient.deleteUser(createdUserId)
+        userClient.deleteUser(currentUserId, currentRole, createdUserId)
     }
 
     @Test

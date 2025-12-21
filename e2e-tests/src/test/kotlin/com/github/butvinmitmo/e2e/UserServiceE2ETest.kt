@@ -23,7 +23,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Order(1)
     fun `GET users should return list with admin user`() {
         loginAsAdmin()
-        val response = userClient.getUsers()
+        val response = userClient.getUsers(adminUserId, adminRole)
 
         assertEquals(200, response.statusCode.value())
         val users = response.body!!
@@ -38,7 +38,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     fun `POST users should create new user`() {
         loginAsAdmin()
         val request = CreateUserRequest(username = testUsername, password = "Test@123")
-        val response = userClient.createUser(request)
+        val response = userClient.createUser(adminUserId, adminRole, request)
 
         assertEquals(201, response.statusCode.value())
         assertNotNull(response.body?.id, "Response should contain user ID")
@@ -49,7 +49,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     @Order(3)
     fun `GET users by id should return user`() {
         loginAsAdmin()
-        val response = userClient.getUserById(testUserId)
+        val response = userClient.getUserById(adminUserId, adminRole, testUserId)
 
         assertEquals(200, response.statusCode.value())
         assertEquals(testUsername, response.body?.username)
@@ -61,7 +61,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     fun `PUT users should update user`() {
         loginAsAdmin()
         val request = UpdateUserRequest(username = updatedUsername)
-        val response = userClient.updateUser(testUserId, request)
+        val response = userClient.updateUser(adminUserId, adminRole, testUserId, request)
 
         assertEquals(200, response.statusCode.value())
         assertEquals(updatedUsername, response.body?.username)
@@ -72,7 +72,7 @@ class UserServiceE2ETest : BaseE2ETest() {
     fun `POST users with duplicate username should return 409`() {
         loginAsAdmin()
         val request = CreateUserRequest(username = updatedUsername, password = "Test@123")
-        assertThrowsWithStatus(409) { userClient.createUser(request) }
+        assertThrowsWithStatus(409) { userClient.createUser(adminUserId, adminRole, request) }
     }
 
     @Test
@@ -80,17 +80,17 @@ class UserServiceE2ETest : BaseE2ETest() {
     fun `GET users with non-existent id should return 404`() {
         loginAsAdmin()
         val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
-        assertThrowsWithStatus(404) { userClient.getUserById(fakeId) }
+        assertThrowsWithStatus(404) { userClient.getUserById(adminUserId, adminRole, fakeId) }
     }
 
     @Test
     @Order(100)
     fun `DELETE user should succeed and cleanup`() {
         loginAsAdmin()
-        val response = userClient.deleteUser(testUserId)
+        val response = userClient.deleteUser(adminUserId, adminRole, testUserId)
         assertEquals(204, response.statusCode.value())
 
         // Verify user is deleted
-        assertThrowsWithStatus(404) { userClient.getUserById(testUserId) }
+        assertThrowsWithStatus(404) { userClient.getUserById(adminUserId, adminRole, testUserId) }
     }
 }

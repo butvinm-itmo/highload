@@ -41,6 +41,8 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
         userAUsername = "e2e_auth_userA_${System.currentTimeMillis()}"
         val userAResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = userAUsername,
                     password = USER_A_PASSWORD,
@@ -51,6 +53,8 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
         userBUsername = "e2e_auth_userB_${System.currentTimeMillis()}"
         val userBResponse =
             userClient.createUser(
+                currentUserId,
+                currentRole,
                 CreateUserRequest(
                     username = userBUsername,
                     password = USER_B_PASSWORD,
@@ -60,7 +64,7 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
         userBId = userBResponse.body!!.id
 
         // Get layout type
-        val layoutTypes = tarotClient.getLayoutTypes().body!!
+        val layoutTypes = tarotClient.getLayoutTypes(currentUserId, currentRole).body!!
         oneCardLayoutId = layoutTypes.find { it.name == "ONE_CARD" }!!.id
     }
 
@@ -68,8 +72,8 @@ class CleanupAuthorizationE2ETest : BaseE2ETest() {
     fun cleanup() {
         loginAsAdmin()
         // Delete both test users (cascades to spreads and interpretations)
-        runCatching { userClient.deleteUser(userAId) }
-        runCatching { userClient.deleteUser(userBId) }
+        runCatching { userClient.deleteUser(currentUserId, currentRole, userAId) }
+        runCatching { userClient.deleteUser(currentUserId, currentRole, userBId) }
     }
 
     @Test
