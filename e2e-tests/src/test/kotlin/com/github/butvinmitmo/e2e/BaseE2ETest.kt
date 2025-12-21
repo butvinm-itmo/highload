@@ -1,29 +1,27 @@
 package com.github.butvinmitmo.e2e
 
+import com.github.butvinmitmo.e2e.config.AuthContext
 import com.github.butvinmitmo.shared.client.DivinationServiceClient
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
+import com.github.butvinmitmo.shared.dto.LoginRequest
 import feign.FeignException
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.ComposeContainer
-import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.junit.jupiter.Testcontainers
-import java.io.File
-import java.time.Duration
+import org.springframework.web.client.RestTemplate
 
 /**
  * Base class for E2E tests.
  *
- * Uses TestContainers to automatically start all services via docker compose.
+ * Tests require services to be running before execution.
+ * Start services with: docker compose up -d
  */
 @SpringBootTest(classes = [E2ETestApplication::class])
-@Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseE2ETest {
     @Autowired
@@ -35,89 +33,132 @@ abstract class BaseE2ETest {
     @Autowired
     protected lateinit var divinationClient: DivinationServiceClient
 
+    // Admin user context for Feign header parameters
+    protected val adminUserId: java.util.UUID = java.util.UUID.fromString("10000000-0000-0000-0000-000000000001")
+    protected val adminRole: String = "ADMIN"
+
+    // Current logged-in user context (set by login methods)
+    protected var currentUserId: java.util.UUID = adminUserId
+    protected var currentRole: String = adminRole
+
     companion object {
-        private const val CONFIG_SERVER = "config-server"
-        private const val EUREKA_SERVER = "eureka-server"
-        private const val GATEWAY_SERVICE = "gateway-service"
-        private const val POSTGRES = "postgres"
-        private const val USER_SERVICE = "user-service"
-        private const val TAROT_SERVICE = "tarot-service"
-        private const val DIVINATION_SERVICE = "divination-service"
-
-        private const val CONFIG_SERVER_PORT = 8888
-        private const val EUREKA_SERVER_PORT = 8761
-        private const val GATEWAY_PORT = 8080
-        private const val POSTGRES_PORT = 5432
-        private const val USER_SERVICE_PORT = 8081
-        private const val TAROT_SERVICE_PORT = 8082
-        private const val DIVINATION_SERVICE_PORT = 8083
-
-        private val STARTUP_TIMEOUT: Duration = Duration.ofMinutes(5)
+        private const val DEFAULT_GATEWAY_URL = "http://localhost:8080"
+        private const val HEALTH_CHECK_TIMEOUT_MS = 5000L
+        private const val HEALTH_CHECK_MAX_RETRIES = 3
+        private const val RETRY_DELAY_MS = 1000L
 
         @JvmStatic
-        val compose: ComposeContainer =
-            ComposeContainer(File("docker-compose.yml"))
-                .withLocalCompose(true)
-                .withExposedService(
-                    CONFIG_SERVER,
-                    CONFIG_SERVER_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    EUREKA_SERVER,
-                    EUREKA_SERVER_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    GATEWAY_SERVICE,
-                    GATEWAY_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    POSTGRES,
-                    POSTGRES_PORT,
-                    Wait
-                        .forListeningPort()
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    USER_SERVICE,
-                    USER_SERVICE_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    TAROT_SERVICE,
-                    TAROT_SERVICE_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).withExposedService(
-                    DIVINATION_SERVICE,
-                    DIVINATION_SERVICE_PORT,
-                    Wait
-                        .forHttp("/actuator/health")
-                        .forStatusCode(200)
-                        .withStartupTimeout(STARTUP_TIMEOUT),
-                ).apply { start() }
+        @BeforeAll
+        fun verifyServicesRunning() {
+            val gatewayUrl =
+                System.getProperty("GATEWAY_URL")
+                    ?: System.getenv("GATEWAY_URL")
+                    ?: DEFAULT_GATEWAY_URL
 
-        @JvmStatic
-        @DynamicPropertySource
-        fun configureProperties(registry: DynamicPropertyRegistry) {
-            val gatewayHost = compose.getServiceHost(GATEWAY_SERVICE, GATEWAY_PORT)
-            val gatewayPort = compose.getServicePort(GATEWAY_SERVICE, GATEWAY_PORT)
+            println("═══════════════════════════════════════════════════════════════════")
+            println("E2E Tests - Pre-Running Application Mode")
+            println("═══════════════════════════════════════════════════════════════════")
+            println("Gateway URL: $gatewayUrl")
+            println("Checking if services are running...")
+            println("═══════════════════════════════════════════════════════════════════")
 
-            registry.add("services.user-service.url") { "http://$gatewayHost:$gatewayPort" }
-            registry.add("services.tarot-service.url") { "http://$gatewayHost:$gatewayPort" }
-            registry.add("services.divination-service.url") { "http://$gatewayHost:$gatewayPort" }
+            val restTemplate = RestTemplate()
+            var lastException: Exception? = null
+
+            for (attempt in 1..HEALTH_CHECK_MAX_RETRIES) {
+                try {
+                    val response =
+                        restTemplate.getForEntity(
+                            "$gatewayUrl/actuator/health",
+                            String::class.java,
+                        )
+
+                    if (response.statusCode.is2xxSuccessful) {
+                        println("✓ Gateway health check passed")
+                        println("═══════════════════════════════════════════════════════════════════")
+                        return
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                    if (attempt < HEALTH_CHECK_MAX_RETRIES) {
+                        println("⚠ Health check attempt $attempt/$HEALTH_CHECK_MAX_RETRIES failed, retrying...")
+                        Thread.sleep(RETRY_DELAY_MS)
+                    }
+                }
+            }
+
+            // All retries failed
+            println("✗ Gateway health check failed after $HEALTH_CHECK_MAX_RETRIES attempts")
+            println("═══════════════════════════════════════════════════════════════════")
+            println("ERROR: Services are not running!")
+            println("")
+            println("To start services, run:")
+            println("  docker compose up -d")
+            println("")
+            println("Or with build:")
+            println("  docker compose up -d --build")
+            println("")
+            println("To check service status:")
+            println("  docker compose ps")
+            println("  curl $gatewayUrl/actuator/health")
+            println("═══════════════════════════════════════════════════════════════════")
+
+            throw IllegalStateException(
+                "Gateway is not accessible at $gatewayUrl/actuator/health. " +
+                    "Please start services with 'docker compose up -d'. " +
+                    "Last error: ${lastException?.message}",
+                lastException,
+            )
         }
+    }
+
+    /**
+     * Login with given credentials and set the JWT token in AuthContext.
+     * Also extracts and stores userId and role from the token response.
+     */
+    protected fun loginAndSetToken(
+        username: String,
+        password: String,
+    ): String {
+        val request = LoginRequest(username = username, password = password)
+        val response = userClient.login(request)
+        val tokenResponse = response.body!!
+        AuthContext.setToken(tokenResponse.token)
+
+        // Extract user context from token response
+        currentRole = tokenResponse.role
+        // Get user ID from the users list (token doesn't contain userId directly in our implementation)
+        val users = userClient.getUsers(adminUserId, adminRole).body!!
+        val user = users.find { it.username == username }
+        if (user != null) {
+            currentUserId = user.id
+        }
+
+        return tokenResponse.token
+    }
+
+    /**
+     * Login as the default admin user
+     */
+    protected fun loginAsAdmin(): String {
+        currentUserId = adminUserId
+        currentRole = adminRole
+        return loginAndSetToken("admin", "Admin@123")
+    }
+
+    /**
+     * Clear the authentication token
+     */
+    protected fun clearAuth() {
+        AuthContext.clear()
+    }
+
+    /**
+     * Clean up authentication context after each test
+     */
+    @AfterEach
+    fun cleanupAuth() {
+        AuthContext.clear()
     }
 
     protected fun assertThrowsWithStatus(

@@ -18,14 +18,18 @@ class SpreadMapper(
     private val userServiceClient: UserServiceClient,
     private val tarotServiceClient: TarotServiceClient,
 ) {
+    // System context for internal service-to-service calls
+    private val systemUserId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    private val systemRole = "SYSTEM"
+
     fun toDto(
         spread: Spread,
         spreadCards: List<SpreadCard>,
         interpretations: List<Interpretation>,
         cardCache: Map<UUID, CardDto> = emptyMap(),
     ): SpreadDto {
-        val author = userServiceClient.getUserById(spread.authorId).body!!
-        val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
+        val author = userServiceClient.getUserById(systemUserId, systemRole, spread.authorId).body!!
+        val layoutType = tarotServiceClient.getLayoutTypeById(systemUserId, systemRole, spread.layoutTypeId).body!!
 
         return SpreadDto(
             id = spread.id!!,
@@ -43,7 +47,13 @@ class SpreadMapper(
                 },
             interpretations =
                 interpretations.map { interpretation ->
-                    val interpAuthor = userServiceClient.getUserById(interpretation.authorId).body!!
+                    val interpAuthor =
+                        userServiceClient
+                            .getUserById(
+                                systemUserId,
+                                systemRole,
+                                interpretation.authorId,
+                            ).body!!
                     InterpretationDto(
                         id = interpretation.id!!,
                         text = interpretation.text,
@@ -61,8 +71,8 @@ class SpreadMapper(
         spread: Spread,
         interpretationsCount: Int = 0,
     ): SpreadSummaryDto {
-        val author = userServiceClient.getUserById(spread.authorId).body!!
-        val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
+        val author = userServiceClient.getUserById(systemUserId, systemRole, spread.authorId).body!!
+        val layoutType = tarotServiceClient.getLayoutTypeById(systemUserId, systemRole, spread.layoutTypeId).body!!
 
         return SpreadSummaryDto(
             id = spread.id!!,
@@ -78,7 +88,7 @@ class SpreadMapper(
     private fun fetchCard(cardId: UUID): CardDto {
         // For single card fetches, we make individual calls
         // In production, you might want to add a batch endpoint
-        val cards = tarotServiceClient.getRandomCards(1).body!!
+        val cards = tarotServiceClient.getRandomCards(systemUserId, systemRole, 1).body!!
         return cards.firstOrNull()
             ?: throw IllegalStateException("Could not fetch card with id $cardId")
     }

@@ -29,37 +29,45 @@ class DivinationServiceE2ETest : BaseE2ETest() {
 
     @BeforeAll
     fun setupTestData() {
+        loginAsAdmin()
+
         // Create test user
         val userResponse =
             userClient.createUser(
-                CreateUserRequest(username = "e2e_divination_user_${System.currentTimeMillis()}"),
+                currentUserId,
+                currentRole,
+                CreateUserRequest(
+                    username = "e2e_divination_user_${System.currentTimeMillis()}",
+                    password = "Test@123",
+                ),
             )
         testUserId = userResponse.body!!.id
 
         // Get admin user
-        val users = userClient.getUsers().body!!
+        val users = userClient.getUsers(currentUserId, currentRole).body!!
         adminId = users.find { it.username == "admin" }!!.id
 
         // Get layout types
-        val layoutTypes = tarotClient.getLayoutTypes().body!!
+        val layoutTypes = tarotClient.getLayoutTypes(currentUserId, currentRole).body!!
         oneCardLayoutId = layoutTypes.find { it.name == "ONE_CARD" }!!.id
         threeCardsLayoutId = layoutTypes.find { it.name == "THREE_CARDS" }!!.id
     }
 
     @AfterAll
     fun cleanup() {
+        loginAsAdmin()
         // Delete test user (cascades to spreads and interpretations)
-        runCatching { userClient.deleteUser(testUserId) }
+        runCatching { userClient.deleteUser(currentUserId, currentRole, testUserId) }
     }
 
     @Test
     @Order(1)
     fun `POST spread should create spread via inter-service communication`() {
+        loginAsAdmin()
         val request =
             CreateSpreadRequest(
                 question = "E2E test question - What does the future hold?",
                 layoutTypeId = oneCardLayoutId,
-                authorId = testUserId,
             )
         val response = divinationClient.createSpread(request)
 
@@ -71,6 +79,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(2)
     fun `GET spread by id should return spread with cards and author`() {
+        loginAsAdmin()
         val response = divinationClient.getSpreadById(spreadId)
 
         assertEquals(200, response.statusCode.value())
@@ -84,11 +93,11 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(3)
     fun `POST spread with THREE_CARDS layout should create spread with 3 cards`() {
+        loginAsAdmin()
         val request =
             CreateSpreadRequest(
                 question = "E2E test - Past, Present, Future?",
                 layoutTypeId = threeCardsLayoutId,
-                authorId = testUserId,
             )
         val response = divinationClient.createSpread(request)
 
@@ -102,6 +111,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(4)
     fun `GET spreads with pagination should return spreads list`() {
+        loginAsAdmin()
         val response = divinationClient.getSpreads(page = 0, size = 10)
 
         assertEquals(200, response.statusCode.value())
@@ -111,6 +121,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(5)
     fun `GET spreads with scroll pagination should return with X-After header when more items available`() {
+        loginAsAdmin()
         val response = divinationClient.getSpreadsScroll(after = null, size = 1)
 
         assertEquals(200, response.statusCode.value())
@@ -124,10 +135,10 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(6)
     fun `POST interpretation should create interpretation`() {
+        loginAsAdmin()
         val request =
             CreateInterpretationRequest(
                 text = "E2E test interpretation - The cards suggest great fortune ahead!",
-                authorId = testUserId,
             )
         val response = divinationClient.createInterpretation(spreadId, request)
 
@@ -139,6 +150,7 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(7)
     fun `GET spread should now include interpretation`() {
+        loginAsAdmin()
         val spread = divinationClient.getSpreadById(spreadId).body!!
         assertEquals(1, spread.interpretations.size, "Spread should have 1 interpretation")
     }
@@ -146,10 +158,10 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(8)
     fun `POST duplicate interpretation by same author should return 409`() {
+        loginAsAdmin()
         val request =
             CreateInterpretationRequest(
                 text = "Another interpretation attempt by same author",
-                authorId = testUserId,
             )
         assertThrowsWithStatus(409) {
             divinationClient.createInterpretation(spreadId, request)
@@ -159,10 +171,10 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(9)
     fun `PUT interpretation should update text`() {
+        loginAsAdmin()
         val request =
             UpdateInterpretationRequest(
                 text = "Updated E2E interpretation - Even better fortune!",
-                authorId = testUserId,
             )
         val response = divinationClient.updateInterpretation(spreadId, interpretationId, request)
 
@@ -173,25 +185,44 @@ class DivinationServiceE2ETest : BaseE2ETest() {
     @Test
     @Order(10)
     fun `PUT interpretation by non-author should return 403`() {
+        // Create a second test user to test non-author update
+        loginAsAdmin()
+        val otherUsername = "e2e_other_user_${System.currentTimeMillis()}"
+        val otherUserResponse =
+            userClient.createUser(
+                currentUserId,
+                currentRole,
+                CreateUserRequest(
+                    username = otherUsername,
+                    password = "Test@456",
+                ),
+            )
+        val otherUserId = otherUserResponse.body!!.id
+
+        // Login as the other user and try to update admin's interpretation
+        loginAndSetToken(otherUsername, "Test@456")
         val request =
             UpdateInterpretationRequest(
                 text = "Malicious update attempt",
-                authorId = adminId,
             )
         assertThrowsWithStatus(403) {
             divinationClient.updateInterpretation(spreadId, interpretationId, request)
         }
+
+        // Cleanup: delete the test user
+        loginAsAdmin()
+        userClient.deleteUser(currentUserId, currentRole, otherUserId)
     }
 
     @Test
     @Order(11)
-    fun `POST spread with non-existent user should return 404`() {
+    fun `POST spread with non-existent layout type should return 404`() {
+        loginAsAdmin()
         val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         val request =
             CreateSpreadRequest(
                 question = "This should fail",
-                layoutTypeId = oneCardLayoutId,
-                authorId = fakeId,
+                layoutTypeId = fakeId,
             )
         assertThrowsWithStatus(404) {
             divinationClient.createSpread(request)
@@ -200,16 +231,31 @@ class DivinationServiceE2ETest : BaseE2ETest() {
 
     @Test
     @Order(12)
-    fun `POST spread with non-existent layout type should return 404`() {
-        val fakeId = UUID.fromString("00000000-0000-0000-0000-000000000000")
-        val request =
-            CreateSpreadRequest(
-                question = "This should fail",
-                layoutTypeId = fakeId,
-                authorId = testUserId,
+    fun `POST interpretation as USER should return 403`() {
+        // Create regular USER
+        loginAsAdmin()
+        val userUsername = "e2e_regular_user_${System.currentTimeMillis()}"
+        val userResponse =
+            userClient.createUser(
+                currentUserId,
+                currentRole,
+                CreateUserRequest(username = userUsername, password = "User@123"),
             )
-        assertThrowsWithStatus(404) {
-            divinationClient.createSpread(request)
+        val regularUserId = userResponse.body!!.id
+
+        // Login as regular user (has USER role by default)
+        loginAndSetToken(userUsername, "User@123")
+
+        val request =
+            CreateInterpretationRequest(
+                text = "This should fail - USER cannot create interpretations",
+            )
+        assertThrowsWithStatus(403) {
+            divinationClient.createInterpretation(spreadId, request)
         }
+
+        // Cleanup
+        loginAsAdmin()
+        userClient.deleteUser(currentUserId, currentRole, regularUserId)
     }
 }

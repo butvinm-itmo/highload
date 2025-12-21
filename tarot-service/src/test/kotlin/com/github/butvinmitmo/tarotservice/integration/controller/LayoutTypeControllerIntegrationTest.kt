@@ -4,11 +4,15 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class LayoutTypeControllerIntegrationTest : BaseControllerIntegrationTest() {
+    private val testUserId = UUID.randomUUID()
+
     @Test
     fun `GET layout-types should return paginated list with X-Total-Count header`() {
         webTestClient
             .get()
             .uri("/api/v0.0.1/layout-types")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -34,6 +38,8 @@ class LayoutTypeControllerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .get()
             .uri("/api/v0.0.1/layout-types/$oneCardLayoutId")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -53,6 +59,8 @@ class LayoutTypeControllerIntegrationTest : BaseControllerIntegrationTest() {
         webTestClient
             .get()
             .uri("/api/v0.0.1/layout-types/$nonExistentId")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isNotFound

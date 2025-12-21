@@ -1,0 +1,21 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    gateway:
+      enabled: false
+  main:
+    web-application-type: reactive
+
+eureka:
+  client:
+    enabled: false
+
+jwt:
+  secret: testSecretKeyThatIsLongEnoughForHS256AlgorithmRequirements!!
+  expiration-hours: 24
+
+security:
+  public-paths:
+    - /api/v0.0.1/auth/login
+    - /actuator/health

@@ -1,0 +1,1039 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8083
+  description: Generated server url
+tags:
+- name: Spreads
+  description: Tarot spread management and viewing
+- name: Interpretations
+  description: Manage interpretations for tarot spreads
+paths:
+  /api/v0.0.1/spreads/{spreadId}/interpretations/{id}:
+    get:
+      tags:
+      - Interpretations
+      summary: Get interpretation details
+      description: Retrieves a specific interpretation by its ID
+      operationId: getInterpretation
+      parameters:
+      - name: spreadId
+        in: path
+        description: Spread ID containing the interpretation
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        description: Interpretation ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Interpretation or spread not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Interpretation found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InterpretationDto"
+    put:
+      tags:
+      - Interpretations
+      summary: Update interpretation
+      description: Updates an existing interpretation. Only the interpretation author
+        can update it.
+      operationId: updateInterpretation
+      parameters:
+      - name: spreadId
+        in: path
+        description: Spread ID containing the interpretation
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        description: Interpretation ID to update
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-User-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInterpretationRequest"
+        required: true
+      responses:
+        "400":
+          description: Invalid request data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Spread or interpretation not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User is not the author of the interpretation
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Interpretation updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InterpretationDto"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InterpretationDto"
+    delete:
+      tags:
+      - Interpretations
+      summary: Delete interpretation
+      description: Deletes an interpretation from a spread. Only the interpretation
+        author can delete it.
+      operationId: deleteInterpretation
+      parameters:
+      - name: spreadId
+        in: path
+        description: Spread ID containing the interpretation
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        description: Interpretation ID to delete
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-User-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Spread or interpretation not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User is not the author of the interpretation
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid authentication
+        "204":
+          description: Interpretation deleted successfully
+  /api/v0.0.1/spreads:
+    get:
+      tags:
+      - Spreads
+      summary: Get paginated spreads
+      description: Retrieves spreads sorted by creation date. Returns total count
+        in X-Total-Count header.
+      operationId: getSpreads
+      parameters:
+      - name: page
+        in: query
+        description: Page number (0-based)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+        example: 0
+      - name: size
+        in: query
+        description: Page size (max 50)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+        example: 20
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Spreads retrieved successfully
+          headers:
+            X-Total-Count:
+              description: Total number of spreads
+              style: simple
+              schema: {}
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpreadSummaryDto"
+    post:
+      tags:
+      - Spreads
+      summary: Create a new spread
+      description: Creates a new tarot spread with randomly selected cards. Cards
+        may be reversed. ID and timestamp are generated by PostgreSQL. Returns only
+        the generated ID.
+      operationId: createSpread
+      parameters:
+      - name: X-User-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSpreadRequest"
+        required: true
+      responses:
+        "400":
+          description: Invalid request data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Author or layout type not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Spread created successfully, returns generated ID"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreateSpreadResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreateSpreadResponse"
+  /api/v0.0.1/spreads/{spreadId}/interpretations:
+    get:
+      tags:
+      - Interpretations
+      summary: Get all interpretations for a spread
+      description: "Retrieves paginated interpretations for the specified spread,\
+        \ ordered by creation date (newest first)"
+      operationId: getInterpretations
+      parameters:
+      - name: spreadId
+        in: path
+        description: Spread ID to get interpretations for
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        description: Page number (0-based)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+        example: 0
+      - name: size
+        in: query
+        description: Page size (max 50)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+        example: 20
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Spread not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Interpretations retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InterpretationDto"
+    post:
+      tags:
+      - Interpretations
+      summary: Add interpretation to a spread
+      description: Creates a new interpretation. Each user can have only one interpretation
+        per spread. ID and timestamp are generated by PostgreSQL. Returns only the
+        generated ID.
+      operationId: addInterpretation
+      parameters:
+      - name: spreadId
+        in: path
+        description: Spread ID to add interpretation to
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-User-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInterpretationRequest"
+        required: true
+      responses:
+        "400":
+          description: Invalid request data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Spread or author not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: User already has an interpretation for this spread
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreateInterpretationResponse"
+        "201":
+          description: "Interpretation added successfully, returns generated ID"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreateInterpretationResponse"
+  /api/v0.0.1/spreads/{id}:
+    get:
+      tags:
+      - Spreads
+      summary: Get spread details
+      description: Retrieves complete details of a specific spread including all cards
+        and interpretations
+      operationId: getSpread
+      parameters:
+      - name: id
+        in: path
+        description: Spread ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Spread not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Spread found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpreadDto"
+    delete:
+      tags:
+      - Spreads
+      summary: Delete a spread
+      description: Deletes a spread and all associated data. Only the author can delete
+        it.
+      operationId: deleteSpread
+      parameters:
+      - name: id
+        in: path
+        description: Spread ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-User-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Spread not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User is not the author of the spread
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid authentication
+        "204":
+          description: Spread deleted successfully
+  /api/v0.0.1/spreads/scroll:
+    get:
+      tags:
+      - Spreads
+      summary: Get spreads with infinite scroll
+      description: Retrieves spreads using cursor-based pagination. Returns X-After
+        header with cursor for next page if more items exist.
+      operationId: getSpreadsByScroll
+      parameters:
+      - name: after
+        in: query
+        description: ID of the last spread from previous request (cursor)
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: size
+        in: query
+        description: Number of spreads to retrieve (max 50)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+        example: 20
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Spreads retrieved successfully
+          headers:
+            X-After:
+              description: Cursor for next page (only present if more items exist)
+              style: simple
+              schema:
+                format: uuid
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpreadSummaryDto"
+components:
+  schemas:
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - error
+      - fieldErrors
+      - message
+      - timestamp
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+      required:
+      - error
+      - message
+      - timestamp
+    UpdateInterpretationRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 50000
+          minLength: 1
+      required:
+      - text
+    InterpretationDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          $ref: "#/components/schemas/UserDto"
+        spreadId:
+          type: string
+          format: uuid
+      required:
+      - author
+      - createdAt
+      - id
+      - spreadId
+      - text
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - id
+      - role
+      - username
+    CreateSpreadRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          maxLength: 10000
+          minLength: 0
+        layoutTypeId:
+          type: string
+          format: uuid
+      required:
+      - layoutTypeId
+    CreateSpreadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+    CreateInterpretationRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 50000
+          minLength: 1
+      required:
+      - text
+    CreateInterpretationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+    SpreadSummaryDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        layoutTypeName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        authorUsername:
+          type: string
+        cardsCount:
+          type: integer
+          format: int32
+        interpretationsCount:
+          type: integer
+          format: int32
+      required:
+      - authorUsername
+      - cardsCount
+      - createdAt
+      - id
+      - interpretationsCount
+      - layoutTypeName
+    ArcanaTypeDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    CardDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        arcanaType:
+          $ref: "#/components/schemas/ArcanaTypeDto"
+      required:
+      - arcanaType
+      - id
+      - name
+    LayoutTypeDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        cardsCount:
+          type: integer
+          format: int32
+      required:
+      - cardsCount
+      - id
+      - name
+    SpreadCardDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        card:
+          $ref: "#/components/schemas/CardDto"
+        positionInSpread:
+          type: integer
+          format: int32
+        isReversed:
+          type: boolean
+      required:
+      - card
+      - id
+      - isReversed
+      - positionInSpread
+    SpreadDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        layoutType:
+          $ref: "#/components/schemas/LayoutTypeDto"
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          $ref: "#/components/schemas/UserDto"
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpreadCardDto"
+        interpretations:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterpretationDto"
+      required:
+      - author
+      - cards
+      - createdAt
+      - id
+      - interpretations
+      - layoutType

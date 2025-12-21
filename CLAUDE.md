@@ -4,15 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tarology Web Service** - A Kotlin/Spring Boot microservices application for Tarot card readings and interpretations. Users can create spreads, view others' spreads, and add interpretations without authentication (user ID-based identification).
+**Tarology Web Service** - A Kotlin/Spring Boot microservices application for Tarot card readings and interpretations. Users authenticate via JWT tokens to create spreads, view others' spreads, and add interpretations.
 
 **Architecture:** Microservices with Feign Clients for inter-service communication.
 
 Key features:
+- JWT-based authentication with 3-role authorization model (USER, MEDIUM, ADMIN)
 - Create tarot spreads with different layouts (one card, three cards, cross/five cards)
 - View all spreads in chronological feed
-- Add/edit/delete interpretations for spreads
-- User management with transactional deletion
+- Add/edit/delete interpretations for spreads (MEDIUM/ADMIN only for creation, author-only for modifications)
+- User management with transactional deletion (ADMIN-only)
 
 ## Microservices Architecture
 
@@ -28,7 +29,7 @@ The application is split into 6 microservices + shared modules:
 | **divination-service** | 8083 | Spreads & Interpretations (Spring WebFlux + R2DBC, reactive) |
 | **shared-dto** | - | Shared DTOs between services |
 | **shared-clients** | - | Shared Feign clients (UserServiceClient, TarotServiceClient, DivinationServiceClient) |
-| **e2e-tests** | - | End-to-end tests using shared-clients |
+| **e2e-tests** | - | End-to-end tests (requires pre-running services) |
 
 **Inter-service Communication:**
 - Services register with Eureka and discover each other dynamically
@@ -63,7 +64,7 @@ The **gateway-service** provides a unified entry point for all external API requ
 **Access Patterns:**
 - **External Clients**: Use gateway at `http://localhost:8080`
 - **Internal Feign Clients**: Direct service URLs via Eureka (e.g., `lb://user-service`)
-- **E2E Tests**: Route through gateway to simulate external access
+- **E2E Tests**: Route through gateway (requires docker compose up -d before running)
 
 **Configuration Location:**
 - Routes and resilience policies: `highload-config/gateway-service.yml`
@@ -80,6 +81,133 @@ resilience4j:
   timelimiter:
     timeoutDuration: 3s
 ```
+
+## Authentication & Authorization
+
+The application uses JWT-based authentication with centralized validation at the gateway level.
+
+### Authentication Flow
+
+1. **Login**: User sends credentials to `POST /api/v0.0.1/auth/login`
+2. **Token Generation**: user-service validates credentials and generates JWT (24h expiration)
+3. **Token Usage**: Client includes JWT in `Authorization: Bearer <token>` header
+4. **Gateway Validation**: gateway-service validates JWT and extracts userId + role
+5. **Header Propagation**: Gateway adds `X-User-Id` and `X-User-Role` headers to backend requests
+6. **Backend Authorization**: Backend services trust gateway headers for authorization checks
+
+### Architecture
+
+**JWT Generation (user-service):**
+- BCrypt password hashing (10 rounds)
+- HS256 signing algorithm
+- 24-hour token expiration
+- Includes username and role in token payload
+
+**JWT Validation (gateway-service):**
+- Validates all requests except public paths
+- Public paths: `/api/v0.0.1/auth/login`, `/actuator/health`
+- Returns 401 for missing/invalid tokens
+- Adds `X-User-Id` and `X-User-Role` headers after validation
+
+**Authorization Model (3-Role System):**
+
+| Role | Spreads | Interpretations | Users |
+|------|---------|-----------------|-------|
+| **USER** | Create, read, delete own | Read only (CANNOT create) | Read only |
+| **MEDIUM** | Create, read, delete own | Create, read, update/delete own | Read only |
+| **ADMIN** | Full access (bypass author checks) | Full access (bypass author checks) | Full CRUD |
+
+- **USER role**: Default role for new users. Can create spreads, read spreads/interpretations, get users list
+- **MEDIUM role**: All USER permissions + create interpretations on any spread
+- **ADMIN role**: Complete system access - user CRUD, create spreads/interpretations, bypass author-only checks for delete/update
+- **Author-only operations**: Non-ADMIN users can only delete/update their own spreads/interpretations
+- **ADMIN bypass**: ADMIN can delete/update ANY spread or interpretation regardless of author
+- **Public read endpoints**: All spreads and cards are readable by any authenticated user
+
+### Default Admin Credentials
+
+**⚠️ FOR DEVELOPMENT ONLY - Change in production!**
+
+```
+Username: admin
+Password: Admin@123
+Role: ADMIN
+ID: 10000000-0000-0000-0000-000000000001
+```
+
+After first deployment, change the admin password immediately in production environments.
+
+### Password Requirements
+
+All user passwords must meet these requirements:
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one digit
+- At least one special character (@$!%*?&#)
+
+Example valid passwords: `Admin@123`, `Pass@word1`, `Test@1234`
+
+### Environment Variables
+
+**JWT_SECRET** - Secret key for JWT signing/validation
+- Required by: user-service, gateway-service
+- Default (dev): `my-secret-key-for-development-only-change-in-production`
+- Production: Set via environment variable or external config
+
+```bash
+# docker-compose.yml includes JWT_SECRET for both services
+docker compose up -d
+
+# Override in production
+export JWT_SECRET="your-secure-production-secret-key"
+```
+
+**Configuration locations:**
+- `highload-config/user-service.yml` - JWT expiration, password regex
+- `highload-config/gateway-service.yml` - JWT secret, public paths
+
+### Testing with Authentication
+
+**E2E Tests:**
+- E2E tests require services to be running: `docker compose up -d`
+- Tests verify gateway health before execution
+- Authentication handled via `loginAsAdmin()` helper (ThreadLocal `AuthContext`)
+- All Feign requests automatically include `Authorization` header
+- Configure gateway URL via `GATEWAY_URL` environment variable (default: http://localhost:8080)
+
+**Manual Testing:**
+
+```bash
+# 1. Login to get JWT token
+curl -X POST http://localhost:8080/api/v0.0.1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"Admin@123"}'
+
+# Response: {"token":"eyJhbGc...", "expiresAt":"2025-12-17T...", "username":"admin", "role":"ADMIN"}
+
+# 2. Use token in subsequent requests
+TOKEN="<token-from-login-response>"
+
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/v0.0.1/users
+
+# 3. Test protected endpoint without token (should return 401)
+curl -v http://localhost:8080/api/v0.0.1/users
+```
+
+**Integration Tests:**
+- Backend services use `@MockBean` for Feign clients (no real authentication)
+- Tests add `X-User-Id` and `X-User-Role` headers directly to requests
+- Gateway is bypassed in integration tests (services tested in isolation)
+
+### Security Notes
+
+- JWT secret must be at least 256 bits (32 characters) for HS256
+- Tokens are stateless - no server-side session storage
+- Backend services do NOT validate JWT (trust gateway headers)
+- All password storage uses BCrypt with salt
+- HTTPS should be used in production to protect tokens in transit
 
 ## Configuration Management
 
@@ -303,19 +431,49 @@ curl http://localhost:8080/actuator/health
 curl http://localhost:8080/actuator/circuitbreakers | jq
 ```
 
-**Note:** `docker-compose.yml` does not include `container_name` fields to ensure compatibility with TestContainers (see https://github.com/testcontainers/testcontainers-java/issues/2472).
-
 ### E2E Testing
+
+E2E tests run against a pre-running application. Services must be started before running tests.
+
+**Local Development:**
 ```bash
-# TestContainers automatically starts and stops services
+# 1. Start all services (required)
+docker compose up -d
+
+# 2. Run E2E tests
 ./gradlew :e2e-tests:test
 
-# IMPORTANT: If tests fail with startup timeouts, pre-build Docker images first
-docker compose build
-./gradlew :e2e-tests:test
+# 3. Stop services when done
+docker compose down
 ```
 
-**Note:** TestContainers may time out during the first run if Docker images aren't pre-built. Building images beforehand (via `docker compose build`) ensures faster startup and prevents timeout failures during test execution.
+**Custom Gateway URL:**
+```bash
+# Via environment variable
+GATEWAY_URL=http://localhost:8080 ./gradlew :e2e-tests:test
+
+# Via system property
+./gradlew :e2e-tests:test -DGATEWAY_URL=http://localhost:8080
+
+# For remote deployment
+GATEWAY_URL=https://tarology.example.com ./gradlew :e2e-tests:test
+```
+
+**Health Check Behavior:**
+- Tests verify gateway health before execution (`/actuator/health`)
+- 3 retry attempts with 1-second delays
+- Fail-fast with clear error message if services aren't running
+- Error message includes `docker compose up -d` command
+
+**CI/CD:**
+- CI automatically builds images, starts services, runs tests, and stops services
+- Uses `docker compose up -d --wait` to ensure all services are healthy
+- Captures service logs on test failure for debugging
+
+**Architecture:**
+- All Feign clients route through gateway (single URL configuration)
+- Gateway URL defaults to `http://localhost:8080`
+- No TestContainers overhead - tests are faster and more lightweight
 
 ### Database Setup
 Each service has its own Flyway migrations with separate history tables:
@@ -367,7 +525,7 @@ The `shared-clients` module provides unified Feign client interfaces for inter-s
 
 **URL Configuration:**
 - Empty URL (default): Uses Eureka service discovery in production
-- Explicit URL: For testing with WireMock or TestContainers
+- Explicit URL: For testing with WireMock or custom deployments
 - Pattern: `@FeignClient(name = "service-name", url = "\${services.service-name.url:}")`
 
 **Dependency Exposure:**
@@ -392,7 +550,7 @@ The `shared-clients` module provides unified Feign client interfaces for inter-s
 - **API Gateway:** Spring Cloud Gateway with circuit breaker
 - **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
 - **Resilience:** Resilience4j circuit breaker, retry, time limiter
-- **Testing:** TestContainers 1.19.8 for E2E tests
+- **Testing:** Spring Boot Test for E2E tests (pre-running services)
 - **Code Style:** ktlint 1.5.0
 
 ## Project Structure
@@ -433,8 +591,7 @@ highload/
 │       ├── SpreadDto.kt, SpreadSummaryDto.kt, ...
 │       ├── InterpretationDto.kt, ...
 │       ├── PageResponse.kt, ScrollResponse.kt
-│       ├── ErrorResponse.kt, ValidationErrorResponse.kt
-│       └── DeleteRequest.kt
+│       └── ErrorResponse.kt, ValidationErrorResponse.kt
 │
 ├── shared-clients/                # Shared Feign clients module
 │   └── src/main/kotlin/.../shared/
@@ -470,10 +627,12 @@ highload/
 │       ├── entity/Spread.kt, SpreadCard.kt, Interpretation.kt
 │       └── mapper/SpreadMapper.kt, InterpretationMapper.kt
 │
-├── e2e-tests/                     # End-to-end tests module
+├── e2e-tests/                     # End-to-end tests (requires docker compose up -d)
 │   └── src/test/kotlin/.../e2e/
 │       ├── E2ETestApplication.kt
-│       ├── BaseE2ETest.kt
+│       ├── BaseE2ETest.kt          # Health check + auth helpers
+│       ├── config/
+│       │   └── AuthFeignConfig.kt  # JWT token interceptor
 │       ├── UserServiceE2ETest.kt
 │       ├── TarotServiceE2ETest.kt
 │       ├── DivinationServiceE2ETest.kt
@@ -510,13 +669,19 @@ All paginated endpoints enforce `@Max(50)` on the `size` parameter. Requesting `
 
 Base path: `/api/v0.0.1`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/users` | Create user (409 if username exists) |
-| GET | `/users?page=N&size=M` | List users (X-Total-Count header) |
-| GET | `/users/{id}` | Get user by ID |
-| PUT | `/users/{id}` | Update user |
-| DELETE | `/users/{id}` | Delete user and all associated data |
+**Authentication:**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/auth/login` | Login with credentials, returns JWT token | No (public) |
+
+**Users:**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/users` | Create user (409 if username exists) | Yes (ADMIN) |
+| GET | `/users?page=N&size=M` | List users (X-Total-Count header) | Yes |
+| GET | `/users/{id}` | Get user by ID | Yes |
+| PUT | `/users/{id}` | Update user | Yes (ADMIN) |
+| DELETE | `/users/{id}` | Delete user and all associated data | Yes (ADMIN) |
 
 ### tarot-service (port 8082)
 
@@ -536,47 +701,49 @@ Base path: `/api/v0.0.1`
 Base path: `/api/v0.0.1`
 
 **Spreads:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/spreads` | Create spread |
-| GET | `/spreads?page=N&size=M` | List spreads (X-Total-Count header) |
-| GET | `/spreads/scroll?after=ID&size=N` | Scroll spreads (X-After header) |
-| GET | `/spreads/{id}` | Get spread with cards and interpretations |
-| DELETE | `/spreads/{id}` | Delete spread (author only) |
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| POST | `/spreads` | Create spread | Any |
+| GET | `/spreads?page=N&size=M` | List spreads (X-Total-Count header) | Any |
+| GET | `/spreads/scroll?after=ID&size=N` | Scroll spreads (X-After header) | Any |
+| GET | `/spreads/{id}` | Get spread with cards and interpretations | Any |
+| DELETE | `/spreads/{id}` | Delete spread | Author or ADMIN |
 
 **Interpretations:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/spreads/{spreadId}/interpretations` | List interpretations |
-| GET | `/spreads/{spreadId}/interpretations/{id}` | Get interpretation |
-| POST | `/spreads/{spreadId}/interpretations` | Add interpretation (409 if duplicate) |
-| PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation (author only) |
-| DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation (author only) |
+| Method | Endpoint | Description | Role |
+|--------|----------|-------------|------|
+| GET | `/spreads/{spreadId}/interpretations` | List interpretations | Any |
+| GET | `/spreads/{spreadId}/interpretations/{id}` | Get interpretation | Any |
+| POST | `/spreads/{spreadId}/interpretations` | Add interpretation (409 if duplicate) | MEDIUM, ADMIN |
+| PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation | Author or ADMIN |
+| DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation | Author or ADMIN |
 
 ## Important API Details
 
-### DeleteRequest DTO
+### Authentication and Request Identity
 
-**IMPORTANT:** Delete endpoints use `userId` field, NOT `authorId`:
+All create and update operations automatically use the authenticated user's ID from the JWT token.
 
-```kotlin
-// DeleteRequest.kt
-data class DeleteRequest(
-    val userId: UUID,  // NOT authorId
-)
+**Request DTOs do NOT include authorId:**
+- `CreateSpreadRequest`: Only requires `question` and `layoutTypeId`
+- `CreateInterpretationRequest`: Only requires `text`
+- `UpdateInterpretationRequest`: Only requires `text`
+
+The controller extracts `X-User-Id` from the JWT-validated request header (added by gateway) and passes it to the service layer as the author ID. This ensures users cannot impersonate others.
+
+**DELETE operations:**
+- No request body required
+- Authorization checks use `X-User-Id` from JWT header
+- Service layer verifies: `resource.authorId == authenticatedUserId`
+
+**Example Flow:**
 ```
-
-This differs from create/update requests which use `authorId`.
-
-### Request/Response DTOs
-
-**Create requests use `authorId`:**
-- `CreateSpreadRequest.authorId`
-- `CreateInterpretationRequest.authorId`
-- `UpdateInterpretationRequest.authorId`
-
-**Delete requests use `userId`:**
-- `DeleteRequest.userId`
+1. Client → Gateway: Authorization: Bearer <JWT>
+2. Gateway validates JWT → adds X-User-Id header
+3. Gateway → Backend Service: X-User-Id + X-User-Role headers
+4. Controller extracts userId from headers
+5. Service uses userId for authorization and resource ownership
+```
 
 ### Entity ID Storage in divination-service
 
@@ -651,48 +818,62 @@ Each service has its own test structure:
 
 ### E2E Tests
 
-The `e2e-tests` module contains Kotlin-based end-to-end tests using Spring Cloud OpenFeign and TestContainers:
+The `e2e-tests` module contains Kotlin-based end-to-end tests using Spring Cloud OpenFeign against a pre-running application.
 
+**Project Structure:**
 ```
 e2e-tests/src/test/kotlin/.../e2e/
 ├── E2ETestApplication.kt              # Spring Boot app for Feign clients
-├── BaseE2ETest.kt                     # Base class with TestContainers setup
+├── BaseE2ETest.kt                     # Health check + auth helpers
 ├── config/
-│   ├── FeignConfig.kt                 # Feign error decoder config
-│   └── JacksonConfig.kt               # Jackson ObjectMapper with JavaTimeModule
-├── client/
-│   ├── UserServiceClient.kt           # Feign client for user-service
-│   ├── TarotServiceClient.kt          # Feign client for tarot-service
-│   └── DivinationServiceClient.kt     # Feign client for divination-service
-├── UserServiceE2ETest.kt              # User CRUD tests (8 tests)
+│   └── AuthFeignConfig.kt             # JWT token interceptor (Authorization header)
+├── UserServiceE2ETest.kt              # User CRUD tests (7 tests)
 ├── TarotServiceE2ETest.kt             # Cards & layout types tests (6 tests)
 ├── DivinationServiceE2ETest.kt        # Spreads & interpretations tests (12 tests)
-└── CleanupAuthorizationE2ETest.kt     # Delete & authorization tests (5 tests)
+├── CleanupAuthorizationE2ETest.kt     # Delete & authorization tests (8 tests)
+└── RoleAuthorizationE2ETest.kt        # Comprehensive 3-role model tests (19 tests)
 ```
 
-**TestContainers Integration:**
-E2E tests use TestContainers `ComposeContainer` to automatically manage service lifecycle:
-- Automatically starts all services (config-server, eureka-server, postgres, user-service, tarot-service, divination-service) from `docker-compose.yml`
-- Waits for health checks on all services (5-minute startup timeout)
-- Uses dynamic port mapping to avoid conflicts
-- Automatically stops containers after tests complete
-- **Note:** `docker-compose.yml` intentionally omits `container_name` fields for TestContainers compatibility
+**Architecture:**
+- All Feign clients route through gateway (http://localhost:8080 by default)
+- Gateway validates JWT tokens and forwards requests to backend services
+- Tests use ThreadLocal `AuthContext` to manage JWT tokens per-thread
+- `AuthFeignConfig` interceptor adds `Authorization: Bearer <token>` header
+
+**Health Check:**
+- `@BeforeAll` hook verifies gateway is accessible before tests run
+- Checks `GET /actuator/health` endpoint with 3 retry attempts
+- Fail-fast with clear error message if services aren't running
+- Error message includes `docker compose up -d` command
 
 **Running E2E tests:**
 ```bash
-# TestContainers automatically starts and stops services
+# 1. Start services (required!)
+docker compose up -d
+
+# 2. Run tests
 ./gradlew :e2e-tests:test
+
+# 3. Cleanup
+docker compose down
 ```
 
-**Dependencies:**
-- `org.testcontainers:testcontainers:1.19.8`
-- `org.testcontainers:junit-jupiter:1.19.8`
+**Gateway URL Configuration:**
+- Default: `http://localhost:8080` (for local development)
+- Override via environment variable: `GATEWAY_URL=http://custom:8080 ./gradlew :e2e-tests:test`
+- Override via system property: `./gradlew :e2e-tests:test -DGATEWAY_URL=http://custom:8080`
 
-**Test coverage (30 tests):**
-- User CRUD, duplicate username (409), not found (404)
+**Dependencies:**
+- `org.springframework.boot:spring-boot-starter-test` - Testing framework
+- `project(":shared-clients")` - Feign clients for all services
+- `project(":shared-dto")` - Request/response DTOs
+
+**Test coverage (52 E2E tests):**
+- User CRUD, duplicate username (409), not found (404), authentication
 - Cards pagination (78 total cards), layout types, random cards, layout type by ID
 - Spreads with inter-service Feign calls, interpretations CRUD
-- Delete operations, authorization verification (403)
+- Delete operations, authorization verification (403), cleanup
+- Comprehensive 3-role authorization (USER, MEDIUM, ADMIN permission boundaries)
 
 ## Code Style Guidelines
 
@@ -833,9 +1014,9 @@ Use `Mono<T>` for single results, `Flux<T>` for multiple results.
 
 ```kotlin
 @Transactional
-fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
+fun createSpread(request: CreateSpreadRequest, authorId: UUID): Mono<CreateSpreadResponse> {
     return Mono
-        .fromCallable { userServiceClient.getUserById(request.authorId) }
+        .fromCallable { userServiceClient.getUserById(authorId) }
         .subscribeOn(Schedulers.boundedElastic())  // Execute on bounded elastic thread pool
         .flatMap { user ->
             Mono.fromCallable { tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!! }
@@ -847,6 +1028,8 @@ fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
         }
 }
 ```
+
+**Note:** The controller extracts `authorId` from the `X-User-Id` header and passes it as a separate parameter to the service.
 
 **Why this works:**
 - `Schedulers.boundedElastic()` - Dedicated thread pool for blocking operations

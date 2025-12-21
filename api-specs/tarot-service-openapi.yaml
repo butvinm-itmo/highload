@@ -1,0 +1,344 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8082
+  description: Generated server url
+tags:
+- name: Layout Types
+  description: Tarot spread layout type operations
+- name: Cards
+  description: Tarot card catalog operations
+paths:
+  /api/v0.0.1/layout-types:
+    get:
+      tags:
+      - Layout Types
+      summary: Get paginated list of layout types
+      description: Retrieves a paginated list of all available tarot spread layout
+        types
+      operationId: getLayoutTypes
+      parameters:
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        description: Page number (0-based)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+        example: 0
+      - name: size
+        in: query
+        description: Page size (max 50)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+        example: 20
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Layout types retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LayoutTypeDto"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LayoutTypeDto"
+  /api/v0.0.1/layout-types/{id}:
+    get:
+      tags:
+      - Layout Types
+      summary: Get layout type by ID
+      description: Retrieves a specific layout type by its UUID
+      operationId: getLayoutTypeById
+      parameters:
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        description: Layout Type ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Layout type not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LayoutTypeDto"
+        "200":
+          description: Layout type found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LayoutTypeDto"
+  /api/v0.0.1/cards:
+    get:
+      tags:
+      - Cards
+      summary: Get paginated list of cards
+      description: Retrieves a paginated list of all tarot cards in the catalog
+      operationId: getCards
+      parameters:
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        description: Page number (0-based)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+        example: 0
+      - name: size
+        in: query
+        description: Page size (max 50)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+        example: 20
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardDto"
+        "200":
+          description: Cards retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardDto"
+  /api/v0.0.1/cards/random:
+    get:
+      tags:
+      - Cards
+      summary: Get random cards
+      description: Retrieves a specified number of random tarot cards
+      operationId: getRandomCards
+      parameters:
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: count
+        in: query
+        description: Number of random cards to retrieve (1-78)
+        required: true
+        schema:
+          type: integer
+          format: int32
+          maximum: 78
+          minimum: 1
+        example: 3
+      responses:
+        "400":
+          description: Invalid count parameter
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardDto"
+        "200":
+          description: Random cards retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardDto"
+components:
+  schemas:
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - error
+      - fieldErrors
+      - message
+      - timestamp
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+      required:
+      - error
+      - message
+      - timestamp
+    LayoutTypeDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        cardsCount:
+          type: integer
+          format: int32
+      required:
+      - cardsCount
+      - id
+      - name
+    ArcanaTypeDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    CardDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        arcanaType:
+          $ref: "#/components/schemas/ArcanaTypeDto"
+      required:
+      - arcanaType
+      - id
+      - name

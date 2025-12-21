@@ -43,21 +43,25 @@ class DivinationService(
     private val interpretationMapper: InterpretationMapper,
 ) {
     @Transactional
-    fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> {
+    fun createSpread(
+        request: CreateSpreadRequest,
+        authorId: UUID,
+        role: String,
+    ): Mono<CreateSpreadResponse> {
         // Validate user exists via Feign (blocking call on boundedElastic)
         return Mono
-            .fromCallable { userServiceClient.getUserById(request.authorId) }
+            .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
             .subscribeOn(Schedulers.boundedElastic())
             .flatMap {
                 // Validate layout type exists via Feign (blocking call on boundedElastic)
                 Mono
-                    .fromCallable { tarotServiceClient.getLayoutTypeById(request.layoutTypeId).body!! }
+                    .fromCallable { tarotServiceClient.getLayoutTypeById(authorId, role, request.layoutTypeId).body!! }
                     .subscribeOn(Schedulers.boundedElastic())
             }.flatMap { layoutType ->
                 val spread =
                     Spread(
                         question = request.question,
-                        authorId = request.authorId,
+                        authorId = authorId,
                         layoutTypeId = request.layoutTypeId,
                     )
                 spreadRepository
@@ -65,8 +69,14 @@ class DivinationService(
                     .flatMap { savedSpread ->
                         // Get random cards via Feign
                         Mono
-                            .fromCallable { tarotServiceClient.getRandomCards(layoutType.cardsCount).body!! }
-                            .subscribeOn(Schedulers.boundedElastic())
+                            .fromCallable {
+                                tarotServiceClient
+                                    .getRandomCards(
+                                        authorId,
+                                        role,
+                                        layoutType.cardsCount,
+                                    ).body!!
+                            }.subscribeOn(Schedulers.boundedElastic())
                             .flatMapMany { cards ->
                                 // Save all spread cards reactively
                                 Flux.fromIterable(
@@ -191,12 +201,13 @@ class DivinationService(
     fun deleteSpread(
         id: UUID,
         userId: UUID,
+        role: String,
     ): Mono<Void> =
         spreadRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Spread not found")))
             .flatMap { spread ->
-                if (spread.authorId != userId) {
+                if (spread.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only delete your own spreads"))
                 } else {
                     spreadRepository.deleteById(id)
@@ -212,15 +223,17 @@ class DivinationService(
     fun addInterpretation(
         spreadId: UUID,
         request: CreateInterpretationRequest,
+        authorId: UUID,
+        role: String,
     ): Mono<CreateInterpretationResponse> =
         getSpreadEntity(spreadId)
             .flatMap {
                 // Validate user exists via Feign (blocking call on boundedElastic)
                 Mono
-                    .fromCallable { userServiceClient.getUserById(request.authorId) }
+                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
                     .subscribeOn(Schedulers.boundedElastic())
             }.flatMap {
-                interpretationRepository.existsByAuthorAndSpread(request.authorId, spreadId)
+                interpretationRepository.existsByAuthorAndSpread(authorId, spreadId)
             }.flatMap { exists ->
                 if (exists) {
                     Mono.error(ConflictException("You already have an interpretation for this spread"))
@@ -228,7 +241,7 @@ class DivinationService(
                     val interpretation =
                         Interpretation(
                             text = request.text,
-                            authorId = request.authorId,
+                            authorId = authorId,
                             spreadId = spreadId,
                         )
                     interpretationRepository
@@ -242,13 +255,14 @@ class DivinationService(
         spreadId: UUID,
         id: UUID,
         userId: UUID,
+        role: String,
         request: UpdateInterpretationRequest,
     ): Mono<InterpretationDto> =
         interpretationRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
             .flatMap { interpretation ->
-                if (interpretation.authorId != userId) {
+                if (interpretation.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only edit your own interpretations"))
                 } else {
                     interpretation.text = request.text
@@ -263,12 +277,13 @@ class DivinationService(
         spreadId: UUID,
         id: UUID,
         userId: UUID,
+        role: String,
     ): Mono<Void> =
         interpretationRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
             .flatMap { interpretation ->
-                if (interpretation.authorId != userId) {
+                if (interpretation.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only delete your own interpretations"))
                 } else {
                     interpretationRepository.deleteById(id)
@@ -330,9 +345,11 @@ class DivinationService(
     private fun buildCardCache(cardIds: Set<UUID>): Mono<Map<UUID, CardDto>> {
         // For now, we fetch random cards for each position
         // In production, you might want to add a batch endpoint to fetch cards by IDs
+        // Using a system user ID for internal calls - cards are reference data
+        val systemUserId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         return Mono
             .fromCallable {
-                val cards = tarotServiceClient.getRandomCards(cardIds.size).body!!
+                val cards = tarotServiceClient.getRandomCards(systemUserId, "SYSTEM", cardIds.size).body!!
                 cardIds.zip(cards).toMap()
             }.subscribeOn(Schedulers.boundedElastic())
     }

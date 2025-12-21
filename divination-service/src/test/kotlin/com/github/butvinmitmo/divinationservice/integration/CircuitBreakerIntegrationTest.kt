@@ -2,23 +2,24 @@ package com.github.butvinmitmo.divinationservice.integration
 
 import com.github.butvinmitmo.divinationservice.integration.controller.BaseControllerIntegrationTest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.butvinmitmo.shared.dto.UserDto
+import feign.FeignException
+import feign.Request
+import feign.RequestTemplate
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
-import com.github.tomakehurst.wiremock.client.WireMock.get as wireMockGet
+import java.time.Instant
 
 @ActiveProfiles("test", "circuitbreaker")
 class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Autowired
     private lateinit var circuitBreakerRegistry: CircuitBreakerRegistry
-
-    // WireMock reset handled by BaseControllerIntegrationTest.resetWireMockBase()
 
     @AfterEach
     fun resetCircuitBreakers() {
@@ -28,28 +29,48 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
         }
     }
 
+    private fun createFeignException(
+        status: Int,
+        message: String,
+    ): FeignException {
+        val request =
+            Request.create(
+                Request.HttpMethod.GET,
+                "http://test",
+                emptyMap(),
+                null,
+                RequestTemplate(),
+            )
+        return FeignException.errorStatus(
+            message,
+            feign.Response
+                .builder()
+                .status(status)
+                .reason(message)
+                .request(request)
+                .headers(emptyMap())
+                .body("""{"error": "$message"}""".toByteArray())
+                .build(),
+        )
+    }
+
     @Test
     fun `should return 502 when user-service returns 503`() {
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(503)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""{"error": "Service Unavailable"}"""),
-                ),
-        )
+        // Mock user service to throw 503 Service Unavailable
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId))
+            .thenThrow(createFeignException(503, "Service Unavailable"))
 
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -62,41 +83,36 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `should return error when user-service times out`() {
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(200)
-                        .withFixedDelay(10000)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                            """
-                            {
-                                "id": "$testUserId",
-                                "username": "admin",
-                                "createdAt": "2024-01-01T00:00:00Z"
-                            }
-                            """.trimIndent(),
-                        ),
+        // Mock user service to sleep and cause timeout (4 seconds to trigger the 3s timeout)
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenAnswer {
+            Thread.sleep(4000) // Sleep longer than the 3s timeout configured in test profile
+            ResponseEntity.ok(
+                UserDto(
+                    id = testUserId,
+                    username = "admin",
+                    createdAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    role = "USER",
                 ),
-        )
+            )
+        }
 
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
-        // Timeout causes error - time limiter should return 502 after 5s
-        // Set WebTestClient timeout to 10s (longer than time limiter's 5s)
+        // Timeout causes error - time limiter should return 502 after configured timeout
+        // Set WebTestClient timeout to 8s (longer than the service timeout)
         val result =
             webTestClient
                 .mutate()
-                .responseTimeout(java.time.Duration.ofSeconds(10))
+                .responseTimeout(java.time.Duration.ofSeconds(8))
                 .build()
                 .post()
                 .uri("/api/v0.0.1/spreads")
+                .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -110,26 +126,21 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `should return 404 for non-existent user - not counted as circuit breaker failure`() {
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(404)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""{"error": "NOT_FOUND", "message": "User not found"}"""),
-                ),
-        )
+        // Mock user service to throw 404 Not Found
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId))
+            .thenThrow(createFeignException(404, "User not found"))
 
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -142,44 +153,31 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `should return 502 when tarot-service returns 503`() {
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                            """
-                            {
-                                "id": "$testUserId",
-                                "username": "admin",
-                                "createdAt": "2024-01-01T00:00:00Z"
-                            }
-                            """.trimIndent(),
-                        ),
-                ),
-        )
+        // Mock user service to return success
+        val userDto =
+            UserDto(
+                id = testUserId,
+                username = "admin",
+                createdAt = Instant.parse("2024-01-01T00:00:00Z"),
+                role = "USER",
+            )
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenReturn(ResponseEntity.ok(userDto))
 
-        wireMock.stubFor(
-            wireMockGet(urlEqualTo("/api/v0.0.1/layout-types/$oneCardLayoutId"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(503)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""{"error": "Service Unavailable"}"""),
-                ),
-        )
+        // Mock tarot service to throw 503 Service Unavailable
+        `when`(tarotServiceClient.getLayoutTypeById(testUserId, "USER", oneCardLayoutId))
+            .thenThrow(createFeignException(503, "Service Unavailable"))
 
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -192,26 +190,21 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `should return 502 when user-service returns 500`() {
-        wireMock.stubFor(
-            wireMockGet(urlPathMatching("/api/v0.0.1/users/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(500)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""{"error": "Internal Server Error"}"""),
-                ),
-        )
+        // Mock user service to throw 500 Internal Server Error
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId))
+            .thenThrow(createFeignException(500, "Internal Server Error"))
 
         val request =
             CreateSpreadRequest(
                 question = "Test question",
-                authorId = testUserId,
                 layoutTypeId = oneCardLayoutId,
             )
 
         webTestClient
             .post()
             .uri("/api/v0.0.1/spreads")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()

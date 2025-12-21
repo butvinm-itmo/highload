@@ -4,7 +4,6 @@ import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadResponse
-import com.github.butvinmitmo.shared.dto.DeleteRequest
 import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
@@ -47,7 +46,6 @@ interface DivinationServiceClient {
     @DeleteMapping("/api/v0.0.1/spreads/{id}")
     fun deleteSpread(
         @PathVariable id: UUID,
-        @RequestBody request: DeleteRequest,
     ): ResponseEntity<Void>
 
     @GetMapping("/api/v0.0.1/spreads/{spreadId}/interpretations")
@@ -78,6 +76,5 @@ interface DivinationServiceClient {
     fun deleteInterpretation(
         @PathVariable spreadId: UUID,
         @PathVariable id: UUID,
-        @RequestBody request: DeleteRequest,
     ): ResponseEntity<Void>
 }

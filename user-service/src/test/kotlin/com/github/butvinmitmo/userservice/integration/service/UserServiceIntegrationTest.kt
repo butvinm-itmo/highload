@@ -20,7 +20,7 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `createUser should persist user to database`() {
-        val request = CreateUserRequest(username = "integrationuser")
+        val request = CreateUserRequest(username = "integrationuser", password = "Test@123")
 
         val response = userService.createUser(request)
 
@@ -32,7 +32,7 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `createUser should throw ConflictException for duplicate username`() {
-        val request = CreateUserRequest(username = "duplicateuser")
+        val request = CreateUserRequest(username = "duplicateuser", password = "Test@123")
         userService.createUser(request)
 
         assertThrows<ConflictException> {
@@ -42,7 +42,7 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `getUser should return existing user`() {
-        val createResponse = userService.createUser(CreateUserRequest(username = "getuser"))
+        val createResponse = userService.createUser(CreateUserRequest(username = "getuser", password = "Test@123"))
 
         val user = userService.getUser(createResponse.id)
 
@@ -61,7 +61,7 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `updateUser should update username`() {
-        val createResponse = userService.createUser(CreateUserRequest(username = "originalname"))
+        val createResponse = userService.createUser(CreateUserRequest(username = "originalname", password = "Test@123"))
 
         val updated = userService.updateUser(createResponse.id, UpdateUserRequest(username = "updatedname"))
 
@@ -72,7 +72,7 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `deleteUser should remove user from database`() {
-        val createResponse = userService.createUser(CreateUserRequest(username = "todelete"))
+        val createResponse = userService.createUser(CreateUserRequest(username = "todelete", password = "Test@123"))
 
         userService.deleteUser(createResponse.id)
 
@@ -90,11 +90,82 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `getUsers should return paginated list`() {
-        userService.createUser(CreateUserRequest(username = "pageuser1"))
-        userService.createUser(CreateUserRequest(username = "pageuser2"))
+        userService.createUser(CreateUserRequest(username = "pageuser1", password = "Test@123"))
+        userService.createUser(CreateUserRequest(username = "pageuser2", password = "Test@123"))
 
         val result = userService.getUsers(0, 10)
 
         assertTrue(result.content.size >= 2)
+    }
+
+    @Test
+    fun `createUser should create user with MEDIUM role when specified`() {
+        val request = CreateUserRequest(username = "mediumuser", password = "Test@123", role = "MEDIUM")
+
+        val response = userService.createUser(request)
+
+        assertNotNull(response.id)
+        val savedUser = userRepository.findById(response.id).orElse(null)
+        assertNotNull(savedUser)
+        assertEquals("mediumuser", savedUser.username)
+        assertEquals("MEDIUM", savedUser.role.name)
+    }
+
+    @Test
+    fun `createUser should create user with ADMIN role when specified`() {
+        val request = CreateUserRequest(username = "adminuser", password = "Test@123", role = "ADMIN")
+
+        val response = userService.createUser(request)
+
+        assertNotNull(response.id)
+        val savedUser = userRepository.findById(response.id).orElse(null)
+        assertNotNull(savedUser)
+        assertEquals("adminuser", savedUser.username)
+        assertEquals("ADMIN", savedUser.role.name)
+    }
+
+    @Test
+    fun `createUser should default to USER role when role not specified`() {
+        val request = CreateUserRequest(username = "defaultroleuser", password = "Test@123")
+
+        val response = userService.createUser(request)
+
+        assertNotNull(response.id)
+        val savedUser = userRepository.findById(response.id).orElse(null)
+        assertNotNull(savedUser)
+        assertEquals("defaultroleuser", savedUser.username)
+        assertEquals("USER", savedUser.role.name)
+    }
+
+    @Test
+    fun `createUser should throw NotFoundException for invalid role`() {
+        val request = CreateUserRequest(username = "invalidroleuser", password = "Test@123", role = "INVALID")
+
+        assertThrows<NotFoundException> {
+            userService.createUser(request)
+        }
+    }
+
+    @Test
+    fun `updateUser should update user role`() {
+        val createResponse = userService.createUser(CreateUserRequest(username = "roleupdate", password = "Test@123"))
+
+        val updated = userService.updateUser(createResponse.id, UpdateUserRequest(role = "MEDIUM"))
+
+        assertEquals("MEDIUM", updated.role)
+        val savedUser = userRepository.findById(createResponse.id).orElse(null)
+        assertEquals("MEDIUM", savedUser.role.name)
+    }
+
+    @Test
+    fun `updateUser should throw NotFoundException for invalid role`() {
+        val createResponse =
+            userService.createUser(
+                CreateUserRequest(username = "invalidupdate", password = "Test@123"),
+            )
+
+        assertThrows<NotFoundException> {
+            userService.updateUser(createResponse.id, UpdateUserRequest(role = "INVALID"))
+        }
     }
 }

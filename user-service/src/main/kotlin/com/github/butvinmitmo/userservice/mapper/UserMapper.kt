@@ -10,6 +10,7 @@ class UserMapper {
         UserDto(
             id = entity.id,
             username = entity.username,
+            role = entity.role.name,
             createdAt = entity.createdAt,
         )
 }

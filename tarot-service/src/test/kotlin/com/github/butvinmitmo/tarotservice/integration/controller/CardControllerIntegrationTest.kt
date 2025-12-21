@@ -1,13 +1,18 @@
 package com.github.butvinmitmo.tarotservice.integration.controller
 
 import org.junit.jupiter.api.Test
+import java.util.UUID
 
 class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
+    private val testUserId = UUID.randomUUID()
+
     @Test
     fun `GET cards should return paginated list with X-Total-Count header`() {
         webTestClient
             .get()
             .uri("/api/v0.0.1/cards")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isOk
@@ -34,7 +39,9 @@ class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
                     .queryParam("page", "0")
                     .queryParam("size", "5")
                     .build()
-            }.exchange()
+            }.header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
+            .exchange()
             .expectStatus()
             .isOk
             .expectBody()
@@ -51,7 +58,9 @@ class CardControllerIntegrationTest : BaseControllerIntegrationTest() {
                     .path("/api/v0.0.1/cards/random")
                     .queryParam("count", "3")
                     .build()
-            }.exchange()
+            }.header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
+            .exchange()
             .expectStatus()
             .isOk
             .expectBody()

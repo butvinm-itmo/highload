@@ -1,0 +1,152 @@
+package com.github.butvinmitmo.userservice.unit.security
+
+import com.github.butvinmitmo.userservice.TestEntityFactory
+import com.github.butvinmitmo.userservice.security.JwtUtil
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.security.Keys
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+
+class JwtUtilTest {
+    private lateinit var jwtUtil: JwtUtil
+    private val testSecret = "testSecretKeyThatIsLongEnoughForHS256AlgorithmRequirements!!"
+    private val expirationHours = 24L
+    private val userId = UUID.randomUUID()
+
+    @BeforeEach
+    fun setup() {
+        jwtUtil = JwtUtil(testSecret, expirationHours)
+    }
+
+    @Test
+    fun `generateToken should return token with correct expiration time`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+        val beforeGeneration = Instant.now()
+
+        val (token, expiresAt) = jwtUtil.generateToken(user)
+
+        assertNotNull(token)
+        assertNotNull(expiresAt)
+
+        val expectedExpiration = beforeGeneration.plus(expirationHours, ChronoUnit.HOURS)
+        val difference = ChronoUnit.SECONDS.between(expiresAt, expectedExpiration)
+        assertTrue(difference < 2, "Expiration time should be within 2 seconds of expected value")
+    }
+
+    @Test
+    fun `generateToken should include user ID as subject`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+
+        val (token, _) = jwtUtil.generateToken(user)
+
+        val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+        assertEquals(userId.toString(), claims.subject)
+    }
+
+    @Test
+    fun `generateToken should include username claim`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+
+        val (token, _) = jwtUtil.generateToken(user)
+
+        val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+        assertEquals("testuser", claims["username"])
+    }
+
+    @Test
+    fun `generateToken should include role claim`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+
+        val (token, _) = jwtUtil.generateToken(user)
+
+        val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+        assertEquals("USER", claims["role"])
+    }
+
+    @Test
+    fun `generateToken should set issuedAt to current time`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+        val beforeGeneration = Instant.now()
+
+        val (token, _) = jwtUtil.generateToken(user)
+
+        val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+        val issuedAt = claims.issuedAt.toInstant()
+        val difference = ChronoUnit.SECONDS.between(beforeGeneration, issuedAt)
+        assertTrue(difference < 2, "IssuedAt should be within 2 seconds of current time")
+    }
+
+    @Test
+    fun `generateToken should be verifiable with correct secret`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+
+        val (token, _) = jwtUtil.generateToken(user)
+
+        val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+
+        assertNotNull(claims)
+    }
+
+    @Test
+    fun `generateToken should include expiration claim matching returned instant`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
+
+        val (token, expiresAt) = jwtUtil.generateToken(user)
+
+        val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+        val tokenExpiration = claims.expiration.toInstant()
+        assertEquals(expiresAt.epochSecond, tokenExpiration.epochSecond)
+    }
+}
