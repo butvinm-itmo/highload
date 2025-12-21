@@ -57,7 +57,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 502 when user-service returns 503`() {
         // Mock user service to throw 503 Service Unavailable
-        `when`(userServiceClient.getUserById(testUserId))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId))
             .thenThrow(createFeignException(503, "Service Unavailable"))
 
         val request =
@@ -70,6 +70,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -83,7 +84,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return error when user-service times out`() {
         // Mock user service to sleep and cause timeout (4 seconds to trigger the 3s timeout)
-        `when`(userServiceClient.getUserById(testUserId)).thenAnswer {
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenAnswer {
             Thread.sleep(4000) // Sleep longer than the 3s timeout configured in test profile
             ResponseEntity.ok(
                 UserDto(
@@ -111,6 +112,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 .post()
                 .uri("/api/v0.0.1/spreads")
                 .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -125,7 +127,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 404 for non-existent user - not counted as circuit breaker failure`() {
         // Mock user service to throw 404 Not Found
-        `when`(userServiceClient.getUserById(testUserId))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId))
             .thenThrow(createFeignException(404, "User not found"))
 
         val request =
@@ -138,6 +140,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -158,10 +161,10 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
                 createdAt = Instant.parse("2024-01-01T00:00:00Z"),
                 role = "USER",
             )
-        `when`(userServiceClient.getUserById(testUserId)).thenReturn(ResponseEntity.ok(userDto))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenReturn(ResponseEntity.ok(userDto))
 
         // Mock tarot service to throw 503 Service Unavailable
-        `when`(tarotServiceClient.getLayoutTypeById(oneCardLayoutId))
+        `when`(tarotServiceClient.getLayoutTypeById(testUserId, "USER", oneCardLayoutId))
             .thenThrow(createFeignException(503, "Service Unavailable"))
 
         val request =
@@ -174,6 +177,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -187,7 +191,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
     @Test
     fun `should return 502 when user-service returns 500`() {
         // Mock user service to throw 500 Internal Server Error
-        `when`(userServiceClient.getUserById(testUserId))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId))
             .thenThrow(createFeignException(500, "Internal Server Error"))
 
         val request =
@@ -200,6 +204,7 @@ class CircuitBreakerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()

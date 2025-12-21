@@ -28,13 +28,16 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 createdAt = Instant.parse("2024-01-01T00:00:00Z"),
                 role = "USER",
             )
-        lenient().`when`(userServiceClient.getUserById(testUserId)).thenReturn(ResponseEntity.ok(userDto))
+        lenient()
+            .`when`(
+                userServiceClient.getUserById(testUserId, "USER", testUserId),
+            ).thenReturn(ResponseEntity.ok(userDto))
 
         // Mock layout type response
         val layoutTypeDto = LayoutTypeDto(id = oneCardLayoutId, name = "ONE_CARD", cardsCount = 1)
         lenient()
             .`when`(
-                tarotServiceClient.getLayoutTypeById(oneCardLayoutId),
+                tarotServiceClient.getLayoutTypeById(testUserId, "USER", oneCardLayoutId),
             ).thenReturn(ResponseEntity.ok(layoutTypeDto))
 
         // Mock random cards response
@@ -47,7 +50,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     arcanaType = arcanaType,
                 ),
             )
-        lenient().`when`(tarotServiceClient.getRandomCards(1)).thenReturn(ResponseEntity.ok(cards))
+        lenient().`when`(tarotServiceClient.getRandomCards(testUserId, "USER", 1)).thenReturn(ResponseEntity.ok(cards))
         val request =
             CreateSpreadRequest(
                 question = "Test question",
@@ -58,6 +61,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -80,6 +84,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()
@@ -99,7 +104,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
 
     @Test
     fun `getSpread should return spread details`() {
-        // Mock user service response
+        // Mock user service response for creating spread
         val userDto =
             UserDto(
                 id = testUserId,
@@ -107,13 +112,15 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 createdAt = Instant.parse("2024-01-01T00:00:00Z"),
                 role = "USER",
             )
-        `when`(userServiceClient.getUserById(testUserId)).thenReturn(ResponseEntity.ok(userDto))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenReturn(ResponseEntity.ok(userDto))
 
-        // Mock layout type response
+        // Mock layout type response for creating spread
         val layoutTypeDto = LayoutTypeDto(id = oneCardLayoutId, name = "ONE_CARD", cardsCount = 1)
-        `when`(tarotServiceClient.getLayoutTypeById(oneCardLayoutId)).thenReturn(ResponseEntity.ok(layoutTypeDto))
+        `when`(
+            tarotServiceClient.getLayoutTypeById(testUserId, "USER", oneCardLayoutId),
+        ).thenReturn(ResponseEntity.ok(layoutTypeDto))
 
-        // Mock random cards response
+        // Mock random cards response for creating spread
         val arcanaType = ArcanaTypeDto(id = UUID.fromString("00000000-0000-0000-0000-000000000010"), name = "MAJOR")
         val cards =
             listOf(
@@ -123,7 +130,16 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     arcanaType = arcanaType,
                 ),
             )
-        `when`(tarotServiceClient.getRandomCards(1)).thenReturn(ResponseEntity.ok(cards))
+        `when`(tarotServiceClient.getRandomCards(testUserId, "USER", 1)).thenReturn(ResponseEntity.ok(cards))
+
+        // Mock system context for mapper (used when fetching spread details)
+        `when`(
+            userServiceClient.getUserById(systemUserId, systemRole, testUserId),
+        ).thenReturn(ResponseEntity.ok(userDto))
+        `when`(
+            tarotServiceClient.getLayoutTypeById(systemUserId, systemRole, oneCardLayoutId),
+        ).thenReturn(ResponseEntity.ok(layoutTypeDto))
+        `when`(tarotServiceClient.getRandomCards(systemUserId, systemRole, 1)).thenReturn(ResponseEntity.ok(cards))
         val request =
             CreateSpreadRequest(
                 question = "Test question",
@@ -135,6 +151,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .post()
                 .uri("/api/v0.0.1/spreads")
                 .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -184,11 +201,13 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 createdAt = Instant.parse("2024-01-01T00:00:00Z"),
                 role = "USER",
             )
-        `when`(userServiceClient.getUserById(testUserId)).thenReturn(ResponseEntity.ok(userDto))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenReturn(ResponseEntity.ok(userDto))
 
         // Mock layout type response
         val layoutTypeDto = LayoutTypeDto(id = oneCardLayoutId, name = "ONE_CARD", cardsCount = 1)
-        `when`(tarotServiceClient.getLayoutTypeById(oneCardLayoutId)).thenReturn(ResponseEntity.ok(layoutTypeDto))
+        `when`(
+            tarotServiceClient.getLayoutTypeById(testUserId, "USER", oneCardLayoutId),
+        ).thenReturn(ResponseEntity.ok(layoutTypeDto))
 
         // Mock random cards response
         val arcanaType = ArcanaTypeDto(id = UUID.fromString("00000000-0000-0000-0000-000000000010"), name = "MAJOR")
@@ -200,7 +219,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     arcanaType = arcanaType,
                 ),
             )
-        `when`(tarotServiceClient.getRandomCards(1)).thenReturn(ResponseEntity.ok(cards))
+        `when`(tarotServiceClient.getRandomCards(testUserId, "USER", 1)).thenReturn(ResponseEntity.ok(cards))
         val request =
             CreateSpreadRequest(
                 question = "Test question",
@@ -212,6 +231,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .post()
                 .uri("/api/v0.0.1/spreads")
                 .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -231,6 +251,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .uri("/api/v0.0.1/spreads/$spreadId")
             .header("X-User-Id", testUserId.toString())
             .header("X-User-Role", "USER")
+            .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
             .isNoContent
@@ -246,11 +267,13 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 createdAt = Instant.parse("2024-01-01T00:00:00Z"),
                 role = "USER",
             )
-        `when`(userServiceClient.getUserById(testUserId)).thenReturn(ResponseEntity.ok(userDto))
+        `when`(userServiceClient.getUserById(testUserId, "USER", testUserId)).thenReturn(ResponseEntity.ok(userDto))
 
         // Mock layout type response
         val layoutTypeDto = LayoutTypeDto(id = oneCardLayoutId, name = "ONE_CARD", cardsCount = 1)
-        `when`(tarotServiceClient.getLayoutTypeById(oneCardLayoutId)).thenReturn(ResponseEntity.ok(layoutTypeDto))
+        `when`(
+            tarotServiceClient.getLayoutTypeById(testUserId, "USER", oneCardLayoutId),
+        ).thenReturn(ResponseEntity.ok(layoutTypeDto))
 
         // Mock random cards response
         val arcanaType = ArcanaTypeDto(id = UUID.fromString("00000000-0000-0000-0000-000000000010"), name = "MAJOR")
@@ -262,7 +285,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                     arcanaType = arcanaType,
                 ),
             )
-        `when`(tarotServiceClient.getRandomCards(1)).thenReturn(ResponseEntity.ok(cards))
+        `when`(tarotServiceClient.getRandomCards(testUserId, "USER", 1)).thenReturn(ResponseEntity.ok(cards))
         val request =
             CreateSpreadRequest(
                 question = "Test question",
@@ -274,6 +297,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
                 .post()
                 .uri("/api/v0.0.1/spreads")
                 .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -312,6 +336,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .post()
             .uri("/api/v0.0.1/spreads")
             .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "USER")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
             .exchange()

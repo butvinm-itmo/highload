@@ -104,12 +104,12 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(userServiceClient.getUserById(userId)).thenReturn(
+        whenever(userServiceClient.getUserById(userId, "USER", userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
         whenever(
-            tarotServiceClient.getLayoutTypeById(layoutTypeId),
+            tarotServiceClient.getLayoutTypeById(userId, "USER", layoutTypeId),
         ).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testLayoutType),
@@ -118,17 +118,17 @@ class DivinationServiceTest {
         whenever(
             spreadCardRepository.save(any()),
         ).thenReturn(Mono.just(TestEntityFactory.createSpreadCard(spreadId = spreadId)))
-        whenever(tarotServiceClient.getRandomCards(3)).thenReturn(
+        whenever(tarotServiceClient.getRandomCards(userId, "USER", 3)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testCards),
         )
 
-        val result = divinationService.createSpread(request, userId).block()
+        val result = divinationService.createSpread(request, userId, "USER").block()
 
         assertNotNull(result)
         assertEquals(spreadId, result!!.id)
-        verify(userServiceClient).getUserById(userId)
-        verify(tarotServiceClient).getLayoutTypeById(layoutTypeId)
+        verify(userServiceClient).getUserById(userId, "USER", userId)
+        verify(tarotServiceClient).getLayoutTypeById(userId, "USER", layoutTypeId)
         verify(spreadRepository).save(any())
     }
 
@@ -216,14 +216,14 @@ class DivinationServiceTest {
             )
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
-        whenever(userServiceClient.getUserById(userId)).thenReturn(
+        whenever(userServiceClient.getUserById(userId, "USER", userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
 
-        val result = divinationService.addInterpretation(spreadId, request, userId).block()
+        val result = divinationService.addInterpretation(spreadId, request, userId, "USER").block()
 
         assertNotNull(result)
         assertEquals(interpretationId, result!!.id)
@@ -235,7 +235,7 @@ class DivinationServiceTest {
         val request = CreateInterpretationRequest(text = "Test interpretation")
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
-        whenever(userServiceClient.getUserById(userId)).thenReturn(
+        whenever(userServiceClient.getUserById(userId, "USER", userId)).thenReturn(
             org.springframework.http.ResponseEntity
                 .ok(testUser),
         )
@@ -243,7 +243,7 @@ class DivinationServiceTest {
 
         val exception =
             assertThrows<ConflictException> {
-                divinationService.addInterpretation(spreadId, request, userId).block()
+                divinationService.addInterpretation(spreadId, request, userId, "USER").block()
             }
         assertEquals("You already have an interpretation for this spread", exception.message)
 

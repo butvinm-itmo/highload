@@ -53,6 +53,10 @@ abstract class BaseControllerIntegrationTest {
     protected val threeCardsLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000021")
     protected val crossLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000022")
 
+    // System context used by mappers for internal Feign calls
+    protected val systemUserId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    protected val systemRole: String = "SYSTEM"
+
     @BeforeEach
     fun resetMocks() {
         Mockito.reset(userServiceClient, tarotServiceClient)
