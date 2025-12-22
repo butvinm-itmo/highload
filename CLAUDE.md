@@ -207,8 +207,8 @@ docker compose up -d --build              # Rebuild and start
 docker compose logs -f <service>          # View logs
 docker compose down                       # Stop all
 
-# E2E tests (requires running services)
-docker compose up -d && ./gradlew :e2e-tests:test
+# E2E tests (automatically rebuilds containers and waits for health)
+./gradlew :e2e-tests:test
 ```
 
 **Environment Variables:**
@@ -227,9 +227,8 @@ docker compose up -d && ./gradlew :e2e-tests:test
 
 ### E2E Tests
 - Located in `e2e-tests` module
-- Require services to be running: `docker compose up -d`
+- Automatically rebuild containers and wait for health checks before running
 - Route through gateway (configurable via `GATEWAY_URL` env var)
-- Verify gateway health before execution
 
 ## Key Implementation Notes
 

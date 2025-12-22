@@ -50,8 +50,8 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    dependsOn(":dockerComposeUp")
 
-    // Pass GATEWAY_URL system property/env var to tests
     systemProperty(
         "GATEWAY_URL",
         System.getProperty("GATEWAY_URL") ?: System.getenv("GATEWAY_URL") ?: "http://localhost:8080",
