@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **PLAN:** Propose changes in steps, stating which services will be affected, which tests must be updated or added.
 3. **IMPLEMENT:** Make atomic, compilable changes.
 4. **VERIFY:** Run specific tests (e.g., `./gradlew :divination-service:test`) immediately.
-5. **COMMIT:** After a complete step, run all tests and commit (specify files explicitly, avoid `git add .`).
+5. **COMMIT:** After a complete step, run all tests including e2e and commit (specify files explicitly, avoid `git add .`).
 6. **REPORT:** Update PROGRESS.md with current progress and CLAUDE.md with updated project context.
 
 **BEHAVIOR EXAMPLES:**
