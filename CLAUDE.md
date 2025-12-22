@@ -11,6 +11,7 @@ Strictly follow this guidelines
 2. **NOT OVERSEE SUSPICIOUS BEHAVIOR:** If e2e tests fail randomly, investigate flakiness rather than retrying blindly.
 3. **CONTRACTS FIRST:** If changing `shared-dto` or `shared-clients`, verify impact on ALL consumer services.
 4. **TEST-DRIVEN:** Run related tests *before* and *after* changes.
+5. **ONLY ESSENTIAL COMMENTS:** Code must be self-explanatory, avoid using docstrings and especially inline comments.
 
 **WORKFLOW:**
 1. **EXPLORE:** Do not guess. Read relevant controllers, services, and DTOs first.
