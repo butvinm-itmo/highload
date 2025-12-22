@@ -30,7 +30,7 @@ Strictly follow this guidelines
     * **BAD:** Adding `@Disabled("fix later")` or commenting out assertions.
     * **GOOD:** Analyzing TestContainer/WireMock logs and fixing the root cause.
 
-Your latest action when work is finished should be verifying that your work follows guidelines and report to me.
+**MOST CRITICAL:** Your latest action when work is finished should be verifying that your work follows guidelines and report to me.
 
 ---
 
