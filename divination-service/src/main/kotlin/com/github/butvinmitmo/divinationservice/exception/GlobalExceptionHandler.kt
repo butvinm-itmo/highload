@@ -4,6 +4,7 @@ import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import feign.FeignException
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import org.slf4j.LoggerFactory
 import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +18,8 @@ import java.time.Instant
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+
     @ExceptionHandler(WebExchangeBindException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleValidationExceptions(
@@ -159,6 +162,7 @@ class GlobalExceptionHandler {
         ex: Exception,
         exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error", ex)
         val response =
             ErrorResponse(
                 error = "INTERNAL_SERVER_ERROR",
