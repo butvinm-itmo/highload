@@ -54,6 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **API Gateway:** Spring Cloud Gateway
 - **Inter-service:** Spring Cloud OpenFeign
 - **Resilience:** Resilience4j (circuit breaker, retry, time limiter)
+- **Messaging:** Apache Kafka 3.7 (KRaft mode, 3 replicas)
 - **Code Style:** ktlint 1.5.0
 
 ## Microservices Architecture
@@ -66,6 +67,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **user-service** | 8081 | Spring MVC + JPA | User management, authentication |
 | **tarot-service** | 8082 | Spring MVC + JPA | Cards & layout types reference data |
 | **divination-service** | 8083 | WebFlux + R2DBC | Spreads & interpretations (reactive) |
+| **notification-service** | 8084 | WebFlux + R2DBC | In-app notifications (reactive) |
 
 **Shared modules:** `shared-dto` (DTOs), `shared-clients` (Feign clients), `e2e-tests`
 
@@ -135,6 +137,10 @@ Minimum 8 chars, uppercase, lowercase, digit, special character (@$!%*?&#).
 **interpretation** - (id UUID PK, text TEXT, author_id UUID FK CASCADE, spread_id UUID FK CASCADE, created_at TIMESTAMPTZ)
 - Unique constraint: (author_id, spread_id)
 
+### notification-service tables
+
+**notification** - (id UUID PK, user_id UUID FK CASCADE, type VARCHAR(50), title VARCHAR(255), message TEXT, is_read BOOLEAN, reference_id UUID, reference_type VARCHAR(50), created_at TIMESTAMPTZ)
+
 ## API Endpoints
 
 Base path: `/api/v0.0.1`
@@ -172,6 +178,14 @@ Base path: `/api/v0.0.1`
 | PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation | Author/ADMIN |
 | DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation | Author/ADMIN |
 
+### notification-service
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/notifications?page=N&size=M` | List user notifications (max 50) | Any |
+| GET | `/notifications/unread-count` | Get unread notification count | Any |
+| PATCH | `/notifications/{id}/read` | Mark notification as read | Owner |
+| POST | `/notifications/mark-all-read` | Mark all notifications as read | Any |
+
 ## Build & Development Commands
 
 ```bash
@@ -198,6 +212,7 @@ docker compose up -d && ./gradlew :e2e-tests:test
 - `EUREKA_URL` - Eureka Server URL (required)
 - `JWT_SECRET` - JWT signing key (required for user-service, gateway-service)
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Database connection
+- `KAFKA_BOOTSTRAP_SERVERS` - Kafka brokers (required for divination-service, notification-service)
 
 ## Testing
 
@@ -235,8 +250,23 @@ Feign clients use pattern: `@FeignClient(name = "service-name", url = "${service
 
 ### Flyway with Shared Database
 
-Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`.
+Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`, `flyway_schema_history_notification`.
 
 ### Configuration Repository
 
 Config files are in the `highload-config/` submodule. After changes, push to submodule and restart config-server.
+
+### Kafka Event-Driven Communication
+
+**Infrastructure:** 3 Kafka brokers in KRaft mode (kafka-1, kafka-2, kafka-3), no Zookeeper.
+
+**Topics:**
+- `spread-events` - Published when a spread is created
+- `interpretation-events` - Published when an interpretation is added
+
+**Flow:**
+1. `divination-service` publishes events after creating spreads/interpretations
+2. `notification-service` consumes events and creates in-app notifications
+3. Notifications are created when someone adds an interpretation to another user's spread
+
+**Reactor-Kafka:** Both services use `reactor-kafka` for reactive Kafka integration.
