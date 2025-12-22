@@ -31,6 +31,7 @@ Strictly follow this guidelines
     * **GOOD:** Analyzing TestContainer/WireMock logs and fixing the root cause.
 
 **MOST CRITICAL:** Your latest action when work is finished should be verifying that your work follows guidelines and report to me.
+Apply self-reflection to the session to find if you made bad decisions, workarounds or ignored suspicious behavior.
 
 ---
 
