@@ -5,6 +5,7 @@ import com.github.butvinmitmo.shared.dto.InterpretationCreatedEvent
 import com.github.butvinmitmo.shared.dto.SpreadCreatedEvent
 import org.mockito.Mockito
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono
 import reactor.kafka.sender.KafkaSender
 
 @TestConfiguration
+@ConditionalOnProperty(name = ["kafka.mock.enabled"], havingValue = "true", matchIfMissing = true)
 class TestKafkaConfig {
     private val logger = LoggerFactory.getLogger(TestKafkaConfig::class.java)
 

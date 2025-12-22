@@ -55,8 +55,11 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.testcontainers:testcontainers:1.19.8")
     testImplementation("org.testcontainers:postgresql:1.19.8")
+    testImplementation("org.testcontainers:kafka:1.19.8")
     testImplementation("org.testcontainers:junit-jupiter:1.19.8")
     testImplementation("org.wiremock:wiremock-standalone:3.5.4")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
+    testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
