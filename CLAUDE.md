@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Agent Guidelines
+## Guidelines
 
-**ACT AS:** Senior Backend Engineer specializing in Kotlin, Spring Boot, and Microservices.
+Strictly follow this guidelines
 
 **CORE RULES:**
 1. **NO AD-HOC PATCHES:** Do not disable tests (`@Disabled`) or use reflection hacks. Fix the root cause.
@@ -29,6 +29,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 * **[Handling Test Failures]**
     * **BAD:** Adding `@Disabled("fix later")` or commenting out assertions.
     * **GOOD:** Analyzing TestContainer/WireMock logs and fixing the root cause.
+
+Your latest action when work is finished should be verifying that your work follows guidelines and report to me.
 
 ---
 
