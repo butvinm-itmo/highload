@@ -18,9 +18,11 @@ import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadResponse
+import com.github.butvinmitmo.shared.dto.InterpretationCreatedEvent
 import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.PageResponse
 import com.github.butvinmitmo.shared.dto.ScrollResponse
+import com.github.butvinmitmo.shared.dto.SpreadCreatedEvent
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
@@ -41,6 +43,7 @@ class DivinationService(
     private val tarotServiceClient: TarotServiceClient,
     private val spreadMapper: SpreadMapper,
     private val interpretationMapper: InterpretationMapper,
+    private val eventPublisher: EventPublisher,
 ) {
     @Transactional
     fun createSpread(
@@ -48,15 +51,23 @@ class DivinationService(
         authorId: UUID,
         role: String,
     ): Mono<CreateSpreadResponse> {
+        var authorUsername = ""
+        var layoutTypeName = ""
+        var cardsCount = 0
+
         // Validate user exists via Feign (blocking call on boundedElastic)
         return Mono
-            .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
+            .fromCallable { userServiceClient.getUserById(authorId, role, authorId).body!! }
             .subscribeOn(Schedulers.boundedElastic())
+            .doOnNext { user -> authorUsername = user.username }
             .flatMap {
                 // Validate layout type exists via Feign (blocking call on boundedElastic)
                 Mono
                     .fromCallable { tarotServiceClient.getLayoutTypeById(authorId, role, request.layoutTypeId).body!! }
                     .subscribeOn(Schedulers.boundedElastic())
+            }.doOnNext { layoutType ->
+                layoutTypeName = layoutType.name
+                cardsCount = layoutType.cardsCount
             }.flatMap { layoutType ->
                 val spread =
                     Spread(
@@ -91,7 +102,20 @@ class DivinationService(
                                 )
                             }.flatMap { spreadCard ->
                                 spreadCardRepository.save(spreadCard)
-                            }.then(Mono.just(CreateSpreadResponse(id = savedSpread.id!!)))
+                            }.then(
+                                // Publish event after spread creation
+                                eventPublisher
+                                    .publishSpreadCreated(
+                                        SpreadCreatedEvent(
+                                            spreadId = savedSpread.id!!,
+                                            authorId = authorId,
+                                            authorUsername = authorUsername,
+                                            question = request.question,
+                                            layoutTypeName = layoutTypeName,
+                                            cardsCount = cardsCount,
+                                        ),
+                                    ).thenReturn(CreateSpreadResponse(id = savedSpread.id!!)),
+                            )
                     }
             }
     }
@@ -225,14 +249,19 @@ class DivinationService(
         request: CreateInterpretationRequest,
         authorId: UUID,
         role: String,
-    ): Mono<CreateInterpretationResponse> =
-        getSpreadEntity(spreadId)
+    ): Mono<CreateInterpretationResponse> {
+        var spreadAuthorId: UUID = authorId
+        var authorUsername = ""
+
+        return getSpreadEntity(spreadId)
+            .doOnNext { spread -> spreadAuthorId = spread.authorId }
             .flatMap {
                 // Validate user exists via Feign (blocking call on boundedElastic)
                 Mono
-                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
+                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId).body!! }
                     .subscribeOn(Schedulers.boundedElastic())
-            }.flatMap {
+            }.doOnNext { user -> authorUsername = user.username }
+            .flatMap {
                 interpretationRepository.existsByAuthorAndSpread(authorId, spreadId)
             }.flatMap { exists ->
                 if (exists) {
@@ -246,9 +275,23 @@ class DivinationService(
                         )
                     interpretationRepository
                         .save(interpretation)
-                        .map { saved -> CreateInterpretationResponse(id = saved.id!!) }
+                        .flatMap { saved ->
+                            // Publish event after interpretation creation
+                            eventPublisher
+                                .publishInterpretationCreated(
+                                    InterpretationCreatedEvent(
+                                        interpretationId = saved.id!!,
+                                        spreadId = spreadId,
+                                        spreadAuthorId = spreadAuthorId,
+                                        interpretationAuthorId = authorId,
+                                        interpretationAuthorUsername = authorUsername,
+                                        textPreview = request.text.take(100),
+                                    ),
+                                ).thenReturn(CreateInterpretationResponse(id = saved.id!!))
+                        }
                 }
             }
+    }
 
     @Transactional
     fun updateInterpretation(

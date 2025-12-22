@@ -6,6 +6,8 @@ logging:
 spring:
   application:
     name: divination-service
+  kafka:
+    enabled: false
   main:
     allow-bean-definition-overriding: true
   cloud:

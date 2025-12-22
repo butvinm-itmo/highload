@@ -2,6 +2,7 @@ package com.github.butvinmitmo.divinationservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.butvinmitmo.divinationservice.config.TestFeignConfiguration
+import com.github.butvinmitmo.divinationservice.config.TestKafkaConfig
 import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
@@ -25,7 +26,7 @@ import java.util.UUID
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
-@Import(TestFeignConfiguration::class)
+@Import(TestFeignConfiguration::class, TestKafkaConfig::class)
 abstract class BaseControllerIntegrationTest {
     @Autowired
     protected lateinit var webTestClient: WebTestClient
