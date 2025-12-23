@@ -60,11 +60,13 @@
 - [x] Create API service modules (authApi, usersApi, cardsApi, spreadsApi, interpretationsApi)
 - [x] Add error handling utilities
 
-### Stage 3: Authentication & Route Protection ⏸️ NOT STARTED
-- [ ] Create AuthContext
-- [ ] Build Login page
-- [ ] Implement protected routes
-- [ ] Set up React Router
+### Stage 3: Authentication & Route Protection ✅ COMPLETED
+- [x] Create AuthContext with login/logout and token management
+- [x] Build Login page with form validation and error handling
+- [x] Implement ProtectedRoute component with role-based access
+- [x] Set up React Router with authentication flow
+- [x] Build Layout component with navbar and role badge
+- [x] Configure React Query client
 
 ### Stage 4: Spreads Feed & Creation ⏸️ NOT STARTED
 - [ ] Build spreads feed with infinite scroll
