@@ -3,6 +3,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { SpreadCard } from '../components/SpreadCard';
 import { CreateSpreadModal } from '../components/CreateSpreadModal';
+import { Loading } from '../components/Loading';
+import { EmptyState } from '../components/EmptyState';
 import { spreadsApi } from '../api';
 
 export function SpreadsFeedPage() {
@@ -61,11 +63,7 @@ export function SpreadsFeedPage() {
           </button>
         </div>
 
-        {isLoading && (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-600">Loading spreads...</div>
-          </div>
-        )}
+        {isLoading && <Loading message="Loading spreads..." />}
 
         {error && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -74,16 +72,13 @@ export function SpreadsFeedPage() {
         )}
 
         {!isLoading && !error && allSpreads.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No spreads yet</h3>
-            <p className="text-gray-600 mb-4">Create your first tarot spread to get started</p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            >
-              Create Spread
-            </button>
-          </div>
+          <EmptyState
+            title="No spreads yet"
+            message="Create your first tarot spread to get started"
+            actionLabel="Create Spread"
+            onAction={() => setIsCreateModalOpen(true)}
+            icon="spreads"
+          />
         )}
 
         <div className="grid gap-4">
