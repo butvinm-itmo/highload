@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { SpreadDetailPage } from './pages/SpreadDetailPage';
+import { UsersPage } from './pages/UsersPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 const queryClient = new QueryClient({
@@ -46,6 +47,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <SpreadDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <UsersPage />
           </ProtectedRoute>
         }
       />
