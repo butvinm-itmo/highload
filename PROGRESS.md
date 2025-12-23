@@ -107,9 +107,13 @@
 - [x] Expose custom headers (X-Total-Count, X-After)
 - [x] Enable credentials for JWT cookie support
 
-### Stage 9: Docker Integration ⏸️ NOT STARTED
-- [ ] Create Dockerfile for frontend-service
-- [ ] Update docker-compose.yml
+### Stage 9: Docker Integration ✅ COMPLETED
+- [x] Create multi-stage Dockerfile for frontend-service
+- [x] Add nginx.conf for SPA routing and static serving
+- [x] Create .dockerignore to exclude unnecessary files
+- [x] Update docker-compose.yml to include frontend-service
+- [x] Configure health check for frontend container
+- [x] Map port 3000:80 for local development
 
 ### Stage 10: Documentation & Testing ⏸️ NOT STARTED
 - [ ] Create frontend README.md
