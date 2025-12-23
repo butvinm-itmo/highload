@@ -76,9 +76,14 @@
 - [x] Integrate React Query infinite queries
 - [x] Add empty state for no spreads
 
-### Stage 5: Spread Detail & Interpretations ⏸️ NOT STARTED
-- [ ] Create spread detail page
-- [ ] Build interpretation CRUD components
+### Stage 5: Spread Detail & Interpretations ✅ COMPLETED
+- [x] Create SpreadDetailPage with full spread display
+- [x] Display all cards with positions and reversed state
+- [x] Build InterpretationList component with edit/delete actions
+- [x] Create AddInterpretationForm (MEDIUM/ADMIN only, one per user)
+- [x] Build EditInterpretationModal for updating interpretations
+- [x] Implement delete spread functionality (author/ADMIN only)
+- [x] Add role-based permissions for interpretation CRUD
 
 ### Stage 6: User Management (ADMIN) ⏸️ NOT STARTED
 - [ ] Build users list page
