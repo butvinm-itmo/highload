@@ -240,3 +240,28 @@ Each service uses separate history table: `flyway_schema_history_user`, `flyway_
 ### Configuration Repository
 
 Config files are in the `highload-config/` submodule. After changes, push to submodule and restart config-server.
+
+### Frontend Service (React SPA)
+
+**Tech Stack:** React 19 + TypeScript + Vite + Tailwind CSS + React Query
+
+**Architecture:**
+- Separate service served by Nginx on port 3000 (Docker) or 5173 (dev)
+- Communicates with backend via gateway-service on port 8080
+- JWT token stored in localStorage, added via Axios interceptor
+- Role-based UI rendering with hierarchical permissions
+
+**Key Files:**
+- `src/api/client.ts` - Axios instance with JWT interceptor and 401 handling
+- `src/context/AuthContext.tsx` - Global auth state, login/logout, role checking
+- `src/components/ProtectedRoute.tsx` - Route guard with role requirements
+- `src/App.tsx` - Router configuration with ErrorBoundary wrapper
+
+**Important Patterns:**
+- Use React Query for all API calls (automatic caching, refetching, error handling)
+- Infinite scroll uses `useInfiniteQuery` with cursor-based pagination (`X-After` header)
+- All modals use controlled state with `isOpen` prop
+- Empty states use EmptyState component with icon variants
+- Loading states use Loading component (fullScreen or inline)
+
+**CORS:** Gateway has CorsConfig allowing localhost:3000 and localhost:5173 origins.
