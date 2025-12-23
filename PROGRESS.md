@@ -100,8 +100,12 @@
 - [x] Integrate shared components into existing pages
 - [x] Responsive design already implemented with Tailwind breakpoints
 
-### Stage 8: Backend Integration (CORS) ⏸️ NOT STARTED
-- [ ] Add CORS configuration to gateway-service
+### Stage 8: Backend Integration (CORS) ✅ COMPLETED
+- [x] Create CorsConfig class for gateway-service
+- [x] Allow localhost:3000 origin for frontend development
+- [x] Configure allowed methods (GET, POST, PUT, DELETE, OPTIONS)
+- [x] Expose custom headers (X-Total-Count, X-After)
+- [x] Enable credentials for JWT cookie support
 
 ### Stage 9: Docker Integration ⏸️ NOT STARTED
 - [ ] Create Dockerfile for frontend-service
