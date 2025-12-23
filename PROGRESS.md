@@ -54,10 +54,11 @@
 - [x] Set up project structure (api, components, pages, context, types, hooks, utils)
 - [x] Create .env configuration for API gateway URL
 
-### Stage 2: TypeScript Types & API Client ⏸️ NOT STARTED
-- [ ] Create TypeScript types from shared-dto DTOs
-- [ ] Build Axios API client with JWT interceptor
-- [ ] Create API service modules
+### Stage 2: TypeScript Types & API Client ✅ COMPLETED
+- [x] Create TypeScript types from shared-dto DTOs
+- [x] Build Axios API client with JWT interceptor
+- [x] Create API service modules (authApi, usersApi, cardsApi, spreadsApi, interpretationsApi)
+- [x] Add error handling utilities
 
 ### Stage 3: Authentication & Route Protection ⏸️ NOT STARTED
 - [ ] Create AuthContext
