@@ -68,10 +68,13 @@
 - [x] Build Layout component with navbar and role badge
 - [x] Configure React Query client
 
-### Stage 4: Spreads Feed & Creation ⏸️ NOT STARTED
-- [ ] Build spreads feed with infinite scroll
-- [ ] Create spread creation modal
-- [ ] Build Card component
+### Stage 4: Spreads Feed & Creation ✅ COMPLETED
+- [x] Build spreads feed with infinite scroll using IntersectionObserver
+- [x] Create spread creation modal with layout type selection
+- [x] Build TarotCard component (text-based placeholder with arcana color)
+- [x] Build SpreadCard component for feed display
+- [x] Integrate React Query infinite queries
+- [x] Add empty state for no spreads
 
 ### Stage 5: Spread Detail & Interpretations ⏸️ NOT STARTED
 - [ ] Create spread detail page
