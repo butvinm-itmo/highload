@@ -85,9 +85,13 @@
 - [x] Implement delete spread functionality (author/ADMIN only)
 - [x] Add role-based permissions for interpretation CRUD
 
-### Stage 6: User Management (ADMIN) ⏸️ NOT STARTED
-- [ ] Build users list page
-- [ ] Create user management modals
+### Stage 6: User Management (ADMIN) ✅ COMPLETED
+- [x] Build UsersPage with paginated table
+- [x] Create CreateUserModal with role selection
+- [x] Build EditUserModal with optional password update
+- [x] Create DeleteUserModal with cascade warning
+- [x] Implement ADMIN-only route protection
+- [x] Add pagination controls with page navigation
 
 ### Stage 7: UI Polish & Shared Components ⏸️ NOT STARTED
 - [ ] Build shared components (Loading, Toast, etc.)
