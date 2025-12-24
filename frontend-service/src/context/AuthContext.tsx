@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AuthTokenResponse, UserDto, Role } from '../types';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import type { UserDto } from '../types';
 import { authApi } from '../api';
 
 interface AuthContextType {
@@ -44,16 +45,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (username: string, password: string) => {
     try {
-      const response: AuthTokenResponse = await authApi.login({ username, password });
+      const response = await authApi.login({ username, password });
 
       // Store token
       localStorage.setItem('auth_token', response.token);
 
       // Create user object from auth response
+      // Backend returns role as string, but we need Role object
+      const roleObject = typeof response.role === 'string'
+        ? { id: '', name: response.role as 'USER' | 'MEDIUM' | 'ADMIN' }
+        : response.role;
+
       const userData: UserDto = {
         id: '', // We don't get ID from login response, will be set on first API call
         username: response.username,
-        role: response.role,
+        role: roleObject,
         createdAt: new Date().toISOString(),
       };
 

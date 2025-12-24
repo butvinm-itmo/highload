@@ -1,4 +1,4 @@
-import { CardDto, LayoutTypeDto, PaginatedResponse } from '../types';
+import type { CardDto, LayoutTypeDto, PaginatedResponse } from '../types';
 import apiClient from './client';
 
 export const cardsApi = {

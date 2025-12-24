@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { usersApi } from '../api';
-import { UserDto } from '../types';
+import type { UserDto } from '../types';
 import { CreateUserModal } from '../components/CreateUserModal';
 import { EditUserModal } from '../components/EditUserModal';
 import { DeleteUserModal } from '../components/DeleteUserModal';

@@ -1,6 +1,5 @@
-import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserDto } from '../types';
+import type { UserDto } from '../types';
 import { usersApi } from '../api';
 import { getErrorMessage } from '../utils/errorHandling';
 

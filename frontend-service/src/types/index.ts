@@ -20,7 +20,7 @@ export interface AuthTokenResponse {
   token: string;
   expiresAt: string;
   username: string;
-  role: Role;
+  role: Role | string; // Backend returns string, but we convert to Role object
 }
 
 export interface CreateUserRequest {

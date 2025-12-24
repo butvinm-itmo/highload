@@ -1,5 +1,4 @@
-import React from 'react';
-import { CardDto } from '../types';
+import type { CardDto } from '../types';
 
 interface TarotCardProps {
   card: CardDto;

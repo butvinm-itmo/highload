@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { SpreadSummaryDto } from '../types';
+import type { SpreadSummaryDto } from '../types';
 
 interface SpreadCardProps {
   spread: SpreadSummaryDto;
