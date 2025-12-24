@@ -347,8 +347,15 @@ class DivinationService(
         val systemUserId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         return Mono
             .fromCallable {
-                // Fetch all cards (78 total) and filter to the ones we need
-                val allCards = tarotServiceClient.getCards(systemUserId, "SYSTEM", 0, 78).body!!
+                val allCards = mutableListOf<CardDto>()
+                val pageSize = 50
+                var page = 0
+                var fetched: List<CardDto>
+                do {
+                    fetched = tarotServiceClient.getCards(systemUserId, "SYSTEM", page, pageSize).body!!
+                    allCards.addAll(fetched)
+                    page++
+                } while (fetched.size == pageSize)
                 allCards.filter { it.id in cardIds }.associateBy { it.id }
             }.subscribeOn(Schedulers.boundedElastic())
     }
