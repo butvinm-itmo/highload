@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { InterpretationDto } from '../types';
+import type { InterpretationDto } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { interpretationsApi } from '../api';
 import { EditInterpretationModal } from './EditInterpretationModal';

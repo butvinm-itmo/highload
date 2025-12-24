@@ -1,4 +1,5 @@
-import React, { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../api';
 import { getErrorMessage } from '../utils/errorHandling';
@@ -106,11 +107,11 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Min 8 chars, mixed case, digit, special char"
+              placeholder="e.g., Pass@123"
               disabled={createMutation.isPending}
             />
             <p className="mt-1 text-xs text-gray-500">
-              Minimum 8 characters with uppercase, lowercase, digit, and special character
+              Minimum 8 characters with uppercase, lowercase, digit, and special character (@$!%*?&#)
             </p>
           </div>
 

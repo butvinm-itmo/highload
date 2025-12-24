@@ -1,4 +1,4 @@
-import { UserDto, CreateUserRequest, UpdateUserRequest, PaginatedResponse } from '../types';
+import type { UserDto, CreateUserRequest, UpdateUserRequest, PaginatedResponse } from '../types';
 import apiClient from './client';
 
 export const usersApi = {

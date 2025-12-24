@@ -1,7 +1,8 @@
-import React, { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cardsApi, spreadsApi } from '../api';
-import { LayoutTypeDto } from '../types';
+import type { LayoutTypeDto } from '../types';
 import { getErrorMessage } from '../utils/errorHandling';
 
 interface CreateSpreadModalProps {

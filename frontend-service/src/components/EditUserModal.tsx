@@ -1,6 +1,7 @@
-import React, { useState, FormEvent, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tantml:react-query';
-import { UserDto } from '../types';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { UserDto } from '../types';
 import { usersApi } from '../api';
 import { getErrorMessage } from '../utils/errorHandling';
 
@@ -35,7 +36,7 @@ export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       handleClose();
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       setError(getErrorMessage(err));
     },
   });

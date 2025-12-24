@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { SpreadCard } from '../components/SpreadCard';
 import { CreateSpreadModal } from '../components/CreateSpreadModal';
+import { CreateUserModal } from '../components/CreateUserModal';
 import { Loading } from '../components/Loading';
 import { EmptyState } from '../components/EmptyState';
 import { spreadsApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export function SpreadsFeedPage() {
+  const { hasRole } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const {
@@ -55,12 +59,22 @@ export function SpreadsFeedPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Tarot Spreads</h1>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Create Spread
-          </button>
+          <div className="flex space-x-3">
+            {hasRole('ADMIN') && (
+              <button
+                onClick={() => setIsCreateUserModalOpen(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Create User
+              </button>
+            )}
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Create Spread
+            </button>
+          </div>
         </div>
 
         {isLoading && <Loading message="Loading spreads..." />}
@@ -105,6 +119,11 @@ export function SpreadsFeedPage() {
       <CreateSpreadModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      <CreateUserModal
+        isOpen={isCreateUserModalOpen}
+        onClose={() => setIsCreateUserModalOpen(false)}
       />
     </Layout>
   );
