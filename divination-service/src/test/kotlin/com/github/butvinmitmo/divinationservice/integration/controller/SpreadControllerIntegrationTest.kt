@@ -139,7 +139,7 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
         `when`(
             tarotServiceClient.getLayoutTypeById(systemUserId, systemRole, oneCardLayoutId),
         ).thenReturn(ResponseEntity.ok(layoutTypeDto))
-        `when`(tarotServiceClient.getRandomCards(systemUserId, systemRole, 1)).thenReturn(ResponseEntity.ok(cards))
+        `when`(tarotServiceClient.getCards(systemUserId, systemRole, 0, 78)).thenReturn(ResponseEntity.ok(cards))
         val request =
             CreateSpreadRequest(
                 question = "Test question",

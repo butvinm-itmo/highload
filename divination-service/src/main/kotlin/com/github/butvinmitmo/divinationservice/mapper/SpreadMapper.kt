@@ -86,10 +86,8 @@ class SpreadMapper(
     }
 
     private fun fetchCard(cardId: UUID): CardDto {
-        // For single card fetches, we make individual calls
-        // In production, you might want to add a batch endpoint
-        val cards = tarotServiceClient.getRandomCards(systemUserId, systemRole, 1).body!!
-        return cards.firstOrNull()
+        val allCards = tarotServiceClient.getCards(systemUserId, systemRole, 0, 78).body!!
+        return allCards.find { it.id == cardId }
             ?: throw IllegalStateException("Could not fetch card with id $cardId")
     }
 }
