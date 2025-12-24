@@ -343,14 +343,13 @@ class DivinationService(
             }
 
     private fun buildCardCache(cardIds: Set<UUID>): Mono<Map<UUID, CardDto>> {
-        // For now, we fetch random cards for each position
-        // In production, you might want to add a batch endpoint to fetch cards by IDs
-        // Using a system user ID for internal calls - cards are reference data
+        if (cardIds.isEmpty()) return Mono.just(emptyMap())
         val systemUserId = UUID.fromString("00000000-0000-0000-0000-000000000000")
         return Mono
             .fromCallable {
-                val cards = tarotServiceClient.getRandomCards(systemUserId, "SYSTEM", cardIds.size).body!!
-                cardIds.zip(cards).toMap()
+                // Fetch all cards (78 total) and filter to the ones we need
+                val allCards = tarotServiceClient.getCards(systemUserId, "SYSTEM", 0, 78).body!!
+                allCards.filter { it.id in cardIds }.associateBy { it.id }
             }.subscribeOn(Schedulers.boundedElastic())
     }
 }
