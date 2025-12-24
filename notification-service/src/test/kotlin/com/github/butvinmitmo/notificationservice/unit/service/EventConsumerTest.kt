@@ -1,9 +1,12 @@
 package com.github.butvinmitmo.notificationservice.unit.service
 
 import com.github.butvinmitmo.notificationservice.entity.Notification
+import com.github.butvinmitmo.notificationservice.mapper.NotificationMapper
 import com.github.butvinmitmo.notificationservice.repository.NotificationRepository
 import com.github.butvinmitmo.notificationservice.service.EventConsumer
+import com.github.butvinmitmo.notificationservice.websocket.NotificationBroadcaster
 import com.github.butvinmitmo.shared.dto.InterpretationCreatedEvent
+import com.github.butvinmitmo.shared.dto.NotificationDto
 import com.github.butvinmitmo.shared.dto.SpreadCreatedEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +38,12 @@ class EventConsumerTest {
     @Mock
     private lateinit var notificationRepository: NotificationRepository
 
+    @Mock
+    private lateinit var notificationBroadcaster: NotificationBroadcaster
+
+    @Mock
+    private lateinit var notificationMapper: NotificationMapper
+
     @Captor
     private lateinit var notificationCaptor: ArgumentCaptor<Notification>
 
@@ -47,16 +56,20 @@ class EventConsumerTest {
 
     @BeforeEach
     fun setup() {
-        // Mock receivers to return Flux.never() to prevent startConsuming from blocking
-        // Using lenient because @PostConstruct may or may not be called in unit test context
         Mockito.lenient().`when`(spreadEventReceiver.receive()).thenReturn(Flux.never())
         Mockito.lenient().`when`(interpretationEventReceiver.receive()).thenReturn(Flux.never())
+        Mockito.lenient().`when`(notificationBroadcaster.broadcast(any(), any())).thenReturn(Mono.empty())
+        Mockito.lenient().`when`(notificationMapper.toDto(any())).thenReturn(
+            Mockito.mock(NotificationDto::class.java),
+        )
 
         eventConsumer =
             EventConsumer(
                 spreadEventReceiver,
                 interpretationEventReceiver,
                 notificationRepository,
+                notificationBroadcaster,
+                notificationMapper,
             )
     }
 

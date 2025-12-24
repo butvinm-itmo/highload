@@ -189,6 +189,7 @@ Base path: `/api/v0.0.1`
 | GET | `/notifications/unread-count` | Get unread notification count | Any |
 | PATCH | `/notifications/{id}/read` | Mark notification as read | Owner |
 | POST | `/notifications/mark-all-read` | Mark all notifications as read | Any |
+| WS | `/notifications/ws` | Real-time notification WebSocket | Any |
 
 ## Build & Development Commands
 
@@ -273,3 +274,28 @@ Config files are in the `highload-config/` submodule. After changes, push to sub
 3. Notifications are created when someone adds an interpretation to another user's spread
 
 **Reactor-Kafka:** Both services use `reactor-kafka` for reactive Kafka integration.
+
+### WebSocket Real-Time Notifications
+
+**Endpoint:** `ws://gateway:8080/api/v0.0.1/notifications/ws`
+
+**Authentication:** JWT token via `Authorization: Bearer <token>` header during WebSocket handshake. Gateway validates JWT and forwards `X-User-Id` header to notification-service.
+
+**Message Format (JSON):**
+```json
+{
+  "id": "uuid",
+  "type": "NEW_INTERPRETATION",
+  "title": "New interpretation on your spread",
+  "message": "username added an interpretation...",
+  "isRead": false,
+  "createdAt": "2025-01-01T00:00:00Z",
+  "referenceId": "uuid",
+  "referenceType": "INTERPRETATION"
+}
+```
+
+**Architecture:**
+- `WebSocketSessionRegistry` - Maps user IDs to active sessions (supports multiple tabs/clients per user)
+- `NotificationBroadcaster` - Sends notifications to all connected sessions for a user
+- `EventConsumer` - On Kafka event, saves notification and broadcasts to connected WebSocket clients

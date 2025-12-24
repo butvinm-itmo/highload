@@ -1,4 +1,53 @@
-# Progress Report: Notification Service Tests
+# Progress Report: WebSocket Notifications
+
+**Plan:** `/home/butvinm/.claude/plans/transient-popping-aurora.md`
+
+## Summary
+
+Added WebSocket endpoint to notification-service for real-time notification delivery to frontend clients.
+
+## WebSocket Implementation
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `notification-service/.../websocket/WebSocketSessionRegistry.kt` | Thread-safe registry mapping user IDs to active sessions |
+| `notification-service/.../websocket/NotificationWebSocketHandler.kt` | WebSocket handler extracting user ID and managing session lifecycle |
+| `notification-service/.../websocket/NotificationBroadcaster.kt` | Service to broadcast notifications to connected sessions |
+| `notification-service/.../config/WebSocketConfig.kt` | WebSocket endpoint configuration at `/api/v0.0.1/notifications/ws` |
+| `notification-service/.../unit/websocket/WebSocketSessionRegistryTest.kt` | Unit tests for session registry |
+| `e2e-tests/.../NotificationWebSocketE2ETest.kt` | E2E tests for WebSocket functionality |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `notification-service/.../service/EventConsumer.kt` | Integrated NotificationBroadcaster for real-time push |
+| `notification-service/.../unit/service/EventConsumerTest.kt` | Updated with new dependencies |
+| `highload-config/gateway-service.yml` | Added WebSocket route `lb:ws://notification-service` |
+| `e2e-tests/build.gradle.kts` | Added `spring-boot-starter-websocket` dependency |
+| `CLAUDE.md` | Added WebSocket endpoint documentation |
+
+### Key Features
+
+- **Multi-session support:** Multiple browser tabs/clients per user
+- **Real-time push:** Notifications pushed immediately when Kafka event is consumed
+- **Gateway integration:** JWT validated during WebSocket upgrade handshake
+- **Graceful cleanup:** Sessions properly unregistered on disconnect
+
+### Test Results
+
+```
+notification-service tests: 44 PASSED
+- Unit tests: 27 passed (including 7 new WebSocket registry tests)
+- Controller Integration tests: 13 passed
+- Kafka Integration tests: 4 passed
+```
+
+---
+
+# Previous: Notification Service Tests
 
 **Plan:** `/home/butvinm/.claude/plans/idempotent-bouncing-planet.md`
 

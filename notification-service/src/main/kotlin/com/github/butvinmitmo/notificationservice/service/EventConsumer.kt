@@ -1,7 +1,9 @@
 package com.github.butvinmitmo.notificationservice.service
 
 import com.github.butvinmitmo.notificationservice.entity.Notification
+import com.github.butvinmitmo.notificationservice.mapper.NotificationMapper
 import com.github.butvinmitmo.notificationservice.repository.NotificationRepository
+import com.github.butvinmitmo.notificationservice.websocket.NotificationBroadcaster
 import com.github.butvinmitmo.shared.dto.InterpretationCreatedEvent
 import com.github.butvinmitmo.shared.dto.SpreadCreatedEvent
 import jakarta.annotation.PostConstruct
@@ -19,6 +21,8 @@ class EventConsumer(
     private val spreadEventReceiver: KafkaReceiver<String, SpreadCreatedEvent>,
     private val interpretationEventReceiver: KafkaReceiver<String, InterpretationCreatedEvent>,
     private val notificationRepository: NotificationRepository,
+    private val notificationBroadcaster: NotificationBroadcaster,
+    private val notificationMapper: NotificationMapper,
 ) {
     private val logger = LoggerFactory.getLogger(EventConsumer::class.java)
 
@@ -92,12 +96,18 @@ class EventConsumer(
                 message = "${event.interpretationAuthorUsername} added an interpretation: \"${event.textPreview}...\"",
                 referenceId = event.interpretationId,
                 referenceType = "INTERPRETATION",
+                createdAt = java.time.Instant.now(),
             )
 
         return notificationRepository
             .save(notification)
-            .doOnSuccess { saved ->
+            .flatMap { saved ->
                 logger.info("Created notification: id=${saved.id} for user=${saved.userId}")
-            }.then()
+                val dto = notificationMapper.toDto(saved)
+                logger.info("Broadcasting notification to WebSocket for user=${saved.userId}")
+                notificationBroadcaster.broadcast(saved.userId, dto)
+            }.doOnError { error ->
+                logger.error("Error during notification save/broadcast", error)
+            }
     }
 }
