@@ -86,7 +86,15 @@ class SpreadMapper(
     }
 
     private fun fetchCard(cardId: UUID): CardDto {
-        val allCards = tarotServiceClient.getCards(systemUserId, systemRole, 0, 78).body!!
+        val allCards = mutableListOf<CardDto>()
+        val pageSize = 50
+        var page = 0
+        var fetched: List<CardDto>
+        do {
+            fetched = tarotServiceClient.getCards(systemUserId, systemRole, page, pageSize).body!!
+            allCards.addAll(fetched)
+            page++
+        } while (fetched.size == pageSize)
         return allCards.find { it.id == cardId }
             ?: throw IllegalStateException("Could not fetch card with id $cardId")
     }
