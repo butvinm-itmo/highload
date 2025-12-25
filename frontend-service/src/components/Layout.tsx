@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { NotificationBell } from './NotificationBell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -56,6 +57,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center space-x-4">
               {user && (
                 <>
+                  <NotificationBell />
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-700">{user.username}</span>
                     <span

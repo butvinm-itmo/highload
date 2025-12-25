@@ -6,8 +6,6 @@ import type {
 } from '../types';
 import apiClient from './client';
 
-const API_BASE_PATH = '/api/v0.0.1/notifications';
-
 export const notificationsApi = {
   /**
    * Get all notifications for the current user
@@ -16,7 +14,7 @@ export const notificationsApi = {
     page: number = 0,
     size: number = 20
   ): Promise<PaginatedResponse<NotificationDto>> => {
-    const response = await apiClient.get<NotificationDto[]>(API_BASE_PATH, {
+    const response = await apiClient.get<NotificationDto[]>('/notifications', {
       params: { page, size },
     });
     const totalCount = parseInt(response.headers['x-total-count'] || '0', 10);
@@ -30,7 +28,7 @@ export const notificationsApi = {
    * Get unread notifications count
    */
   getUnreadCount: async (): Promise<number> => {
-    const response = await apiClient.get<UnreadCountResponse>(`${API_BASE_PATH}/unread-count`);
+    const response = await apiClient.get<UnreadCountResponse>(`/notifications/unread-count`);
     return response.data.count;
   },
 
@@ -38,14 +36,14 @@ export const notificationsApi = {
    * Mark a single notification as read
    */
   markAsRead: async (notificationId: string): Promise<void> => {
-    await apiClient.patch(`${API_BASE_PATH}/${notificationId}/read`);
+    await apiClient.patch(`/notifications/${notificationId}/read`);
   },
 
   /**
    * Mark all notifications as read
    */
   markAllAsRead: async (): Promise<number> => {
-    const response = await apiClient.post<MarkAllReadResponse>(`${API_BASE_PATH}/mark-all-read`);
+    const response = await apiClient.post<MarkAllReadResponse>(`/notifications/mark-all-read`);
     return response.data.markedAsRead;
   },
 };
