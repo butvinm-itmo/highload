@@ -11,6 +11,8 @@ import com.github.butvinmitmo.divinationservice.mapper.SpreadMapper
 import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
+import com.github.butvinmitmo.divinationservice.util.FileValidator
+import com.github.butvinmitmo.shared.client.FileStorageServiceClient
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.CardDto
@@ -18,12 +20,16 @@ import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadResponse
+import com.github.butvinmitmo.shared.dto.InterpretationCreatedEvent
 import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.PageResponse
 import com.github.butvinmitmo.shared.dto.ScrollResponse
+import com.github.butvinmitmo.shared.dto.SpreadCreatedEvent
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
+import org.springframework.http.codec.multipart.FilePart
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import reactor.core.publisher.Flux
@@ -39,8 +45,11 @@ class DivinationService(
     private val interpretationRepository: InterpretationRepository,
     private val userServiceClient: UserServiceClient,
     private val tarotServiceClient: TarotServiceClient,
+    private val fileStorageServiceClient: FileStorageServiceClient,
     private val spreadMapper: SpreadMapper,
     private val interpretationMapper: InterpretationMapper,
+    private val eventPublisher: EventPublisher,
+    private val fileValidator: FileValidator,
 ) {
     @Transactional
     fun createSpread(
@@ -48,15 +57,23 @@ class DivinationService(
         authorId: UUID,
         role: String,
     ): Mono<CreateSpreadResponse> {
+        var authorUsername = ""
+        var layoutTypeName = ""
+        var cardsCount = 0
+
         // Validate user exists via Feign (blocking call on boundedElastic)
         return Mono
-            .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
+            .fromCallable { userServiceClient.getUserById(authorId, role, authorId).body!! }
             .subscribeOn(Schedulers.boundedElastic())
+            .doOnNext { user -> authorUsername = user.username }
             .flatMap {
                 // Validate layout type exists via Feign (blocking call on boundedElastic)
                 Mono
                     .fromCallable { tarotServiceClient.getLayoutTypeById(authorId, role, request.layoutTypeId).body!! }
                     .subscribeOn(Schedulers.boundedElastic())
+            }.doOnNext { layoutType ->
+                layoutTypeName = layoutType.name
+                cardsCount = layoutType.cardsCount
             }.flatMap { layoutType ->
                 val spread =
                     Spread(
@@ -91,7 +108,20 @@ class DivinationService(
                                 )
                             }.flatMap { spreadCard ->
                                 spreadCardRepository.save(spreadCard)
-                            }.then(Mono.just(CreateSpreadResponse(id = savedSpread.id!!)))
+                            }.then(
+                                // Publish event after spread creation
+                                eventPublisher
+                                    .publishSpreadCreated(
+                                        SpreadCreatedEvent(
+                                            spreadId = savedSpread.id!!,
+                                            authorId = authorId,
+                                            authorUsername = authorUsername,
+                                            question = request.question,
+                                            layoutTypeName = layoutTypeName,
+                                            cardsCount = cardsCount,
+                                        ),
+                                    ).thenReturn(CreateSpreadResponse(id = savedSpread.id!!)),
+                            )
                     }
             }
     }
@@ -225,14 +255,19 @@ class DivinationService(
         request: CreateInterpretationRequest,
         authorId: UUID,
         role: String,
-    ): Mono<CreateInterpretationResponse> =
-        getSpreadEntity(spreadId)
+    ): Mono<CreateInterpretationResponse> {
+        var spreadAuthorId: UUID = authorId
+        var authorUsername = ""
+
+        return getSpreadEntity(spreadId)
+            .doOnNext { spread -> spreadAuthorId = spread.authorId }
             .flatMap {
                 // Validate user exists via Feign (blocking call on boundedElastic)
                 Mono
-                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
+                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId).body!! }
                     .subscribeOn(Schedulers.boundedElastic())
-            }.flatMap {
+            }.doOnNext { user -> authorUsername = user.username }
+            .flatMap {
                 interpretationRepository.existsByAuthorAndSpread(authorId, spreadId)
             }.flatMap { exists ->
                 if (exists) {
@@ -246,9 +281,23 @@ class DivinationService(
                         )
                     interpretationRepository
                         .save(interpretation)
-                        .map { saved -> CreateInterpretationResponse(id = saved.id!!) }
+                        .flatMap { saved ->
+                            // Publish event after interpretation creation
+                            eventPublisher
+                                .publishInterpretationCreated(
+                                    InterpretationCreatedEvent(
+                                        interpretationId = saved.id!!,
+                                        spreadId = spreadId,
+                                        spreadAuthorId = spreadAuthorId,
+                                        interpretationAuthorId = authorId,
+                                        interpretationAuthorUsername = authorUsername,
+                                        textPreview = request.text.take(100),
+                                    ),
+                                ).thenReturn(CreateInterpretationResponse(id = saved.id!!))
+                        }
                 }
             }
+    }
 
     @Transactional
     fun updateInterpretation(
@@ -286,8 +335,120 @@ class DivinationService(
                 if (interpretation.authorId != userId && role != "ADMIN") {
                     Mono.error(ForbiddenException("You can only delete your own interpretations"))
                 } else {
-                    interpretationRepository.deleteById(id)
+                    val deleteFileMono =
+                        if (interpretation.fileKey != null) {
+                            Mono
+                                .fromCallable { fileStorageServiceClient.deleteFile(interpretation.fileKey!!) }
+                                .subscribeOn(Schedulers.boundedElastic())
+                                .then()
+                                .onErrorResume { Mono.empty() }
+                        } else {
+                            Mono.empty()
+                        }
+                    deleteFileMono.then(interpretationRepository.deleteById(id))
                 }
+            }
+
+    @Transactional
+    fun uploadInterpretationFile(
+        spreadId: UUID,
+        interpretationId: UUID,
+        userId: UUID,
+        role: String,
+        filePart: FilePart,
+        fileSize: Long,
+    ): Mono<InterpretationDto> =
+        interpretationRepository
+            .findById(interpretationId)
+            .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
+            .flatMap { interpretation ->
+                if (interpretation.spreadId != spreadId) {
+                    return@flatMap Mono.error<InterpretationDto>(
+                        NotFoundException("Interpretation not found in this spread"),
+                    )
+                }
+                if (interpretation.authorId != userId && role != "ADMIN") {
+                    return@flatMap Mono.error<InterpretationDto>(
+                        ForbiddenException("You can only upload files to your own interpretations"),
+                    )
+                }
+                if (interpretation.fileKey != null) {
+                    return@flatMap Mono.error<InterpretationDto>(
+                        ConflictException("Interpretation already has a file. Delete it first."),
+                    )
+                }
+
+                fileValidator.validate(filePart, fileSize)
+
+                val fileKey = "interpretations/$interpretationId/${filePart.filename()}"
+
+                filePart
+                    .content()
+                    .reduce { buffer1, buffer2 ->
+                        buffer1.write(buffer2)
+                        buffer1
+                    }.flatMap { dataBuffer ->
+                        val bytes = ByteArray(dataBuffer.readableByteCount())
+                        dataBuffer.read(bytes)
+                        val multipartFile =
+                            MockMultipartFile(
+                                "file",
+                                filePart.filename(),
+                                filePart.headers().contentType?.toString(),
+                                bytes,
+                            )
+                        Mono
+                            .fromCallable {
+                                fileStorageServiceClient.uploadFile(multipartFile, fileKey)
+                            }.subscribeOn(Schedulers.boundedElastic())
+                    }.flatMap {
+                        interpretation.fileKey = fileKey
+                        interpretationRepository
+                            .save(interpretation)
+                            .map { saved -> interpretationMapper.toDto(saved) }
+                    }
+            }
+
+    @Transactional
+    fun deleteInterpretationFile(
+        spreadId: UUID,
+        interpretationId: UUID,
+        userId: UUID,
+        role: String,
+    ): Mono<InterpretationDto> =
+        interpretationRepository
+            .findById(interpretationId)
+            .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
+            .flatMap { interpretation ->
+                if (interpretation.spreadId != spreadId) {
+                    return@flatMap Mono.error<InterpretationDto>(
+                        NotFoundException("Interpretation not found in this spread"),
+                    )
+                }
+                if (interpretation.authorId != userId && role != "ADMIN") {
+                    return@flatMap Mono.error<InterpretationDto>(
+                        ForbiddenException("You can only delete files from your own interpretations"),
+                    )
+                }
+                if (interpretation.fileKey == null) {
+                    return@flatMap Mono.error<InterpretationDto>(
+                        NotFoundException("Interpretation has no file attached"),
+                    )
+                }
+
+                val fileKey = interpretation.fileKey!!
+                Mono
+                    .fromCallable { fileStorageServiceClient.deleteFile(fileKey) }
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .onErrorResume { Mono.empty() }
+                    .then(
+                        Mono.defer {
+                            interpretation.fileKey = null
+                            interpretationRepository
+                                .save(interpretation)
+                                .map { saved -> interpretationMapper.toDto(saved) }
+                        },
+                    )
             }
 
     @Transactional(readOnly = true)

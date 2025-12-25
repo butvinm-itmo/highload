@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.divinationservice.integration
 
+import com.github.butvinmitmo.divinationservice.config.TestKafkaConfig
 import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -19,6 +21,7 @@ import reactor.core.publisher.Mono
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
+@Import(TestKafkaConfig::class)
 abstract class BaseIntegrationTest {
     @Autowired
     protected lateinit var webTestClient: WebTestClient

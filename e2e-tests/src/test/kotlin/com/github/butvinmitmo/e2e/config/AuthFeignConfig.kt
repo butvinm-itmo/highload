@@ -1,15 +1,19 @@
 package com.github.butvinmitmo.e2e.config
 
+import feign.Client
 import feign.RequestInterceptor
 import feign.RequestTemplate
+import feign.hc5.ApacheHttp5Client
+import org.apache.hc.client5.http.impl.classic.HttpClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 /**
- * Thread-local storage for JWT tokens in E2E tests
+ * Thread-local storage for JWT tokens in E2E tests.
+ * Uses InheritableThreadLocal so Awaitility threads can access the token.
  */
 object AuthContext {
-    private val tokenHolder = ThreadLocal<String>()
+    private val tokenHolder = InheritableThreadLocal<String>()
 
     fun setToken(token: String?) {
         if (token == null) {
@@ -39,4 +43,13 @@ class AuthFeignConfig {
                 template.header("Authorization", "Bearer $token")
             }
         }
+
+    /**
+     * Use Apache HttpClient5 which supports PATCH method
+     */
+    @Bean
+    fun feignClient(): Client {
+        val httpClient = HttpClients.createDefault()
+        return ApacheHttp5Client(httpClient)
+    }
 }

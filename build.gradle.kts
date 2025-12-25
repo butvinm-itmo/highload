@@ -38,3 +38,21 @@ subprojects {
         }
     }
 }
+
+tasks.register<Exec>("dockerComposeUp") {
+    group = "docker"
+    description = "Rebuild and start all Docker containers, waiting for health checks"
+    commandLine("docker", "compose", "up", "-d", "--build", "--wait")
+}
+
+tasks.register<Exec>("dockerComposeDown") {
+    group = "docker"
+    description = "Stop and remove all Docker containers"
+    commandLine("docker", "compose", "down")
+}
+
+tasks.register("e2e") {
+    group = "verification"
+    description = "Rebuild containers, wait for health checks, then run e2e tests"
+    dependsOn(":e2e-tests:test")
+}
