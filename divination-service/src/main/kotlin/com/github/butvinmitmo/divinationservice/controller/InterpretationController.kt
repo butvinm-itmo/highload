@@ -1,6 +1,5 @@
 package com.github.butvinmitmo.divinationservice.controller
 
-import com.github.butvinmitmo.divinationservice.exception.ForbiddenException
 import com.github.butvinmitmo.divinationservice.service.DivinationService
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
@@ -22,6 +21,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -43,12 +43,6 @@ import java.util.UUID
 class InterpretationController(
     private val divinationService: DivinationService,
 ) {
-    private fun requireMediumOrAdmin(role: String?) {
-        if (role != "MEDIUM" && role != "ADMIN") {
-            throw ForbiddenException("Only MEDIUM and ADMIN users can create interpretations")
-        }
-    }
-
     @GetMapping
     @Operation(
         summary = "Get all interpretations for a spread",
@@ -203,6 +197,7 @@ class InterpretationController(
             ),
         ],
     )
+    @PreAuthorize("hasAnyRole('MEDIUM', 'ADMIN')")
     fun addInterpretation(
         @Parameter(description = "Spread ID to add interpretation to", required = true)
         @PathVariable
@@ -214,12 +209,10 @@ class InterpretationController(
         @RequestHeader("X-User-Role")
         role: String,
         @Valid @RequestBody request: CreateInterpretationRequest,
-    ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> {
-        requireMediumOrAdmin(role)
-        return divinationService
+    ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
+        divinationService
             .addInterpretation(spreadId, request, userId, role)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
-    }
 
     @PutMapping("/{id}")
     @Operation(

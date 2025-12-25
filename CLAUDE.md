@@ -77,7 +77,7 @@ Apply self-reflection to the session to find if you made bad decisions, workarou
 | **notification-service** | 8084 | WebFlux + R2DBC      | In-app notifications (reactive)      |
 | **file-storage-service** | 8085 | Spring MVC + MinIO   | File storage for attachments         |
 
-**Shared modules:** `shared-dto` (DTOs), `shared-clients` (Feign clients), `e2e-tests`
+**Shared modules:** `shared-dto` (DTOs), `shared-clients` (Feign clients), `shared-security` (Spring Security infrastructure), `e2e-tests`
 
 **Inter-service Communication:**
 
@@ -118,6 +118,37 @@ ID: 10000000-0000-0000-0000-000000000001
 ### Password Requirements
 
 Minimum 8 chars, uppercase, lowercase, digit, special character (@$!%\*?&#).
+
+### Security Implementation (Spring Security)
+
+Authorization is implemented using Spring Security with `@PreAuthorize` annotations:
+
+**Shared Infrastructure (`shared-security` module):**
+- `UserPrincipal` - Data class with userId and role
+- `HeaderAuthentication` - Spring Security authentication token
+
+**MVC Services (user-service):**
+- `HeaderAuthenticationFilter` extracts `X-User-*` headers into `SecurityContext`
+- `@EnableMethodSecurity` enables `@PreAuthorize` annotations
+
+**WebFlux Services (divination-service, notification-service):**
+- `HeaderAuthenticationWebFilter` populates reactive `SecurityContext`
+- `@EnableReactiveMethodSecurity(useAuthorizationManager = true)` enables reactive `@PreAuthorize`
+
+**Authorization Patterns:**
+```kotlin
+// Role-based authorization (controller)
+@PreAuthorize("hasRole('ADMIN')")
+fun createUser(...): ResponseEntity<...>
+
+@PreAuthorize("hasAnyRole('MEDIUM', 'ADMIN')")
+fun addInterpretation(...): Mono<ResponseEntity<...>>
+
+// Owner-based authorization (service layer - to avoid duplicate DB lookups)
+if (entity.authorId != userId && role != "ADMIN") {
+    throw ForbiddenException("...")
+}
+```
 
 ## Database Schema
 

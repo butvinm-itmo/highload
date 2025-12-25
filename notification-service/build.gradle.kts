@@ -41,6 +41,10 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.4")
+
+    // Spring Security for authentication and authorization
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation(project(":shared-security"))
     implementation("org.postgresql:postgresql")
     implementation("io.projectreactor.kafka:reactor-kafka:1.3.23")
     implementation("org.springframework.kafka:spring-kafka")
