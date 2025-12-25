@@ -24,6 +24,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to decode JWT and extract user ID
+  const getUserIdFromToken = (token: string): string => {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      return decoded.sub || '';
+    } catch {
+      return '';
+    }
+  };
+
   // Load user from localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('auth_token');
@@ -32,6 +43,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (storedToken && storedUser) {
       try {
         const parsedUser: UserDto = JSON.parse(storedUser);
+
+        // If user doesn't have ID, decode it from token
+        if (!parsedUser.id && storedToken) {
+          parsedUser.id = getUserIdFromToken(storedToken);
+          // Update localStorage with the ID
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+        }
+
         setToken(storedToken);
         setUser(parsedUser);
       } catch (error) {
@@ -50,6 +69,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Store token
       localStorage.setItem('auth_token', response.token);
 
+      // Decode JWT to extract user ID from the payload
+      const userId = getUserIdFromToken(response.token);
+
       // Create user object from auth response
       // Backend returns role as string, but we need Role object
       const roleObject = typeof response.role === 'string'
@@ -57,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         : response.role;
 
       const userData: UserDto = {
-        id: '', // We don't get ID from login response, will be set on first API call
+        id: userId,
         username: response.username,
         role: roleObject,
         createdAt: new Date().toISOString(),
