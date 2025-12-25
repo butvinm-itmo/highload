@@ -134,12 +134,80 @@ All 10 stages successfully completed. The Tarology Web Service now has a fully f
 
 ---
 
+## Current Lab: Lab 4 - Messaging & File Management (In Progress)
+
+**Started:** 2025-12-25
+**Branch:** `ui` (integrating backend changes from `master`)
+
+**Backend Changes Pulled:**
+- ✅ New file-storage-service (MinIO-based, port 8085)
+- ✅ New notification-service (Kafka + WebSocket, port 8084)
+- ✅ InterpretationDto updated with optional `fileUrl` field
+- ✅ Event-driven architecture with Kafka
+- ✅ WebSocket endpoint at `/ws/notifications`
+
+**Frontend Integration Plan:** 10 independent stages (see PLAN.md)
+
+### Stage 1: Update TypeScript Types & API Client ⏸️ PENDING
+- [ ] Update InterpretationDto with fileUrl field
+- [ ] Add NotificationDto and related types
+- [ ] Add FileUploadResponse type
+- [ ] Ensure type safety across all API calls
+
+### Stage 2: Create File Storage API Module ⏸️ PENDING
+- [ ] Create filesApi.ts with upload/download/delete
+- [ ] Add file validation utilities
+- [ ] Configure Axios for multipart/form-data
+
+### Stage 3: Add File Attachment to Interpretations ⏸️ PENDING
+- [ ] Update AddInterpretationForm with file upload
+- [ ] Update EditInterpretationModal for attachments
+- [ ] Update InterpretationList to display images
+- [ ] Create ImageLightbox component
+
+### Stage 4: Create Notifications API Module ⏸️ PENDING
+- [ ] Create notificationsApi.ts
+- [ ] Add React Query hooks for notifications
+- [ ] Implement optimistic updates
+
+### Stage 5: Add WebSocket Support ⏸️ PENDING
+- [ ] Create WebSocket client utility
+- [ ] Create NotificationContext
+- [ ] Integrate with React Query
+
+### Stage 6: Build Notifications UI Components ⏸️ PENDING
+- [ ] Create NotificationBell component
+- [ ] Create NotificationsPage
+- [ ] Add toast notifications
+
+### Stage 7: CORS Verification ⏸️ PENDING
+- [ ] Verify WebSocket support in CORS config
+- [ ] Test file upload CORS
+- [ ] Test file download headers
+
+### Stage 8: Docker Verification ⏸️ PENDING
+- [ ] Verify all services in docker-compose.yml
+- [ ] Test full stack in Docker
+- [ ] Verify WebSocket in Docker
+
+### Stage 9: Loading States & Error Handling ⏸️ PENDING
+- [ ] Add file upload progress indicators
+- [ ] Add WebSocket error handling
+- [ ] Add empty states for notifications
+
+### Stage 10: Documentation ⏸️ PENDING
+- [ ] Update frontend-service/README.md
+- [ ] Update PROGRESS.md with completion
+- [ ] Update CLAUDE.md with new patterns
+
+---
+
 ## Future Labs
 
-### Lab 4: Messaging & File Management (Planned)
-- Message service for real-time notifications
-- File management service for card images
-- WebSocket integration for live interpretations
+### Lab 5: Performance & Monitoring (Planned)
+- Implement caching strategies
+- Add application monitoring
+- Performance optimization
 
 ---
 
