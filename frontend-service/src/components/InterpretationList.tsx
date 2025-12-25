@@ -4,6 +4,7 @@ import type { InterpretationDto } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { interpretationsApi } from '../api';
 import { EditInterpretationModal } from './EditInterpretationModal';
+import { ImageLightbox } from './ImageLightbox';
 import { getErrorMessage } from '../utils/errorHandling';
 
 interface InterpretationListProps {
@@ -15,6 +16,7 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
   const { user, hasRole } = useAuth();
   const [editingInterpretation, setEditingInterpretation] = useState<InterpretationDto | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
@@ -88,6 +90,17 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
                 )}
               </div>
               <p className="text-gray-700 whitespace-pre-wrap">{interpretation.text}</p>
+
+              {interpretation.fileUrl && (
+                <div className="mt-3">
+                  <img
+                    src={interpretation.fileUrl}
+                    alt="Interpretation attachment"
+                    className="max-w-md max-h-64 rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setLightboxImage(interpretation.fileUrl!)}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
@@ -99,6 +112,13 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
           spreadId={spreadId}
           isOpen={true}
           onClose={() => setEditingInterpretation(null)}
+        />
+      )}
+
+      {lightboxImage && (
+        <ImageLightbox
+          imageUrl={lightboxImage}
+          onClose={() => setLightboxImage(null)}
         />
       )}
     </>

@@ -61,4 +61,33 @@ export const interpretationsApi = {
   deleteInterpretation: async (spreadId: string, interpretationId: string): Promise<void> => {
     await apiClient.delete(`/spreads/${spreadId}/interpretations/${interpretationId}`);
   },
+
+  /**
+   * Upload file attachment to interpretation (author or ADMIN only)
+   */
+  uploadFile: async (spreadId: string, interpretationId: string, file: File): Promise<InterpretationDto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<InterpretationDto>(
+      `/spreads/${spreadId}/interpretations/${interpretationId}/file`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Delete file attachment from interpretation (author or ADMIN only)
+   */
+  deleteFile: async (spreadId: string, interpretationId: string): Promise<InterpretationDto> => {
+    const response = await apiClient.delete<InterpretationDto>(
+      `/spreads/${spreadId}/interpretations/${interpretationId}/file`
+    );
+    return response.data;
+  },
 };
