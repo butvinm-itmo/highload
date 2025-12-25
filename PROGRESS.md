@@ -1,10 +1,10 @@
 # Project Progress
 
-## Current Status: UI Implementation (Lab 4 - UI Phase)
+## Current Status: UI Implementation + Backend Integration (Lab 4)
 
 **Branch:** `ui`
 
-**Last Updated:** 2025-12-24
+**Last Updated:** 2025-12-25
 
 ---
 
@@ -17,13 +17,15 @@
 - OpenAPI specifications
 
 ### Lab 2: Microservices Architecture ✅
-- Decomposed into 6 services:
+- Decomposed into 8 services:
   - config-server (Spring Cloud Config)
   - eureka-server (Netflix Eureka)
   - gateway-service (Spring Cloud Gateway)
   - user-service (Spring MVC + JPA)
   - tarot-service (Spring MVC + JPA)
   - divination-service (Spring WebFlux + R2DBC)
+  - notification-service (Spring WebFlux + R2DBC)
+  - file-storage-service (Spring MVC + MinIO)
 - Shared modules: shared-dto, shared-clients
 - Service discovery with Eureka
 - API Gateway with routing
@@ -37,9 +39,28 @@
 - Default admin account for development
 - Password validation (min 8 chars, mixed case, digit, special char)
 
+### Lab 4: Messaging & File Management ✅ (Backend Complete)
+- **Kafka Event-Driven Architecture** (3 brokers in KRaft mode)
+  - `spread-events` topic for spread creation
+  - `interpretation-events` topic for interpretation creation
+  - Reactive Kafka integration with reactor-kafka
+- **notification-service** (port 8084)
+  - In-app notifications via Kafka events
+  - WebSocket real-time notifications (`/notifications/ws`)
+  - REST API for notification management
+  - PostgreSQL storage with R2DBC
+- **file-storage-service** (port 8085)
+  - MinIO object storage integration
+  - File upload/download/delete endpoints
+  - Support for interpretation attachments (PNG/JPG, 2MB max)
+- **divination-service updates**
+  - File attachment support for interpretations
+  - Kafka event publishing for spreads and interpretations
+  - Cascade file deletion on interpretation removal
+
 ---
 
-## Current Lab: UI Implementation (In Progress)
+## Current Work: UI Implementation (Lab 4 - UI Phase)
 
 **Goal:** Build React + TypeScript SPA for the Tarology Web Service
 
@@ -123,7 +144,7 @@
 - [x] Document user roles and permissions
 - [x] Update PROGRESS.md with final status
 
-## 🎉 UI Implementation Complete!
+## 🎉 Basic UI Implementation Complete!
 
 All 10 stages successfully completed. The Tarology Web Service now has a fully functional React + TypeScript frontend with:
 - Complete authentication and authorization
@@ -134,19 +155,19 @@ All 10 stages successfully completed. The Tarology Web Service now has a fully f
 
 ---
 
-## Current Lab: Lab 4 - Messaging & File Management (In Progress)
+## Current Phase: Integrating Backend Messaging & File Features
 
 **Started:** 2025-12-25
-**Branch:** `ui` (integrating backend changes from `master`)
+**Branch:** `ui` (merging backend changes from `master`)
 
-**Backend Changes Pulled:**
+**Backend Changes Merged:**
 - ✅ New file-storage-service (MinIO-based, port 8085)
 - ✅ New notification-service (Kafka + WebSocket, port 8084)
 - ✅ InterpretationDto updated with optional `fileUrl` field
-- ✅ Event-driven architecture with Kafka
-- ✅ WebSocket endpoint at `/ws/notifications`
+- ✅ Event-driven architecture with Kafka (3 brokers in KRaft mode)
+- ✅ WebSocket endpoint at `/api/v0.0.1/notifications/ws`
 
-**Frontend Integration Plan:** 10 independent stages (see PLAN.md)
+**Frontend Integration Plan:** 10 independent stages
 
 ### Stage 1: Update TypeScript Types & API Client ⏸️ PENDING
 - [ ] Update InterpretationDto with fileUrl field
@@ -202,21 +223,14 @@ All 10 stages successfully completed. The Tarology Web Service now has a fully f
 
 ---
 
-## Future Labs
-
-### Lab 5: Performance & Monitoring (Planned)
-- Implement caching strategies
-- Add application monitoring
-- Performance optimization
-
----
-
 ## Testing Status
 
-### E2E Tests
-- ✅ 31 comprehensive E2E tests passing
-- ✅ Tests cover all major flows (auth, CRUD, authorization)
-- ✅ Tests route through gateway-service
+### Backend Tests
+- ✅ Unit tests passing for all services
+- ✅ Integration tests passing with TestContainers
+- ✅ E2E tests: 31 tests passing (including file attachments and notifications)
+- ✅ Kafka integration tests passing
+- ✅ WebSocket E2E tests passing
 
 ### Frontend Tests
 - ⏸️ Not yet implemented
@@ -233,6 +247,8 @@ None currently identified.
 
 - All backend services are production-ready
 - Database schema is stable with proper migrations
-- API endpoints are fully documented in OpenAPI specs
-- Docker Compose orchestration is working correctly
+- API endpoints are fully documented in CLAUDE.md
+- Docker Compose orchestration includes all 8 services + infrastructure
 - Frontend implementation follows CLAUDE.md guidelines
+- Kafka cluster running in KRaft mode (no Zookeeper)
+- MinIO object storage configured and healthy
