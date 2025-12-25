@@ -19,7 +19,9 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.http.codec.multipart.FilePart
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -347,4 +350,124 @@ class InterpretationController(
                 reactor.core.publisher.Mono
                     .just(ResponseEntity.noContent().build()),
             )
+
+    @PostMapping("/{id}/file", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(
+        summary = "Upload file to interpretation",
+        description = "Uploads an image file (PNG/JPG, max 2MB) to an interpretation.",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "File uploaded successfully",
+                content = [Content(schema = Schema(implementation = InterpretationDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid file type or size",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not the author of the interpretation",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Interpretation not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "Interpretation already has a file attached",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun uploadInterpretationFile(
+        @Parameter(description = "Spread ID containing the interpretation", required = true)
+        @PathVariable
+        spreadId: UUID,
+        @Parameter(description = "Interpretation ID", required = true)
+        @PathVariable
+        id: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
+        @RequestPart("file") file: FilePart,
+        @RequestHeader("Content-Length") contentLength: Long,
+    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
+        divinationService
+            .uploadInterpretationFile(spreadId, id, userId, role, file, contentLength)
+            .map { ResponseEntity.ok(it) }
+
+    @DeleteMapping("/{id}/file")
+    @Operation(
+        summary = "Delete file from interpretation",
+        description = "Deletes the attached file from an interpretation. Only the author or ADMIN can delete.",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "File deleted successfully",
+                content = [Content(schema = Schema(implementation = InterpretationDto::class))],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "User is not the author of the interpretation",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Interpretation or file not found",
+                content = [
+                    Content(
+                        schema = Schema(implementation = com.github.butvinmitmo.shared.dto.ErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun deleteInterpretationFile(
+        @Parameter(description = "Spread ID containing the interpretation", required = true)
+        @PathVariable
+        spreadId: UUID,
+        @Parameter(description = "Interpretation ID", required = true)
+        @PathVariable
+        id: UUID,
+        @Parameter(description = "User ID from JWT", required = true)
+        @RequestHeader("X-User-Id")
+        userId: UUID,
+        @Parameter(description = "User role from JWT", required = true)
+        @RequestHeader("X-User-Role")
+        role: String,
+    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
+        divinationService
+            .deleteInterpretationFile(spreadId, id, userId, role)
+            .map { ResponseEntity.ok(it) }
 }

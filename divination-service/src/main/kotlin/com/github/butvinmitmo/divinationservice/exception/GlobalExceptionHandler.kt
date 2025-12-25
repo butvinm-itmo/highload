@@ -94,6 +94,22 @@ class GlobalExceptionHandler {
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
 
+    @ExceptionHandler(InvalidFileException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleInvalidFileException(
+        ex: InvalidFileException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "INVALID_FILE",
+                message = ex.message ?: "Invalid file",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.BAD_REQUEST)
+    }
+
     @ExceptionHandler(FeignException.NotFound::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleFeignNotFoundException(
