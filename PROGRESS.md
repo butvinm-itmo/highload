@@ -74,21 +74,15 @@
 
 ## What Remains
 
-### BLOCKING: Fix Broken Tests
-- `DivinationServiceTest.kt` - constructor changed, needs mock for:
-  - `FileStorageServiceClient`
-  - `FileValidator`
-
 ### Phase 8: E2E Tests (NOT STARTED)
 - Create `FileAttachmentE2ETest.kt`
 
-### Phase 9: Documentation (NOT STARTED)
+### Phase 9: Documentation (IN PROGRESS)
 - Update CLAUDE.md with file-storage-service info
 
 ---
 
-## Known Issues
+## Completed Fixes
 
-1. **DivinationService constructor changed** - added `fileStorageServiceClient` and `fileValidator` parameters. Existing unit tests need to be updated to mock these new dependencies.
-
-2. **highload-config submodule modified** - need to commit and push changes to the submodule separately.
+1. **DivinationServiceTest fixed** - added mocks for `FileStorageServiceClient` and `FileValidator`
+2. **highload-config submodule committed** - changes pushed to submodule

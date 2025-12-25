@@ -75,6 +75,7 @@ Apply self-reflection to the session to find if you made bad decisions, workarou
 | **tarot-service**        | 8082 | Spring MVC + JPA     | Cards & layout types reference data  |
 | **divination-service**   | 8083 | WebFlux + R2DBC      | Spreads & interpretations (reactive) |
 | **notification-service** | 8084 | WebFlux + R2DBC      | In-app notifications (reactive)      |
+| **file-storage-service** | 8085 | Spring MVC + MinIO   | File storage for attachments         |
 
 **Shared modules:** `shared-dto` (DTOs), `shared-clients` (Feign clients), `e2e-tests`
 
@@ -150,9 +151,10 @@ Minimum 8 chars, uppercase, lowercase, digit, special character (@$!%\*?&#).
 
 - Unique constraint: (spread_id, position_in_spread)
 
-**interpretation** - (id UUID PK, text TEXT, author_id UUID FK CASCADE, spread_id UUID FK CASCADE, created_at TIMESTAMPTZ)
+**interpretation** - (id UUID PK, text TEXT, author_id UUID FK CASCADE, spread_id UUID FK CASCADE, file_key VARCHAR(512), created_at TIMESTAMPTZ)
 
 - Unique constraint: (author_id, spread_id)
+- file_key: Optional path to attached image in MinIO
 
 ### notification-service tables
 
@@ -197,6 +199,8 @@ Base path: `/api/v0.0.1`
 | POST   | `/spreads/{spreadId}/interpretations`      | Add interpretation                    | MEDIUM/ADMIN |
 | PUT    | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation                 | Author/ADMIN |
 | DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation                 | Author/ADMIN |
+| POST   | `/spreads/{spreadId}/interpretations/{id}/file` | Upload file to interpretation (PNG/JPG, 2MB max) | Author/ADMIN |
+| DELETE | `/spreads/{spreadId}/interpretations/{id}/file` | Delete file from interpretation       | Author/ADMIN |
 
 ### notification-service
 
@@ -207,6 +211,14 @@ Base path: `/api/v0.0.1`
 | PATCH  | `/notifications/{id}/read`     | Mark notification as read        | Owner |
 | POST   | `/notifications/mark-all-read` | Mark all notifications as read   | Any   |
 | WS     | `/notifications/ws`            | Real-time notification WebSocket | Any   |
+
+### file-storage-service
+
+| Method | Endpoint                | Description          | Auth |
+| ------ | ----------------------- | -------------------- | ---- |
+| POST   | `/files?key={key}`      | Upload file          | Any  |
+| DELETE | `/files?key={key}`      | Delete file          | Any  |
+| GET    | `/files/{key}`          | Download file        | Any  |
 
 ## Build & Development Commands
 
@@ -236,6 +248,9 @@ docker compose down                       # Stop all
 - `JWT_SECRET` - JWT signing key (required for user-service, gateway-service)
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Database connection
 - `KAFKA_BOOTSTRAP_SERVERS` - Kafka brokers (required for divination-service, notification-service)
+- `MINIO_URL` - MinIO URL (required for file-storage-service)
+- `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` - MinIO credentials
+- `MINIO_BUCKET` - MinIO bucket name (default: tarot-files)
 
 ## Testing
 
@@ -325,3 +340,15 @@ Config files are in the `highload-config/` submodule. After changes, push to sub
 - `WebSocketSessionRegistry` - Maps user IDs to active sessions (supports multiple tabs/clients per user)
 - `NotificationBroadcaster` - Sends notifications to all connected sessions for a user
 - `EventConsumer` - On Kafka event, saves notification and broadcasts to connected WebSocket clients
+
+### File Storage (file-storage-service)
+
+**Infrastructure:** MinIO object storage (S3-compatible)
+
+**File Attachments:**
+
+- Interpretations can have one optional image attachment (PNG/JPG, max 2MB)
+- Files stored in MinIO with key format: `interpretations/{interpretationId}/{filename}`
+- `divination-service` validates file type and coordinates upload via Feign client
+- `InterpretationDto` includes `fileUrl` for direct download when file is attached
+- Deleting interpretation cascades to delete attached file
