@@ -415,11 +415,14 @@ class InterpretationController(
         @RequestHeader("X-User-Role")
         role: String,
         @RequestPart("file") file: FilePart,
-        @RequestHeader("Content-Length") contentLength: Long,
-    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
-        divinationService
-            .uploadInterpretationFile(spreadId, id, userId, role, file, contentLength)
+        @RequestHeader("Content-Length", required = false) contentLength: Long?,
+    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> {
+        // Get content length from header or fall back to FilePart headers
+        val fileSize = contentLength ?: file.headers().contentLength
+        return divinationService
+            .uploadInterpretationFile(spreadId, id, userId, role, file, fileSize)
             .map { ResponseEntity.ok(it) }
+    }
 
     @DeleteMapping("/{id}/file")
     @Operation(

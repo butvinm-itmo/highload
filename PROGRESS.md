@@ -2,13 +2,13 @@
 
 ## Current Work: File Attachment for Interpretations
 
-**Status:** IN PROGRESS - Implementation done, tests need fixing
+**Status:** COMPLETE
 
 **Branch:** notification-service
 
 ---
 
-## What Was Done
+## All Phases Complete
 
 ### Phase 1-2: file-storage-service (COMPLETE)
 - Created new `file-storage-service` module
@@ -23,7 +23,7 @@
 - Added `FileStorageServiceClient` Feign client
 - Added `FeignMultipartConfig` for multipart support
 - Files:
-  - `shared-dto/.../FileDto.kt`
+  - `shared-dto/.../FileUploadResponse.kt`
   - `shared-clients/.../FileStorageServiceClient.kt`
   - `shared-clients/.../FeignMultipartConfig.kt`
   - `shared-clients/build.gradle.kts` (added feign-form deps)
@@ -70,15 +70,36 @@
   - `highload-config/gateway-service.yml`
   - `highload-config/divination-service.yml`
 
+### Phase 8: E2E Tests (COMPLETE)
+- Created `FileAttachmentE2ETest.kt` with comprehensive tests:
+  - Upload PNG file
+  - Download file
+  - Upload duplicate file (409)
+  - Delete file
+  - Upload JPG file
+  - Invalid file type (400)
+  - Oversized file (400)
+  - Non-author upload (403)
+  - Delete interpretation cascades file deletion
+- Files:
+  - `e2e-tests/.../FileAttachmentE2ETest.kt`
+
+### Phase 9: Documentation (COMPLETE)
+- CLAUDE.md already updated with:
+  - file-storage-service in microservices table (port 8085)
+  - interpretation schema with file_key column
+  - File endpoints in divination-service
+  - file-storage-service endpoints
+  - MINIO_* environment variables
+  - File Storage section
+
 ---
 
-## What Remains
+## Tests Status
 
-### Phase 8: E2E Tests (NOT STARTED)
-- Create `FileAttachmentE2ETest.kt`
-
-### Phase 9: Documentation (IN PROGRESS)
-- Update CLAUDE.md with file-storage-service info
+- `./gradlew :divination-service:test` - PASSING
+- `./gradlew :file-storage-service:test` - PASSING
+- `./gradlew :e2e-tests:compileTestKotlin` - PASSING (E2E tests require docker compose up)
 
 ---
 
