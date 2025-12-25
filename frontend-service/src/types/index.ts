@@ -67,6 +67,7 @@ export interface InterpretationDto {
   createdAt: string;
   author: UserDto;
   spreadId: string;
+  fileUrl?: string;
 }
 
 export interface SpreadDto {
@@ -111,6 +112,35 @@ export interface PaginatedResponse<T> {
 export interface ScrollResponse<T> {
   data: T[];
   afterCursor?: string;
+}
+
+// File Upload Types
+export interface FileUploadResponse {
+  url: string;
+}
+
+// Notification Types
+export type NotificationType = 'NEW_SPREAD' | 'NEW_INTERPRETATION';
+
+export type ReferenceType = 'SPREAD' | 'INTERPRETATION';
+
+export interface NotificationDto {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  referenceId: string;
+  referenceType: ReferenceType;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}
+
+export interface MarkAllReadResponse {
+  markedAsRead: number;
 }
 
 // API Error Response
