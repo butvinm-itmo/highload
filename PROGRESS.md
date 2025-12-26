@@ -237,7 +237,7 @@ Refactor microservices to have totally independent database schemas without FK c
 ---
 
 ### Phase 7: (Optional) Simplify Test Schema
-- [ ] **Pending**
+- [x] **Completed**
 
 - **Goal:** Remove unnecessary tables from test init script (user, layout_type, card).
 
@@ -246,10 +246,12 @@ Refactor microservices to have totally independent database schemas without FK c
 
 - **Verification Cmd:** `./gradlew :divination-service:test`
 
+- **Result:** All 40 tests passed (35 integration tests + 5 SpreadMapperTest)
+
 - **Phase Execution:**
-  1. **Implement:** Remove user, layout_type, card tables from init-test-db.sql
-  2. **Verify:** Run `./gradlew :divination-service:test`
-  3. **Report:** Update PROGRESS.md (mark Phase 7 complete)
+  1. **Implement:** Remove user, arcana_type, layout_type, card tables and test data from init-test-db.sql ✓
+  2. **Verify:** Run `./gradlew :divination-service:test` ✓ (40 tests passed)
+  3. **Report:** Update PROGRESS.md (mark Phase 7 complete) ✓
   4. **Commit:**
      ```bash
      git add divination-service/src/test/resources/init-test-db.sql
@@ -261,7 +263,7 @@ Refactor microservices to have totally independent database schemas without FK c
 
      🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+     Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
      ```
 
 ---
