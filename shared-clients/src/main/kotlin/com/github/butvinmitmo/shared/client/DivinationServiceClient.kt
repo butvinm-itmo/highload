@@ -80,4 +80,13 @@ interface DivinationServiceClient {
         @PathVariable id: UUID,
         @RequestBody request: DeleteRequest,
     ): ResponseEntity<Void>
+
+    /**
+     * Internal endpoint: Deletes all spreads and interpretations authored by the given user.
+     * Called by user-service before deleting a user to maintain referential integrity.
+     */
+    @DeleteMapping("/api/v0.0.1/internal/users/{userId}/data")
+    fun deleteUserData(
+        @PathVariable userId: UUID,
+    ): ResponseEntity<Void>
 }

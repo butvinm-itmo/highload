@@ -1,9 +1,11 @@
 package com.github.butvinmitmo.userservice.integration
 
+import com.github.butvinmitmo.shared.client.DivinationServiceClient
 import com.github.butvinmitmo.userservice.repository.UserRepository
 import org.junit.jupiter.api.AfterEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -17,6 +19,9 @@ import java.util.UUID
 abstract class BaseIntegrationTest {
     @Autowired
     protected lateinit var userRepository: UserRepository
+
+    @MockBean
+    protected lateinit var divinationServiceClient: DivinationServiceClient
 
     @AfterEach
     fun cleanupDatabase() {

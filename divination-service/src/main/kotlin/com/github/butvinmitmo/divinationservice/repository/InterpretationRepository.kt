@@ -39,6 +39,9 @@ interface InterpretationRepository :
 
     @Query("SELECT COUNT(*) FROM interpretation WHERE spread_id = :spreadId")
     fun countBySpreadId(spreadId: UUID): Mono<Long>
+
+    @Query("DELETE FROM interpretation WHERE author_id = :authorId")
+    fun deleteByAuthorId(authorId: UUID): Mono<Void>
 }
 
 interface InterpretationRepositoryCustom {

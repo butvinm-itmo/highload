@@ -9,14 +9,23 @@ import com.github.butvinmitmo.userservice.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.ResponseEntity
 import java.util.UUID
 
 class UserServiceIntegrationTest : BaseIntegrationTest() {
     @Autowired
     private lateinit var userService: UserService
+
+    @BeforeEach
+    fun setupMocks() {
+        whenever(divinationServiceClient.deleteUserData(any())).thenReturn(ResponseEntity.noContent().build())
+    }
 
     @Test
     fun `createUser should persist user to database`() {

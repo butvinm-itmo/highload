@@ -336,4 +336,19 @@ class DivinationService(
                 cardIds.zip(cards).toMap()
             }.subscribeOn(Schedulers.boundedElastic())
     }
+
+    /**
+     * Deletes all spreads and interpretations authored by the given user.
+     * This is called by user-service before deleting a user to maintain referential integrity
+     * now that cross-service FK constraints have been removed.
+     */
+    @Transactional
+    fun deleteByAuthorId(authorId: UUID): Mono<Void> =
+        // First delete all interpretations by this author
+        interpretationRepository
+            .deleteByAuthorId(authorId)
+            .then(
+                // Then delete all spreads by this author (cascade will delete spread_cards)
+                spreadRepository.deleteByAuthorId(authorId),
+            )
 }

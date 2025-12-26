@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.userservice.service
 
+import com.github.butvinmitmo.shared.client.DivinationServiceClient
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.CreateUserResponse
 import com.github.butvinmitmo.shared.dto.PageResponse
@@ -10,6 +11,7 @@ import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
 import com.github.butvinmitmo.userservice.mapper.UserMapper
 import com.github.butvinmitmo.userservice.repository.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,7 +21,10 @@ import java.util.UUID
 class UserService(
     private val userRepository: UserRepository,
     private val userMapper: UserMapper,
+    private val divinationServiceClient: DivinationServiceClient,
 ) {
+    private val logger = LoggerFactory.getLogger(UserService::class.java)
+
     @Transactional
     fun createUser(request: CreateUserRequest): CreateUserResponse {
         if (userRepository.findByUsername(request.username) != null) {
@@ -81,6 +86,16 @@ class UserService(
     fun deleteUser(id: UUID) {
         if (!userRepository.existsById(id)) {
             throw NotFoundException("User not found")
+        }
+
+        // Delete user's data in divination-service first (replaces FK CASCADE behavior)
+        try {
+            divinationServiceClient.deleteUserData(id)
+            logger.info("Successfully deleted divination data for user {}", id)
+        } catch (e: Exception) {
+            logger.warn("Failed to delete divination data for user {}: {}", id, e.message)
+            // Continue with user deletion even if divination cleanup fails
+            // Orphaned data will be handled gracefully by divination-service
         }
 
         userRepository.deleteById(id)

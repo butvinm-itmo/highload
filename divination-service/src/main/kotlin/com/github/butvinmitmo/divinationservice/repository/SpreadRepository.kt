@@ -26,6 +26,12 @@ interface SpreadRepository :
 
     @Query("SELECT COUNT(*) FROM spread")
     override fun count(): Mono<Long>
+
+    @Query("SELECT * FROM spread WHERE author_id = :authorId")
+    fun findByAuthorId(authorId: UUID): Flux<Spread>
+
+    @Query("DELETE FROM spread WHERE author_id = :authorId")
+    fun deleteByAuthorId(authorId: UUID): Mono<Void>
 }
 
 interface SpreadRepositoryCustom {

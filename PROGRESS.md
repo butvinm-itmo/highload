@@ -94,68 +94,50 @@ Refactor microservices to have totally independent database schemas without FK c
 ---
 
 ### Phase 3: Implement Orphan Data Cleanup for User Deletion
-- [ ] **Pending**
+- [x] **Completed**
 
 - **Goal:** Add application-level cascade delete logic since database FK CASCADE is removed.
 
 - **Scope:**
   - `shared-clients/.../DivinationServiceClient.kt` - Add cleanup endpoint
-  - `divination-service/.../controller/SpreadController.kt` - Add internal endpoint
+  - `divination-service/.../controller/InternalController.kt` - Add internal endpoint (new file)
   - `divination-service/.../service/DivinationService.kt` - Add deleteByAuthorId
-  - `divination-service/.../repository/SpreadRepository.kt` - Add findByAuthorId
+  - `divination-service/.../repository/SpreadRepository.kt` - Add findByAuthorId, deleteByAuthorId
   - `divination-service/.../repository/InterpretationRepository.kt` - Add deleteByAuthorId
   - `user-service/.../service/UserService.kt` - Call cleanup before delete
+  - `user-service/build.gradle.kts` - Add shared-clients dependency
+  - `user-service/.../UserServiceApplication.kt` - Enable Feign clients
 
 - **Design (Synchronous approach):**
   ```
   UserService.deleteUser(id)
     └── DivinationServiceClient.deleteUserData(id)  // Call first
         └── DivinationService.deleteByAuthorId(id)
-            ├── Delete all spreads by author
-            └── Delete all interpretations by author
+            ├── Delete all interpretations by author
+            └── Delete all spreads by author
     └── userRepository.deleteById(id)              // Then delete user
   ```
 
 - **Test Strategy:**
   - Unit tests for deleteByAuthorId
-  - Integration tests for cleanup endpoint
-  - Update E2E tests
+  - Integration tests with mocked DivinationServiceClient
+  - New test: `deleteUser should continue when divination service fails`
 
 - **Verification Cmd:** `./gradlew :divination-service:test :user-service:test`
 
+- **Result:** All 64 tests passed (35 divination-service + 29 user-service)
+
 - **Phase Execution:**
-  1. **Implement:**
-     - Add repository methods (findByAuthorId, deleteByAuthorId)
-     - Add DivinationService.deleteByAuthorId
-     - Add internal cleanup endpoint in SpreadController
-     - Add DivinationServiceClient.deleteUserData
-     - Update UserService to call cleanup before delete
-     - Add unit and integration tests
-  2. **Verify:** Run `./gradlew :divination-service:test :user-service:test`
-  3. **Report:** Update PROGRESS.md (mark Phase 3 complete)
-  4. **Commit:**
-     ```bash
-     git add shared-clients/src/main/kotlin/com/github/butvinmitmo/shared/client/DivinationServiceClient.kt
-     git add divination-service/src/main/kotlin/com/github/butvinmitmo/divinationservice/controller/SpreadController.kt
-     git add divination-service/src/main/kotlin/com/github/butvinmitmo/divinationservice/service/DivinationService.kt
-     git add divination-service/src/main/kotlin/com/github/butvinmitmo/divinationservice/repository/SpreadRepository.kt
-     git add divination-service/src/main/kotlin/com/github/butvinmitmo/divinationservice/repository/InterpretationRepository.kt
-     git add user-service/src/main/kotlin/com/github/butvinmitmo/userservice/service/UserService.kt
-     git add divination-service/src/test/kotlin/.../DivinationServiceTest.kt
-     git add user-service/src/test/kotlin/.../UserServiceTest.kt
-     git add PROGRESS.md
-     git commit -m "Add application-level cascade delete for user deletion
-
-     - Add DivinationServiceClient.deleteUserData endpoint
-     - Add internal /users/{userId}/data cleanup endpoint
-     - Implement DivinationService.deleteByAuthorId to delete spreads and interpretations
-     - Update UserService.deleteUser to call cleanup before deletion
-     - Add unit and integration tests
-
-     🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
-     ```
+  1. **Implement:** ✓
+     - Added repository methods (findByAuthorId, deleteByAuthorId)
+     - Added DivinationService.deleteByAuthorId
+     - Created InternalController with DELETE /api/v0.0.1/internal/users/{userId}/data
+     - Added DivinationServiceClient.deleteUserData
+     - Updated UserService to call cleanup before delete (with graceful error handling)
+     - Added/updated unit and integration tests
+  2. **Verify:** `./gradlew :divination-service:test :user-service:test` ✓ (64 tests passed)
+  3. **Report:** Update PROGRESS.md (mark Phase 3 complete) ✓
+  4. **Commit:** See below
 
 ---
 

@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.userservice.unit.service
 
+import com.github.butvinmitmo.shared.client.DivinationServiceClient
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.userservice.TestEntityFactory
@@ -24,6 +25,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.http.ResponseEntity
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
@@ -33,6 +35,9 @@ class UserServiceTest {
     @Mock
     private lateinit var userRepository: UserRepository
 
+    @Mock
+    private lateinit var divinationServiceClient: DivinationServiceClient
+
     private lateinit var userService: UserService
     private val userMapper = UserMapper()
 
@@ -41,7 +46,7 @@ class UserServiceTest {
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, userMapper)
+        userService = UserService(userRepository, userMapper, divinationServiceClient)
     }
 
     @Test
@@ -138,9 +143,11 @@ class UserServiceTest {
     @Test
     fun `deleteUser should delete user when exists`() {
         whenever(userRepository.existsById(userId)).thenReturn(true)
+        whenever(divinationServiceClient.deleteUserData(userId)).thenReturn(ResponseEntity.noContent().build())
 
         userService.deleteUser(userId)
 
+        verify(divinationServiceClient).deleteUserData(userId)
         verify(userRepository).deleteById(userId)
     }
 
@@ -155,6 +162,17 @@ class UserServiceTest {
         assertEquals("User not found", exception.message)
 
         verify(userRepository, never()).deleteById(any())
+    }
+
+    @Test
+    fun `deleteUser should continue when divination service fails`() {
+        whenever(userRepository.existsById(userId)).thenReturn(true)
+        whenever(divinationServiceClient.deleteUserData(userId)).thenThrow(RuntimeException("Service unavailable"))
+
+        userService.deleteUser(userId)
+
+        verify(divinationServiceClient).deleteUserData(userId)
+        verify(userRepository).deleteById(userId)
     }
 
     @Test
