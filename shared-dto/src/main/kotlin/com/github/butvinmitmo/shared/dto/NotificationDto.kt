@@ -10,18 +10,13 @@ data class NotificationDto(
     val message: String,
     val isRead: Boolean,
     val createdAt: Instant,
-    val referenceId: UUID,
-    val referenceType: ReferenceType,
+    val spreadId: UUID?,
+    val interpretationId: UUID?,
 )
 
 enum class NotificationType {
     NEW_SPREAD,
     NEW_INTERPRETATION,
-}
-
-enum class ReferenceType {
-    SPREAD,
-    INTERPRETATION,
 }
 
 data class UnreadCountResponse(

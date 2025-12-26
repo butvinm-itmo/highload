@@ -94,8 +94,8 @@ class EventConsumer(
                 type = "NEW_INTERPRETATION",
                 title = "New interpretation on your spread",
                 message = "${event.interpretationAuthorUsername} added an interpretation: \"${event.textPreview}...\"",
-                referenceId = event.interpretationId,
-                referenceType = "INTERPRETATION",
+                spreadId = event.spreadId,
+                interpretationId = event.interpretationId,
                 createdAt = java.time.Instant.now(),
             )
 

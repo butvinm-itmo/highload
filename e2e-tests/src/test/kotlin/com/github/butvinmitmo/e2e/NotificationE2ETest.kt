@@ -5,11 +5,11 @@ import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.NotificationType
-import com.github.butvinmitmo.shared.dto.ReferenceType
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -154,7 +154,8 @@ class NotificationE2ETest : BaseE2ETest() {
         notificationId = notification.id
 
         assertEquals(NotificationType.NEW_INTERPRETATION, notification.type)
-        assertEquals(ReferenceType.INTERPRETATION, notification.referenceType)
+        assertEquals(spreadId, notification.spreadId)
+        assertNotNull(notification.interpretationId)
         assertTrue(notification.message.contains(mediumUsername), "Message should contain medium's username")
         assertFalse(notification.isRead, "Notification should be unread")
     }

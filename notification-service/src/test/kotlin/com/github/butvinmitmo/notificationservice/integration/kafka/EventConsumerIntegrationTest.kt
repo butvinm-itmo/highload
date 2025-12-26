@@ -153,8 +153,8 @@ class EventConsumerIntegrationTest {
             assertEquals("New interpretation on your spread", notification.title)
             assertTrue(notification.message.contains("testMedium"))
             assertTrue(notification.message.contains("This spread reveals great fortune"))
-            assertEquals(interpretationId, notification.referenceId)
-            assertEquals("INTERPRETATION", notification.referenceType)
+            assertEquals(spreadId, notification.spreadId)
+            assertEquals(interpretationId, notification.interpretationId)
             assertEquals(false, notification.isRead)
         }
     }

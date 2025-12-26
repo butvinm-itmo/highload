@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.divinationservice.integration.controller
 
+import com.github.butvinmitmo.divinationservice.entity.Interpretation
 import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
@@ -350,5 +351,100 @@ class SpreadControllerIntegrationTest : BaseControllerIntegrationTest() {
             .expectBody()
             .jsonPath("$")
             .isArray
+    }
+
+    @Test
+    fun `getSpread should return interpretations with fileUrl when file is attached`() {
+        // Mock user service response for creating spread
+        val userDto =
+            UserDto(
+                id = testUserId,
+                username = "admin",
+                createdAt = Instant.parse("2024-01-01T00:00:00Z"),
+                role = "MEDIUM",
+            )
+        `when`(userServiceClient.getUserById(testUserId, "MEDIUM", testUserId)).thenReturn(ResponseEntity.ok(userDto))
+
+        // Mock layout type response for creating spread
+        val layoutTypeDto = LayoutTypeDto(id = oneCardLayoutId, name = "ONE_CARD", cardsCount = 1)
+        `when`(
+            tarotServiceClient.getLayoutTypeById(testUserId, "MEDIUM", oneCardLayoutId),
+        ).thenReturn(ResponseEntity.ok(layoutTypeDto))
+
+        // Mock random cards response for creating spread
+        val arcanaType = ArcanaTypeDto(id = UUID.fromString("00000000-0000-0000-0000-000000000010"), name = "MAJOR")
+        val cards =
+            listOf(
+                CardDto(
+                    id = UUID.fromString("00000000-0000-0000-0000-000000000030"),
+                    name = "The Fool",
+                    arcanaType = arcanaType,
+                ),
+            )
+        `when`(tarotServiceClient.getRandomCards(testUserId, "MEDIUM", 1)).thenReturn(ResponseEntity.ok(cards))
+
+        // Mock system context for mapper (used when fetching spread details)
+        `when`(
+            userServiceClient.getUserById(systemUserId, systemRole, testUserId),
+        ).thenReturn(ResponseEntity.ok(userDto))
+        `when`(
+            tarotServiceClient.getLayoutTypeById(systemUserId, systemRole, oneCardLayoutId),
+        ).thenReturn(ResponseEntity.ok(layoutTypeDto))
+        `when`(tarotServiceClient.getCards(systemUserId, systemRole, 0, 50)).thenReturn(ResponseEntity.ok(cards))
+
+        // Create spread
+        val request =
+            CreateSpreadRequest(
+                question = "Test question with file",
+                layoutTypeId = oneCardLayoutId,
+            )
+
+        val spreadId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads")
+                .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "MEDIUM")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .jsonPath("$.id")
+                .exists()
+                .returnResult()
+                .responseBody
+                ?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
+
+        // Create interpretation with fileKey directly in database
+        val fileKey = "interpretations/test-interpretation-id/test-image.png"
+        val interpretation =
+            Interpretation(
+                text = "Test interpretation with file",
+                authorId = testUserId,
+                spreadId = UUID.fromString(spreadId),
+                fileKey = fileKey,
+            )
+        interpretationRepository.save(interpretation).block()
+
+        // Verify spread details include fileUrl for interpretation
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.id")
+            .isEqualTo(spreadId)
+            .jsonPath("$.interpretations[0].fileUrl")
+            .exists()
+            .jsonPath("$.interpretations[0].fileUrl")
+            .value<String> { url ->
+                assert(url.contains(fileKey)) { "fileUrl should contain the fileKey: $url" }
+            }
     }
 }

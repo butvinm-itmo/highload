@@ -6,7 +6,6 @@ import com.github.butvinmitmo.divinationservice.entity.SpreadCard
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.CardDto
-import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.SpreadCardDto
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
@@ -17,6 +16,7 @@ import java.util.UUID
 class SpreadMapper(
     private val userServiceClient: UserServiceClient,
     private val tarotServiceClient: TarotServiceClient,
+    private val interpretationMapper: InterpretationMapper,
 ) {
     // System context for internal service-to-service calls
     private val systemUserId = UUID.fromString("00000000-0000-0000-0000-000000000000")
@@ -45,23 +45,7 @@ class SpreadMapper(
                         isReversed = spreadCard.isReversed,
                     )
                 },
-            interpretations =
-                interpretations.map { interpretation ->
-                    val interpAuthor =
-                        userServiceClient
-                            .getUserById(
-                                systemUserId,
-                                systemRole,
-                                interpretation.authorId,
-                            ).body!!
-                    InterpretationDto(
-                        id = interpretation.id!!,
-                        text = interpretation.text,
-                        author = interpAuthor,
-                        spreadId = interpretation.spreadId,
-                        createdAt = interpretation.createdAt!!,
-                    )
-                },
+            interpretations = interpretations.map { interpretationMapper.toDto(it) },
             author = author,
             createdAt = spread.createdAt!!,
         )

@@ -255,6 +255,23 @@ class FileAttachmentE2ETest : BaseE2ETest() {
     }
 
     @Test
+    @Order(2)
+    fun `GET spread should include fileUrl in interpretations after upload`() {
+        loginAndSetToken(mediumUsername, MEDIUM_PASSWORD)
+
+        val spread = divinationClient.getSpreadById(spreadId).body!!
+
+        assertTrue(spread.interpretations.isNotEmpty(), "Spread should have interpretations")
+        val interpretation = spread.interpretations.find { it.id == interpretationId }
+        assertNotNull(interpretation, "Should find the interpretation")
+        assertNotNull(interpretation!!.fileUrl, "Interpretation in spread details should have fileUrl")
+        assertTrue(
+            interpretation.fileUrl!!.contains("/api/v0.0.1/files/"),
+            "fileUrl should point to file-storage-service",
+        )
+    }
+
+    @Test
     @Order(3)
     fun `download file should succeed`() {
         loginAndSetToken(mediumUsername, MEDIUM_PASSWORD)

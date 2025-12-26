@@ -94,8 +94,8 @@ class EventConsumerTest {
                 type = "NEW_INTERPRETATION",
                 title = "New interpretation on your spread",
                 message = "medium_user added an interpretation: \"This is a test interpretation...\"",
-                referenceId = interpretationId,
-                referenceType = "INTERPRETATION",
+                spreadId = spreadId,
+                interpretationId = interpretationId,
                 createdAt = Instant.now(),
             )
 
@@ -121,8 +121,8 @@ class EventConsumerTest {
             "medium_user added an interpretation: \"This is a test interpretation...\"",
             capturedNotification.message,
         )
-        assertEquals(interpretationId, capturedNotification.referenceId)
-        assertEquals("INTERPRETATION", capturedNotification.referenceType)
+        assertEquals(spreadId, capturedNotification.spreadId)
+        assertEquals(interpretationId, capturedNotification.interpretationId)
         assertEquals(false, capturedNotification.isRead)
     }
 
