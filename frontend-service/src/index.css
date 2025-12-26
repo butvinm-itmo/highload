@@ -164,3 +164,13 @@ h1, h2, h3, h4, h5, h6 {
     border-color: rgba(167, 139, 250, 0.5);
   }
 }
+
+/* File input styling */
+input[type="file"]::file-selector-button {
+  background: linear-gradient(to right, #7c3aed, #c026d3);
+  cursor: pointer;
+}
+
+input[type="file"]:hover::file-selector-button {
+  background: linear-gradient(to right, #8b5cf6, #d946ef);
+}

@@ -102,12 +102,12 @@ export function AddInterpretationForm({ spreadId }: AddInterpretationFormProps) 
   const isLoading = createMutation.isPending || uploadingFile;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">Add Your Interpretation</h3>
+    <div className="mystical-card p-6">
+      <h3 className="text-xl font-display font-semibold text-gray-100 mb-4">Add Your Interpretation</h3>
 
       {error && (
-        <div className="mb-3 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-          {error}
+        <div className="mb-4 p-3 rounded-lg border backdrop-blur-sm font-serif" style={{ backgroundColor: 'rgba(153, 27, 27, 0.2)', borderColor: 'rgba(239, 68, 68, 0.5)' }}>
+          <div className="text-red-300">{error}</div>
         </div>
       )}
 
@@ -116,13 +116,14 @@ export function AddInterpretationForm({ spreadId }: AddInterpretationFormProps) 
           rows={4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full px-4 py-3 border rounded-lg backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-mystic-500 focus:border-mystic-500 transition-all font-serif text-gray-900"
+          style={{ backgroundColor: 'rgba(229, 231, 235, 0.95)', borderColor: 'rgba(91, 33, 182, 0.3)' }}
           placeholder="Share your interpretation of this spread..."
           disabled={isLoading}
         />
 
-        <div className="mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="mt-4">
+          <label className="block text-sm font-serif font-medium text-gray-300 mb-2">
             Attach Image (optional)
           </label>
           <input
@@ -130,39 +131,40 @@ export function AddInterpretationForm({ spreadId }: AddInterpretationFormProps) 
             type="file"
             accept="image/png,image/jpeg,image/jpg"
             onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+            className="block w-full text-sm font-serif text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:text-white hover:file:from-mystic-500 hover:file:to-cosmic-500 file:transition-all file:cursor-pointer"
+            style={{ '--file-bg': 'linear-gradient(to right, rgba(124, 58, 237, 1), rgba(192, 38, 211, 1))' } as any}
             disabled={isLoading}
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs font-serif text-gray-500 italic">
             PNG or JPG, max 2MB
           </p>
 
           {filePreview && file && (
-            <div className="mt-3 relative inline-block">
+            <div className="mt-4 relative inline-block">
               <img
                 src={filePreview}
                 alt="Preview"
-                className="max-w-xs max-h-48 rounded-lg border border-gray-300"
+                className="max-w-xs max-h-48 rounded-lg border-2 border-mystic-600 shadow-mystic"
               />
               <button
                 type="button"
                 onClick={handleRemoveFile}
-                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700 shadow-lg transition-all"
                 disabled={isLoading}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <p className="text-xs text-gray-600 mt-1">{formatFileSize(file.size)}</p>
+              <p className="text-xs font-serif text-gray-400 mt-2">{formatFileSize(file.size)}</p>
             </div>
           )}
         </div>
 
-        <div className="mt-3 flex justify-end">
+        <div className="mt-5 flex justify-end">
           <button
             type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-gradient-to-r from-mystic-600 to-cosmic-600 text-white rounded-lg shadow-mystic hover:from-mystic-500 hover:to-cosmic-500 hover:shadow-cosmic focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-void-950 focus:ring-mystic-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300 font-serif font-medium"
             disabled={isLoading}
           >
             {isLoading
