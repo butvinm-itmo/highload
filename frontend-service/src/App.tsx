@@ -4,7 +4,6 @@ import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { SpreadDetailPage } from './pages/SpreadDetailPage';
@@ -13,6 +12,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useCardImagePreload } from './hooks/useCardImagePreload';
+import { useEffect } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,19 +84,22 @@ function AppRoutes() {
 }
 
 function App() {
+  // Always use dark mode
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <ThemeProvider>
-            <AuthProvider>
-              <ToastProvider>
-                <NotificationProvider>
-                  <AppRoutes />
-                </NotificationProvider>
-              </ToastProvider>
-            </AuthProvider>
-          </ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <NotificationProvider>
+                <AppRoutes />
+              </NotificationProvider>
+            </ToastProvider>
+          </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
-import { ThemeToggle } from './ThemeToggle';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -63,7 +62,6 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center space-x-4">
               {user && (
                 <>
-                  <ThemeToggle />
                   <NotificationBell />
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-serif text-gray-300">{user.username}</span>

@@ -15,7 +15,7 @@ interface TarotCardProps {
   totalCards?: number;
 }
 
-export function TarotCard({ card, isReversed = false, position, size = 'medium', delay = 0, showBack = false, spreadFromDeck = false, totalCards = 1 }: TarotCardProps) {
+export function TarotCard({ card, isReversed = false, position, size = 'medium', delay = 0, showBack = false, spreadFromDeck = false }: TarotCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
