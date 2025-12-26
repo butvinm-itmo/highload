@@ -40,12 +40,14 @@ export function TarotCard({ card, isReversed = false, position, size = 'medium',
       transition={{ delay }}
     >
       <motion.div
-        className={`${sizeClasses[size]} border-3 ${arcanaColor} rounded-xl ${
+        className={`${sizeClasses[size]} border-3 ${
+          isReversed ? 'border-red-500' : arcanaColor
+        } rounded-xl ${
           isReversed ? 'transform rotate-180' : ''
         } transition-all duration-500 ${glowColor} cursor-pointer relative overflow-hidden`}
         style={{
           perspective: 1000,
-          backgroundColor: 'rgba(3, 7, 18, 0.8)',
+          backgroundColor: isReversed ? 'rgba(20, 5, 5, 0.9)' : 'rgba(3, 7, 18, 0.8)',
         }}
         whileHover={{
           scale: 1.08,
@@ -55,14 +57,82 @@ export function TarotCard({ card, isReversed = false, position, size = 'medium',
         whileTap={{ scale: 0.95 }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
-        animate={isHovered ? {
+        animate={isReversed ? {
+          boxShadow: [
+            '0 0 20px rgba(220, 38, 38, 0.4), 0 0 40px rgba(220, 38, 38, 0.2)',
+            '0 0 30px rgba(220, 38, 38, 0.6), 0 0 60px rgba(220, 38, 38, 0.3)',
+            '0 0 20px rgba(220, 38, 38, 0.4), 0 0 40px rgba(220, 38, 38, 0.2)',
+          ],
+        } : isHovered ? {
           boxShadow: isMajorArcana
             ? '0 0 40px rgba(217, 70, 239, 0.6), 0 0 80px rgba(217, 70, 239, 0.3)'
             : '0 0 40px rgba(139, 92, 246, 0.6), 0 0 80px rgba(139, 92, 246, 0.3)'
         } : {}}
+        transition={isReversed ? {
+          boxShadow: {
+            duration: 2,
+            repeat: Infinity,
+            ease: 'easeInOut'
+          }
+        } : {}}
       >
-        {/* Mystical particles effect on hover */}
-        {isHovered && (
+        {/* Reversed card dark energy effect (always visible) */}
+        {isReversed && (
+          <motion.div className="absolute inset-0 pointer-events-none z-30">
+            {[...Array(12)].map((_, i) => (
+              <motion.div
+                key={`reversed-${i}`}
+                className="absolute w-1.5 h-1.5 rounded-full bg-red-500"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: '100%',
+                  boxShadow: '0 0 8px rgba(220, 38, 38, 0.8)',
+                }}
+                animate={{
+                  y: [0, -Math.random() * 150 - 100],
+                  x: [0, (Math.random() - 0.5) * 40],
+                  opacity: [0.8, 0.6, 0],
+                  scale: [1, 0.8, 0],
+                }}
+                transition={{
+                  duration: 2 + Math.random(),
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: 'easeOut',
+                }}
+              />
+            ))}
+            {/* Smoke effect for reversed cards */}
+            {[...Array(3)].map((_, i) => (
+              <motion.div
+                key={`smoke-${i}`}
+                className="absolute rounded-full"
+                style={{
+                  left: `${20 + i * 30}%`,
+                  bottom: '-10%',
+                  width: '40px',
+                  height: '40px',
+                  background: 'radial-gradient(circle, rgba(139, 0, 0, 0.4) 0%, transparent 70%)',
+                  filter: 'blur(8px)',
+                }}
+                animate={{
+                  y: [-10, -80, -150],
+                  opacity: [0, 0.5, 0],
+                  scale: [0.5, 1.5, 2],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay: i * 1,
+                  ease: 'easeOut',
+                }}
+              />
+            ))}
+          </motion.div>
+        )}
+
+        {/* Mystical particles effect on hover for normal cards */}
+        {isHovered && !isReversed && (
           <motion.div
             className="absolute inset-0 pointer-events-none z-30"
             initial={{ opacity: 0 }}
@@ -96,13 +166,15 @@ export function TarotCard({ card, isReversed = false, position, size = 'medium',
         <motion.div
           className="absolute inset-0 pointer-events-none z-20"
           style={{
-            background: isMajorArcana
+            background: isReversed
+              ? 'linear-gradient(135deg, transparent 30%, rgba(220, 38, 38, 0.4) 50%, transparent 70%)'
+              : isMajorArcana
               ? 'linear-gradient(135deg, transparent 30%, rgba(217, 70, 239, 0.3) 50%, transparent 70%)'
               : 'linear-gradient(135deg, transparent 30%, rgba(139, 92, 246, 0.3) 50%, transparent 70%)',
           }}
           initial={{ x: '-100%', opacity: 0 }}
-          animate={isHovered ? { x: '100%', opacity: 1 } : { x: '-100%', opacity: 0 }}
-          transition={{ duration: 0.8 }}
+          animate={isReversed ? { x: '100%', opacity: 0.8 } : isHovered ? { x: '100%', opacity: 1 } : { x: '-100%', opacity: 0 }}
+          transition={isReversed ? { duration: 2, repeat: Infinity, repeatDelay: 1 } : { duration: 0.8 }}
         />
 
         {/* Card image or fallback */}
@@ -141,7 +213,27 @@ export function TarotCard({ card, isReversed = false, position, size = 'medium',
         )}
 
         {/* Arcana type indicator glow */}
-        <div className={`absolute top-2 right-2 w-3 h-3 rounded-full z-20 ${isMajorArcana ? 'bg-cosmic-400' : 'bg-mystic-400'}`} style={{ boxShadow: isMajorArcana ? '0 0 10px rgba(217, 70, 239, 0.8)' : '0 0 10px rgba(139, 92, 246, 0.8)' }}></div>
+        <motion.div
+          className={`absolute top-2 right-2 w-3 h-3 rounded-full z-20 ${
+            isReversed ? 'bg-red-500' : isMajorArcana ? 'bg-cosmic-400' : 'bg-mystic-400'
+          }`}
+          style={{
+            boxShadow: isReversed
+              ? '0 0 10px rgba(220, 38, 38, 0.8)'
+              : isMajorArcana
+              ? '0 0 10px rgba(217, 70, 239, 0.8)'
+              : '0 0 10px rgba(139, 92, 246, 0.8)'
+          }}
+          animate={isReversed ? {
+            scale: [1, 1.3, 1],
+            opacity: [1, 0.7, 1],
+          } : {}}
+          transition={isReversed ? {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          } : {}}
+        />
       </motion.div>
 
       {position !== undefined && (
