@@ -21,29 +21,43 @@ export function UsersPage() {
 
   const totalPages = data ? Math.ceil(data.totalCount / pageSize) : 0;
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeStyles = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg border';
+        return {
+          className: 'text-white font-bold',
+          style: {
+            background: 'linear-gradient(to right, rgb(220, 38, 38), rgb(185, 28, 28))',
+            borderColor: 'rgba(248, 113, 113, 0.5)',
+            boxShadow: '0 0 15px rgba(220, 38, 38, 0.4)',
+          }
+        };
       case 'MEDIUM':
-        return 'bg-gradient-to-r from-cosmic-500 to-mystic-500 text-white shadow-mystic border';
+        return {
+          className: 'text-white font-bold',
+          style: {
+            background: 'linear-gradient(to right, rgb(168, 85, 247), rgb(147, 51, 234))',
+            borderColor: 'rgba(240, 171, 252, 0.5)',
+            boxShadow: '0 0 15px rgba(168, 85, 247, 0.4)',
+          }
+        };
       case 'USER':
-        return 'bg-gradient-to-r from-mystic-500 to-blue-500 text-white shadow-md border';
+        return {
+          className: 'text-white font-bold',
+          style: {
+            background: 'linear-gradient(to right, rgb(59, 130, 246), rgb(37, 99, 235))',
+            borderColor: 'rgba(96, 165, 250, 0.5)',
+            boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)',
+          }
+        };
       default:
-        return 'bg-void-700 text-gray-300 border border-gray-600';
-    }
-  };
-
-  const getRoleBadgeBorderColor = (role: string) => {
-    switch (role) {
-      case 'ADMIN':
-        return 'rgba(248, 113, 113, 0.3)';
-      case 'MEDIUM':
-        return 'rgba(240, 171, 252, 0.3)';
-      case 'USER':
-        return 'rgba(167, 139, 250, 0.3)';
-      default:
-        return 'rgba(75, 85, 99, 1)';
+        return {
+          className: 'text-gray-300',
+          style: {
+            background: 'rgb(55, 65, 81)',
+            borderColor: 'rgba(75, 85, 99, 0.8)',
+          }
+        };
     }
   };
 
@@ -106,14 +120,17 @@ export function UsersPage() {
                           <div className="text-base font-serif font-medium text-gray-200">{user.username}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-3 py-1.5 inline-flex text-xs leading-5 font-display font-semibold rounded-full ${getRoleBadgeColor(
-                              user.role.name
-                            )}`}
-                            style={{ borderColor: getRoleBadgeBorderColor(user.role.name) }}
-                          >
-                            {user.role.name}
-                          </span>
+                          {(() => {
+                            const badgeStyles = getRoleBadgeStyles(user.role.name);
+                            return (
+                              <span
+                                className={`px-3 py-1.5 inline-flex text-xs leading-5 font-display rounded-full border ${badgeStyles.className}`}
+                                style={badgeStyles.style}
+                              >
+                                {user.role.name}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-serif text-gray-400">
                           {formattedDate}
