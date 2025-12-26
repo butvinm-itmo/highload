@@ -46,7 +46,7 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
 
   if (interpretations.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         No interpretations yet. Be the first to share your insights!
       </div>
     );
@@ -65,11 +65,11 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
           });
 
           return (
-            <div key={interpretation.id} className="bg-white border border-gray-200 rounded-lg p-4">
+            <div key={interpretation.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium text-gray-900">{interpretation.author.username}</span>
-                  <span className="text-xs text-gray-500">{formattedDate}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{interpretation.author.username}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</span>
                 </div>
                 {canEditOrDelete(interpretation) && (
                   <div className="flex space-x-2">
@@ -90,7 +90,7 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
                   </div>
                 )}
               </div>
-              <p className="text-gray-700 whitespace-pre-wrap">{interpretation.text}</p>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{interpretation.text}</p>
 
               {interpretation.fileUrl && (
                 <div className="mt-3">
