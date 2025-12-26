@@ -33,22 +33,20 @@ CREATE TABLE IF NOT EXISTS card (
 );
 
 -- Spread table (divination-service)
+-- Note: Cross-service FK constraints removed to enable independent database deployment
 CREATE TABLE IF NOT EXISTS spread (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     question TEXT,
     layout_type_id UUID NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    author_id UUID NOT NULL,
-    CONSTRAINT fk_spread_layout_type FOREIGN KEY (layout_type_id)
-        REFERENCES layout_type(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_spread_author FOREIGN KEY (author_id)
-        REFERENCES "user"(id) ON DELETE CASCADE
+    author_id UUID NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_spread_author_id ON spread(author_id);
 CREATE INDEX IF NOT EXISTS idx_spread_created_at ON spread(created_at DESC);
 
 -- Spread card table (divination-service)
+-- Note: Cross-service FK constraint (fk_spread_card_card) removed
 CREATE TABLE IF NOT EXISTS spread_card (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     spread_id UUID NOT NULL,
@@ -57,8 +55,6 @@ CREATE TABLE IF NOT EXISTS spread_card (
     is_reversed BOOLEAN DEFAULT FALSE,
     CONSTRAINT fk_spread_card_spread FOREIGN KEY (spread_id)
         REFERENCES spread(id) ON DELETE CASCADE,
-    CONSTRAINT fk_spread_card_card FOREIGN KEY (card_id)
-        REFERENCES card(id) ON DELETE RESTRICT,
     CONSTRAINT check_position CHECK (position_in_spread > 0)
 );
 
@@ -67,14 +63,13 @@ CREATE INDEX IF NOT EXISTS idx_spread_card_card_id ON spread_card(card_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_spread_card_unique_position ON spread_card(spread_id, position_in_spread);
 
 -- Interpretation table (divination-service)
+-- Note: Cross-service FK constraint (fk_interpretation_author) removed
 CREATE TABLE IF NOT EXISTS interpretation (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     text TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     author_id UUID NOT NULL,
     spread_id UUID NOT NULL,
-    CONSTRAINT fk_interpretation_author FOREIGN KEY (author_id)
-        REFERENCES "user"(id) ON DELETE CASCADE,
     CONSTRAINT fk_interpretation_spread FOREIGN KEY (spread_id)
         REFERENCES spread(id) ON DELETE CASCADE,
     CONSTRAINT uq_interpretation_author_spread UNIQUE (author_id, spread_id)

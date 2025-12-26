@@ -59,7 +59,7 @@ Refactor microservices to have totally independent database schemas without FK c
 ---
 
 ### Phase 2: Update Test Init Script
-- [ ] **Pending**
+- [x] **Completed**
 
 - **Goal:** Remove cross-service FK constraints from test database initialization script.
 
@@ -70,10 +70,12 @@ Refactor microservices to have totally independent database schemas without FK c
 
 - **Verification Cmd:** `./gradlew :divination-service:test`
 
+- **Result:** All 35 tests passed
+
 - **Phase Execution:**
-  1. **Implement:** Remove FK constraint definitions from init-test-db.sql (keep test data for WireMock)
-  2. **Verify:** Run `./gradlew :divination-service:test`
-  3. **Report:** Update PROGRESS.md (mark Phase 2 complete)
+  1. **Implement:** Remove FK constraint definitions from init-test-db.sql (keep test data for WireMock) ✓
+  2. **Verify:** Run `./gradlew :divination-service:test` ✓ (35 tests passed)
+  3. **Report:** Update PROGRESS.md (mark Phase 2 complete) ✓
   4. **Commit:**
      ```bash
      git add divination-service/src/test/resources/init-test-db.sql
