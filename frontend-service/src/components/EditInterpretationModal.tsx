@@ -66,6 +66,7 @@ export function EditInterpretationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spread', spreadId] });
       setDeletingFile(false);
+      onClose(); // Close modal after successful deletion
     },
     onError: (err) => {
       setError(getErrorMessage(err));
@@ -137,13 +138,13 @@ export function EditInterpretationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Edit Interpretation</h2>
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
+      <div className="mystical-card max-w-2xl w-full p-8 animate-fade-in">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-3xl font-display font-bold text-gray-100">Edit Interpretation</h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-mystic-300 transition-colors"
             disabled={updateMutation.isPending}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,8 +154,8 @@ export function EditInterpretationModal({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-            {error}
+          <div className="mb-4 p-3 rounded-lg border backdrop-blur-sm font-serif" style={{ backgroundColor: 'rgba(153, 27, 27, 0.2)', borderColor: 'rgba(239, 68, 68, 0.5)' }}>
+            <div className="text-red-300">{error}</div>
           </div>
         )}
 
@@ -163,29 +164,31 @@ export function EditInterpretationModal({
             rows={6}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-4 py-3 border rounded-lg backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-mystic-500 focus:border-mystic-500 transition-all font-serif text-gray-900"
+            style={{ backgroundColor: 'rgba(229, 231, 235, 0.95)', borderColor: 'rgba(91, 33, 182, 0.3)' }}
             placeholder="Share your interpretation..."
             disabled={isLoading}
           />
 
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mt-5">
+            <label className="block text-sm font-serif font-medium text-gray-300 mb-2">
               Attachment
             </label>
 
             {/* Show existing file */}
             {interpretation.fileUrl && !filePreview && (
-              <div className="mb-3">
-                <div className="flex items-center gap-3">
+              <div className="mb-4">
+                <div className="flex items-center gap-4">
                   <AuthenticatedImage
                     src={interpretation.fileUrl}
                     alt="Current attachment"
-                    className="max-w-xs max-h-32 rounded-lg border border-gray-300"
+                    className="max-w-xs max-h-32 rounded-lg border-2 border-mystic-600 shadow-mystic"
                   />
                   <button
                     type="button"
                     onClick={handleDeleteExistingFile}
-                    className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-serif text-red-300 border-2 rounded-lg hover:bg-red-900/30 transition-all duration-300 disabled:opacity-50"
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.5)' }}
                     disabled={isLoading}
                   >
                     {deletingFile ? 'Deleting...' : 'Delete'}
@@ -196,23 +199,23 @@ export function EditInterpretationModal({
 
             {/* Show new file preview */}
             {filePreview && newFile && (
-              <div className="mb-3 relative inline-block">
+              <div className="mb-4 relative inline-block">
                 <img
                   src={filePreview}
                   alt="New attachment"
-                  className="max-w-xs max-h-32 rounded-lg border border-gray-300"
+                  className="max-w-xs max-h-32 rounded-lg border-2 border-mystic-600 shadow-mystic"
                 />
                 <button
                   type="button"
                   onClick={handleRemoveNewFile}
-                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700 shadow-lg transition-all"
                   disabled={isLoading}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                <p className="text-xs text-gray-600 mt-1">{formatFileSize(newFile.size)}</p>
+                <p className="text-xs font-serif text-gray-400 mt-2">{formatFileSize(newFile.size)}</p>
               </div>
             )}
 
@@ -222,26 +225,27 @@ export function EditInterpretationModal({
               type="file"
               accept="image/png,image/jpeg,image/jpg"
               onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+              className="block w-full text-sm font-serif text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:text-white file:transition-all file:cursor-pointer"
               disabled={isLoading}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-2 text-xs font-serif text-gray-500 italic">
               {interpretation.fileUrl && !newFile ? 'Select a new image to replace the existing one' : 'PNG or JPG, max 2MB'}
             </p>
           </div>
 
-          <div className="flex space-x-3 pt-4">
+          <div className="flex space-x-4 pt-6">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="flex-1 px-5 py-3 border-2 rounded-lg text-base font-serif font-medium text-gray-300 hover:bg-void-800/50 focus:outline-none focus:ring-2 focus:ring-mystic-500 transition-all disabled:opacity-50"
+              style={{ borderColor: 'rgba(91, 33, 182, 0.5)' }}
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="flex-1 px-5 py-3 rounded-lg shadow-mystic text-base font-serif font-medium text-white bg-gradient-to-r from-mystic-600 to-cosmic-600 hover:from-mystic-500 hover:to-cosmic-500 hover:shadow-cosmic focus:outline-none focus:ring-2 focus:ring-mystic-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300"
               disabled={isLoading}
             >
               {isLoading
