@@ -142,47 +142,36 @@ Refactor microservices to have totally independent database schemas without FK c
 ---
 
 ### Phase 4: Handle Orphaned Data Gracefully
-- [ ] **Pending**
+- [x] **Completed**
 
 - **Goal:** Handle cases where referenced entities no longer exist.
 
 - **Scope:**
   - `divination-service/.../mapper/SpreadMapper.kt`
-  - `divination-service/.../service/DivinationService.kt`
+  - `divination-service/src/test/.../unit/mapper/SpreadMapperTest.kt` (new file)
 
 - **Design:** Return placeholder data for deleted users:
   ```kotlin
-  val author = try {
-      userServiceClient.getUserById(spread.authorId).body!!
-  } catch (e: FeignException.NotFound) {
-      UserDto(id = spread.authorId, username = "[Deleted User]", ...)
-  }
+  private fun getUserOrPlaceholder(userId: UUID): UserDto =
+      try {
+          userServiceClient.getUserById(userId).body!!
+      } catch (e: FeignException.NotFound) {
+          logger.warn("User {} not found, returning placeholder", userId)
+          createDeletedUserPlaceholder(userId)
+      }
   ```
 
-- **Test Strategy:** Unit tests with mocked Feign 404 responses
+- **Test Strategy:** Unit tests with mocked Feign 404 responses (5 new tests)
 
 - **Verification Cmd:** `./gradlew :divination-service:test`
 
+- **Result:** All 40 tests passed (35 existing + 5 new SpreadMapperTest)
+
 - **Phase Execution:**
-  1. **Implement:** Add try-catch handling in SpreadMapper for missing users/layout types
-  2. **Verify:** Run `./gradlew :divination-service:test`
-  3. **Report:** Update PROGRESS.md (mark Phase 4 complete)
-  4. **Commit:**
-     ```bash
-     git add divination-service/src/main/kotlin/com/github/butvinmitmo/divinationservice/mapper/SpreadMapper.kt
-     git add divination-service/src/main/kotlin/com/github/butvinmitmo/divinationservice/service/DivinationService.kt
-     git add divination-service/src/test/kotlin/.../SpreadMapperTest.kt
-     git add PROGRESS.md
-     git commit -m "Handle orphaned data gracefully when referenced entities deleted
-
-     - Add fallback handling in SpreadMapper for missing users/layout types
-     - Return placeholder UserDto/LayoutTypeDto when Feign returns 404
-     - Add unit tests for orphan handling scenarios
-
-     🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
-     ```
+  1. **Implement:** Added getUserOrPlaceholder and getLayoutTypeOrPlaceholder methods ✓
+  2. **Verify:** Run `./gradlew :divination-service:test` ✓ (40 tests passed)
+  3. **Report:** Update PROGRESS.md (mark Phase 4 complete) ✓
+  4. **Commit:** See below
 
 ---
 

@@ -7,10 +7,15 @@ import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.InterpretationDto
+import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.shared.dto.SpreadCardDto
 import com.github.butvinmitmo.shared.dto.SpreadDto
 import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
+import com.github.butvinmitmo.shared.dto.UserDto
+import feign.FeignException
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.Instant
 import java.util.UUID
 
 @Component
@@ -18,14 +23,16 @@ class SpreadMapper(
     private val userServiceClient: UserServiceClient,
     private val tarotServiceClient: TarotServiceClient,
 ) {
+    private val logger = LoggerFactory.getLogger(SpreadMapper::class.java)
+
     fun toDto(
         spread: Spread,
         spreadCards: List<SpreadCard>,
         interpretations: List<Interpretation>,
         cardCache: Map<UUID, CardDto> = emptyMap(),
     ): SpreadDto {
-        val author = userServiceClient.getUserById(spread.authorId).body!!
-        val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
+        val author = getUserOrPlaceholder(spread.authorId)
+        val layoutType = getLayoutTypeOrPlaceholder(spread.layoutTypeId)
 
         return SpreadDto(
             id = spread.id!!,
@@ -43,7 +50,7 @@ class SpreadMapper(
                 },
             interpretations =
                 interpretations.map { interpretation ->
-                    val interpAuthor = userServiceClient.getUserById(interpretation.authorId).body!!
+                    val interpAuthor = getUserOrPlaceholder(interpretation.authorId)
                     InterpretationDto(
                         id = interpretation.id!!,
                         text = interpretation.text,
@@ -61,8 +68,8 @@ class SpreadMapper(
         spread: Spread,
         interpretationsCount: Int = 0,
     ): SpreadSummaryDto {
-        val author = userServiceClient.getUserById(spread.authorId).body!!
-        val layoutType = tarotServiceClient.getLayoutTypeById(spread.layoutTypeId).body!!
+        val author = getUserOrPlaceholder(spread.authorId)
+        val layoutType = getLayoutTypeOrPlaceholder(spread.layoutTypeId)
 
         return SpreadSummaryDto(
             id = spread.id!!,
@@ -74,6 +81,42 @@ class SpreadMapper(
             createdAt = spread.createdAt!!,
         )
     }
+
+    /**
+     * Fetches user from user-service. Returns placeholder if user was deleted.
+     */
+    private fun getUserOrPlaceholder(userId: UUID): UserDto =
+        try {
+            userServiceClient.getUserById(userId).body!!
+        } catch (e: FeignException.NotFound) {
+            logger.warn("User {} not found, returning placeholder", userId)
+            createDeletedUserPlaceholder(userId)
+        }
+
+    /**
+     * Fetches layout type from tarot-service. Returns placeholder if not found.
+     */
+    private fun getLayoutTypeOrPlaceholder(layoutTypeId: UUID): LayoutTypeDto =
+        try {
+            tarotServiceClient.getLayoutTypeById(layoutTypeId).body!!
+        } catch (e: FeignException.NotFound) {
+            logger.warn("LayoutType {} not found, returning placeholder", layoutTypeId)
+            createDeletedLayoutTypePlaceholder(layoutTypeId)
+        }
+
+    private fun createDeletedUserPlaceholder(userId: UUID): UserDto =
+        UserDto(
+            id = userId,
+            username = "[Deleted User]",
+            createdAt = Instant.EPOCH,
+        )
+
+    private fun createDeletedLayoutTypePlaceholder(layoutTypeId: UUID): LayoutTypeDto =
+        LayoutTypeDto(
+            id = layoutTypeId,
+            name = "[Deleted Layout]",
+            cardsCount = 0,
+        )
 
     private fun fetchCard(cardId: UUID): CardDto {
         // For single card fetches, we make individual calls
