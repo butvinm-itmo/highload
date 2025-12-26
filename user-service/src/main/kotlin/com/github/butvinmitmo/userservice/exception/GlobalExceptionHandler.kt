@@ -5,6 +5,7 @@ import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -101,6 +102,22 @@ class GlobalExceptionHandler {
             ErrorResponse(
                 error = "FORBIDDEN",
                 message = ex.message ?: "Forbidden",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(
+        ex: AccessDeniedException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = ex.message ?: "Access denied",
                 timestamp = Instant.now(),
                 path = request.getDescription(false).removePrefix("uri="),
             )

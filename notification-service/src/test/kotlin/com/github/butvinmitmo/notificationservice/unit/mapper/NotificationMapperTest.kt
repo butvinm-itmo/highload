@@ -3,7 +3,6 @@ package com.github.butvinmitmo.notificationservice.unit.mapper
 import com.github.butvinmitmo.notificationservice.TestEntityFactory
 import com.github.butvinmitmo.notificationservice.mapper.NotificationMapper
 import com.github.butvinmitmo.shared.dto.NotificationType
-import com.github.butvinmitmo.shared.dto.ReferenceType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -15,7 +14,8 @@ class NotificationMapperTest {
     @Test
     fun `toDto should correctly map all fields from entity`() {
         val id = UUID.randomUUID()
-        val referenceId = UUID.randomUUID()
+        val spreadId = UUID.randomUUID()
+        val interpretationId = UUID.randomUUID()
         val createdAt = Instant.now()
 
         val entity =
@@ -26,8 +26,8 @@ class NotificationMapperTest {
                 title = "Test title",
                 message = "Test message",
                 isRead = true,
-                referenceId = referenceId,
-                referenceType = "INTERPRETATION",
+                spreadId = spreadId,
+                interpretationId = interpretationId,
                 createdAt = createdAt,
             )
 
@@ -39,8 +39,8 @@ class NotificationMapperTest {
         assertEquals("Test message", dto.message)
         assertEquals(true, dto.isRead)
         assertEquals(createdAt, dto.createdAt)
-        assertEquals(referenceId, dto.referenceId)
-        assertEquals(ReferenceType.INTERPRETATION, dto.referenceType)
+        assertEquals(spreadId, dto.spreadId)
+        assertEquals(interpretationId, dto.interpretationId)
     }
 
     @Test
@@ -54,37 +54,50 @@ class NotificationMapperTest {
 
     @Test
     fun `toDto should correctly map NEW_SPREAD type`() {
+        val spreadId = UUID.randomUUID()
         val entity =
             TestEntityFactory.createNotification(
                 type = "NEW_SPREAD",
-                referenceType = "SPREAD",
+                spreadId = spreadId,
+                interpretationId = null,
             )
 
         val dto = mapper.toDto(entity)
 
         assertEquals(NotificationType.NEW_SPREAD, dto.type)
+        assertEquals(spreadId, dto.spreadId)
+        assertEquals(null, dto.interpretationId)
     }
 
     @Test
-    fun `toDto should correctly map INTERPRETATION reference type`() {
-        val entity = TestEntityFactory.createNotification(referenceType = "INTERPRETATION")
-
-        val dto = mapper.toDto(entity)
-
-        assertEquals(ReferenceType.INTERPRETATION, dto.referenceType)
-    }
-
-    @Test
-    fun `toDto should correctly map SPREAD reference type`() {
+    fun `toDto should correctly map notification with spreadId and interpretationId`() {
+        val spreadId = UUID.randomUUID()
+        val interpretationId = UUID.randomUUID()
         val entity =
             TestEntityFactory.createNotification(
-                type = "NEW_SPREAD",
-                referenceType = "SPREAD",
+                spreadId = spreadId,
+                interpretationId = interpretationId,
             )
 
         val dto = mapper.toDto(entity)
 
-        assertEquals(ReferenceType.SPREAD, dto.referenceType)
+        assertEquals(spreadId, dto.spreadId)
+        assertEquals(interpretationId, dto.interpretationId)
+    }
+
+    @Test
+    fun `toDto should correctly map notification with null spreadId`() {
+        val interpretationId = UUID.randomUUID()
+        val entity =
+            TestEntityFactory.createNotification(
+                spreadId = null,
+                interpretationId = interpretationId,
+            )
+
+        val dto = mapper.toDto(entity)
+
+        assertEquals(null, dto.spreadId)
+        assertEquals(interpretationId, dto.interpretationId)
     }
 
     @Test

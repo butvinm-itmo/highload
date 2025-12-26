@@ -194,6 +194,8 @@ class NotificationWebSocketE2ETest : BaseE2ETest() {
 
             val notification = receivedMessages[0]
             assertEquals(NotificationType.NEW_INTERPRETATION, notification.type)
+            assertEquals(spreadId, notification.spreadId)
+            assertNotNull(notification.interpretationId)
             assertTrue(notification.message.contains(mediumUsername))
         } finally {
             session.close()
