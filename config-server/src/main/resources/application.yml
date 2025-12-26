@@ -11,7 +11,7 @@ spring:
       server:
         git:
           uri: https://github.com/butvinm-itmo/highload-config.git
-          default-label: main
+          default-label: lab2-fixes
           clone-on-start: true
           timeout: 10
 

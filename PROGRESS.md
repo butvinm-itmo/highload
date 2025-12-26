@@ -176,40 +176,28 @@ Refactor microservices to have totally independent database schemas without FK c
 ---
 
 ### Phase 5: Update E2E Tests
-- [ ] **Pending**
+- [x] **Completed**
 
 - **Goal:** Verify E2E tests pass with new cleanup logic.
 
 - **Scope:**
-  - `e2e-tests/.../CleanupAuthorizationE2ETest.kt`
+  - `e2e-tests/.../CascadeDeleteE2ETest.kt` (new file)
+  - `highload-config/gateway-service.yml` - Add internal route
+  - `config-server/.../application.yml` - Switch to lab2-fixes branch
 
-- **Additional Test:**
-  ```kotlin
-  @Test
-  fun `DELETE user should cascade delete spreads and interpretations`() {
-      // Verify application-level cascade works
-  }
-  ```
+- **New Tests:**
+  - `spreads and interpretations exist before user deletion`
+  - `DELETE user should cascade delete all user spreads and interpretations`
 
 - **Verification Cmd:** `docker compose build && ./gradlew :e2e-tests:test`
 
+- **Result:** All 32 E2E tests passed (30 existing + 2 new CascadeDeleteE2ETest)
+
 - **Phase Execution:**
-  1. **Implement:** Add cascade delete verification test
-  2. **Verify:** Run `docker compose build && ./gradlew :e2e-tests:test`
-  3. **Report:** Update PROGRESS.md (mark Phase 5 complete)
-  4. **Commit:**
-     ```bash
-     git add e2e-tests/src/test/kotlin/com/github/butvinmitmo/e2e/CleanupAuthorizationE2ETest.kt
-     git add PROGRESS.md
-     git commit -m "Add E2E test for application-level cascade delete
-
-     - Verify user deletion cascades to spreads and interpretations
-     - Test cleanup endpoint works through full service stack
-
-     🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
-     ```
+  1. **Implement:** Created CascadeDeleteE2ETest with cascade delete verification ✓
+  2. **Verify:** `docker compose build && ./gradlew :e2e-tests:test` ✓ (32 tests passed)
+  3. **Report:** Update PROGRESS.md (mark Phase 5 complete) ✓
+  4. **Commit:** See below
 
 ---
 
