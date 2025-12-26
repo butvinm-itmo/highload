@@ -4,10 +4,12 @@ export interface Role {
   name: 'USER' | 'MEDIUM' | 'ADMIN';
 }
 
+export type RoleName = 'USER' | 'MEDIUM' | 'ADMIN';
+
 export interface UserDto {
   id: string;
   username: string;
-  role: Role;
+  role: RoleName;
   createdAt: string;
 }
 

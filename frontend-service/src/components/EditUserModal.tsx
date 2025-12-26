@@ -14,14 +14,14 @@ interface EditUserModalProps {
 export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
   const [username, setUsername] = useState(user.username);
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'USER' | 'MEDIUM' | 'ADMIN'>(user.role.name);
+  const [role, setRole] = useState<'USER' | 'MEDIUM' | 'ADMIN'>(user.role);
   const [error, setError] = useState('');
 
   const queryClient = useQueryClient();
 
   useEffect(() => {
     setUsername(user.username);
-    setRole(user.role.name);
+    setRole(user.role);
     setPassword('');
   }, [user]);
 
@@ -30,7 +30,7 @@ export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
       usersApi.updateUser(user.id, {
         username: username !== user.username ? username.trim() : undefined,
         password: password ? password : undefined,
-        role: role !== user.role.name ? role : undefined,
+        role: role !== user.role ? role : undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -44,7 +44,7 @@ export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
   const handleClose = () => {
     setUsername(user.username);
     setPassword('');
-    setRole(user.role.name);
+    setRole(user.role);
     setError('');
     onClose();
   };

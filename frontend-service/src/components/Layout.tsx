@@ -67,10 +67,10 @@ export function Layout({ children }: LayoutProps) {
                     <span className="text-sm font-serif text-gray-300">{user.username}</span>
                     <span
                       className={`px-3 py-1 text-xs font-display font-semibold rounded-full ${getRoleBadgeColor(
-                        user.role.name
+                        user.role
                       )}`}
                     >
-                      {user.role.name}
+                      {user.role}
                     </span>
                   </div>
                   <button

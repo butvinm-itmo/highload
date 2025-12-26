@@ -73,15 +73,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userId = getUserIdFromToken(response.token);
 
       // Create user object from auth response
-      // Backend returns role as string, but we need Role object
-      const roleObject = typeof response.role === 'string'
-        ? { id: '', name: response.role as 'USER' | 'MEDIUM' | 'ADMIN' }
-        : response.role;
+      // Backend returns role as string
+      const roleName = typeof response.role === 'string'
+        ? response.role as 'USER' | 'MEDIUM' | 'ADMIN'
+        : response.role.name;
 
       const userData: UserDto = {
         id: userId,
         username: response.username,
-        role: roleObject,
+        role: roleName,
         createdAt: new Date().toISOString(),
       };
 
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       USER: 1,
     };
 
-    const userRoleLevel = roleHierarchy[user.role.name] || 0;
+    const userRoleLevel = roleHierarchy[user.role] || 0;
     const requiredRoleLevel = roleHierarchy[role] || 0;
 
     return userRoleLevel >= requiredRoleLevel;

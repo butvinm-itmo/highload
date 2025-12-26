@@ -83,7 +83,7 @@ export function UsersPage() {
                           <span
                             className="px-3 py-1.5 inline-flex text-xs leading-5 font-display rounded-full border text-white font-bold"
                             style={(() => {
-                              const roleName = user.role?.name || 'UNKNOWN';
+                              const roleName = user.role || 'UNKNOWN';
                               switch (roleName) {
                                 case 'ADMIN':
                                   return {
@@ -111,7 +111,7 @@ export function UsersPage() {
                               }
                             })()}
                           >
-                            {user.role?.name || 'UNKNOWN'}
+                            {user.role || 'UNKNOWN'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-serif text-gray-400">
