@@ -3,6 +3,7 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { InterpretationDto } from '../types';
 import { interpretationsApi } from '../api';
+import { AuthenticatedImage } from './AuthenticatedImage';
 import { getErrorMessage } from '../utils/errorHandling';
 import { validateFile, formatFileSize } from '../utils/fileValidation';
 
@@ -176,7 +177,7 @@ export function EditInterpretationModal({
             {interpretation.fileUrl && !filePreview && (
               <div className="mb-3">
                 <div className="flex items-center gap-3">
-                  <img
+                  <AuthenticatedImage
                     src={interpretation.fileUrl}
                     alt="Current attachment"
                     className="max-w-xs max-h-32 rounded-lg border border-gray-300"

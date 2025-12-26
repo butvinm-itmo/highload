@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AuthenticatedImage } from './AuthenticatedImage';
 
 interface ImageLightboxProps {
   imageUrl: string;
@@ -36,7 +37,7 @@ export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-      <img
+      <AuthenticatedImage
         src={imageUrl}
         alt="Full size"
         className="max-w-full max-h-full object-contain p-8"

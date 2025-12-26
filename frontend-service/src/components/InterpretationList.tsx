@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { interpretationsApi } from '../api';
 import { EditInterpretationModal } from './EditInterpretationModal';
 import { ImageLightbox } from './ImageLightbox';
+import { AuthenticatedImage } from './AuthenticatedImage';
 import { getErrorMessage } from '../utils/errorHandling';
 
 interface InterpretationListProps {
@@ -93,7 +94,7 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
 
               {interpretation.fileUrl && (
                 <div className="mt-3">
-                  <img
+                  <AuthenticatedImage
                     src={interpretation.fileUrl}
                     alt="Interpretation attachment"
                     className="max-w-md max-h-64 rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
