@@ -42,4 +42,7 @@ out/
 ### Python ###
 .venv
 
+### Vite ###
+.vite/
+
 .env
