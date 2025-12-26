@@ -24,24 +24,24 @@ export function UsersPage() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md';
       case 'MEDIUM':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-gradient-to-r from-cosmic-600 to-mystic-600 text-white shadow-mystic';
       case 'USER':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gradient-to-r from-mystic-600 to-mystic-700 text-white shadow-md';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-void-700 text-gray-300';
     }
   };
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <h1 className="text-4xl font-display font-bold text-gray-100">User Management</h1>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="px-6 py-3 bg-gradient-to-r from-mystic-600 to-cosmic-600 text-white rounded-lg shadow-mystic hover:from-mystic-500 hover:to-cosmic-500 hover:shadow-cosmic focus:outline-none focus:ring-2 focus:ring-mystic-500 transition-all duration-300 font-serif font-medium"
           >
             Create User
           </button>
@@ -49,7 +49,7 @@ export function UsersPage() {
 
         {isLoading && (
           <div className="flex justify-center py-12">
-            <div className="text-gray-600">Loading users...</div>
+            <div className="text-gray-600 dark:text-gray-400">Loading users...</div>
           </div>
         )}
 
@@ -61,25 +61,25 @@ export function UsersPage() {
 
         {!isLoading && !error && data && (
           <>
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="mystical-card overflow-hidden">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: 'rgba(91, 33, 182, 0.3)' }}>
+                    <th className="px-6 py-4 text-left text-xs font-display font-semibold text-gray-400 uppercase tracking-wider">
                       Username
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-display font-semibold text-gray-400 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-display font-semibold text-gray-400 uppercase tracking-wider">
                       Created At
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-display font-semibold text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y" style={{ borderColor: 'rgba(91, 33, 182, 0.2)' }}>
                   {data.data.map((user) => {
                     const formattedDate = new Date(user.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -88,32 +88,32 @@ export function UsersPage() {
                     });
 
                     return (
-                      <tr key={user.id}>
+                      <tr key={user.id} className="hover:transition-colors" style={{ '--hover-bg': 'rgba(76, 29, 149, 0.2)' } as React.CSSProperties} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(76, 29, 149, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                          <div className="text-base font-serif font-medium text-gray-200">{user.username}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(
+                            className={`px-3 py-1.5 inline-flex text-xs leading-5 font-display font-semibold rounded-full ${getRoleBadgeColor(
                               user.role.name
                             )}`}
                           >
                             {user.role.name}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-serif text-gray-400">
                           {formattedDate}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-serif font-medium space-x-3">
                           <button
                             onClick={() => setEditingUser(user)}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-mystic-400 hover:text-mystic-300 transition-colors"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => setDeletingUser(user)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-400 hover:text-red-300 transition-colors"
                           >
                             Delete
                           </button>
@@ -127,22 +127,24 @@ export function UsersPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-700">
+              <div className="flex justify-between items-center mystical-card p-4">
+                <div className="text-sm font-serif text-gray-300">
                   Showing page {page + 1} of {totalPages} ({data.totalCount} total users)
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-3">
                   <button
                     onClick={() => setPage(Math.max(0, page - 1))}
                     disabled={page === 0}
-                    className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border-2 rounded-lg text-sm font-serif text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-void-800/50 transition-all"
+                    style={{ borderColor: 'rgba(91, 33, 182, 0.5)' }}
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                     disabled={page >= totalPages - 1}
-                    className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border-2 rounded-lg text-sm font-serif text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-void-800/50 transition-all"
+                    style={{ borderColor: 'rgba(91, 33, 182, 0.5)' }}
                   >
                     Next
                   </button>
