@@ -189,7 +189,7 @@ if (entity.authorId != userId && role != "ADMIN") {
 
 ### notification-service tables
 
-**notification** - (id UUID PK, user_id UUID FK CASCADE, type VARCHAR(50), title VARCHAR(255), message TEXT, is_read BOOLEAN, reference_id UUID, reference_type VARCHAR(50), created_at TIMESTAMPTZ)
+**notification** - (id UUID PK, user_id UUID FK CASCADE, type VARCHAR(50), title VARCHAR(255), message TEXT, is_read BOOLEAN, spread_id UUID, interpretation_id UUID, created_at TIMESTAMPTZ)
 
 ## API Endpoints
 
@@ -361,8 +361,8 @@ Config files are in the `highload-config/` submodule. After changes, push to sub
   "message": "username added an interpretation...",
   "isRead": false,
   "createdAt": "2025-01-01T00:00:00Z",
-  "referenceId": "uuid",
-  "referenceType": "INTERPRETATION"
+  "spreadId": "uuid",
+  "interpretationId": "uuid"
 }
 ```
 

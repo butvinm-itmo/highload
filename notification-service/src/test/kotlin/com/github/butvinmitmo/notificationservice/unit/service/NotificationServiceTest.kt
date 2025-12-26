@@ -8,7 +8,6 @@ import com.github.butvinmitmo.notificationservice.repository.NotificationReposit
 import com.github.butvinmitmo.notificationservice.service.NotificationService
 import com.github.butvinmitmo.shared.dto.NotificationDto
 import com.github.butvinmitmo.shared.dto.NotificationType
-import com.github.butvinmitmo.shared.dto.ReferenceType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -39,7 +38,8 @@ class NotificationServiceTest {
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val otherUserId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val notificationId = UUID.randomUUID()
-    private val referenceId = UUID.randomUUID()
+    private val spreadId = UUID.randomUUID()
+    private val interpretationId = UUID.randomUUID()
     private val createdAt = Instant.now()
 
     @BeforeEach
@@ -68,8 +68,8 @@ class NotificationServiceTest {
                     message = notification.message,
                     isRead = notification.isRead,
                     createdAt = notification.createdAt!!,
-                    referenceId = notification.referenceId,
-                    referenceType = ReferenceType.INTERPRETATION,
+                    spreadId = notification.spreadId,
+                    interpretationId = notification.interpretationId,
                 )
             }
 
@@ -122,8 +122,8 @@ class NotificationServiceTest {
                 message = notifications[0].message,
                 isRead = notifications[0].isRead,
                 createdAt = notifications[0].createdAt!!,
-                referenceId = notifications[0].referenceId,
-                referenceType = ReferenceType.INTERPRETATION,
+                spreadId = notifications[0].spreadId,
+                interpretationId = notifications[0].interpretationId,
             )
 
         whenever(notificationRepository.countByUserId(userId)).thenReturn(Mono.just(25L))
@@ -168,7 +168,8 @@ class NotificationServiceTest {
                 id = notificationId,
                 userId = userId,
                 isRead = false,
-                referenceId = referenceId,
+                spreadId = spreadId,
+                interpretationId = interpretationId,
                 createdAt = createdAt,
             )
 
@@ -182,8 +183,8 @@ class NotificationServiceTest {
                 message = notification.message,
                 isRead = true,
                 createdAt = createdAt,
-                referenceId = referenceId,
-                referenceType = ReferenceType.INTERPRETATION,
+                spreadId = spreadId,
+                interpretationId = interpretationId,
             )
 
         whenever(notificationRepository.findById(notificationId)).thenReturn(Mono.just(notification))

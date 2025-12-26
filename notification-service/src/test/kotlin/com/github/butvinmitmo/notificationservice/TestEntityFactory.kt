@@ -12,8 +12,8 @@ object TestEntityFactory {
         title: String = "Test notification",
         message: String = "Test notification message",
         isRead: Boolean = false,
-        referenceId: UUID = UUID.randomUUID(),
-        referenceType: String = "INTERPRETATION",
+        spreadId: UUID? = UUID.randomUUID(),
+        interpretationId: UUID? = UUID.randomUUID(),
         createdAt: Instant? = Instant.now(),
     ): Notification =
         Notification(
@@ -23,8 +23,8 @@ object TestEntityFactory {
             title = title,
             message = message,
             isRead = isRead,
-            referenceId = referenceId,
-            referenceType = referenceType,
+            spreadId = spreadId,
+            interpretationId = interpretationId,
             createdAt = createdAt,
         )
 }
