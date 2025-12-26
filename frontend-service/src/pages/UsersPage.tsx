@@ -21,46 +21,6 @@ export function UsersPage() {
 
   const totalPages = data ? Math.ceil(data.totalCount / pageSize) : 0;
 
-  const getRoleBadgeStyles = (role: string) => {
-    switch (role) {
-      case 'ADMIN':
-        return {
-          className: 'text-white font-bold',
-          style: {
-            background: 'linear-gradient(to right, rgb(220, 38, 38), rgb(185, 28, 28))',
-            borderColor: 'rgba(248, 113, 113, 0.5)',
-            boxShadow: '0 0 15px rgba(220, 38, 38, 0.4)',
-          }
-        };
-      case 'MEDIUM':
-        return {
-          className: 'text-white font-bold',
-          style: {
-            background: 'linear-gradient(to right, rgb(168, 85, 247), rgb(147, 51, 234))',
-            borderColor: 'rgba(240, 171, 252, 0.5)',
-            boxShadow: '0 0 15px rgba(168, 85, 247, 0.4)',
-          }
-        };
-      case 'USER':
-        return {
-          className: 'text-white font-bold',
-          style: {
-            background: 'linear-gradient(to right, rgb(59, 130, 246), rgb(37, 99, 235))',
-            borderColor: 'rgba(96, 165, 250, 0.5)',
-            boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)',
-          }
-        };
-      default:
-        return {
-          className: 'text-gray-300',
-          style: {
-            background: 'rgb(55, 65, 81)',
-            borderColor: 'rgba(75, 85, 99, 0.8)',
-          }
-        };
-    }
-  };
-
   return (
     <Layout>
       <div className="space-y-8">
@@ -120,17 +80,39 @@ export function UsersPage() {
                           <div className="text-base font-serif font-medium text-gray-200">{user.username}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {(() => {
-                            const badgeStyles = getRoleBadgeStyles(user.role.name);
-                            return (
-                              <span
-                                className={`px-3 py-1.5 inline-flex text-xs leading-5 font-display rounded-full border ${badgeStyles.className}`}
-                                style={badgeStyles.style}
-                              >
-                                {user.role.name}
-                              </span>
-                            );
-                          })()}
+                          <span
+                            className="px-3 py-1.5 inline-flex text-xs leading-5 font-display rounded-full border text-white font-bold"
+                            style={(() => {
+                              const roleName = user.role?.name || 'UNKNOWN';
+                              switch (roleName) {
+                                case 'ADMIN':
+                                  return {
+                                    background: 'linear-gradient(to right, rgb(220, 38, 38), rgb(185, 28, 28))',
+                                    borderColor: 'rgba(248, 113, 113, 0.5)',
+                                    boxShadow: '0 0 15px rgba(220, 38, 38, 0.4)',
+                                  };
+                                case 'MEDIUM':
+                                  return {
+                                    background: 'linear-gradient(to right, rgb(168, 85, 247), rgb(147, 51, 234))',
+                                    borderColor: 'rgba(240, 171, 252, 0.5)',
+                                    boxShadow: '0 0 15px rgba(168, 85, 247, 0.4)',
+                                  };
+                                case 'USER':
+                                  return {
+                                    background: 'linear-gradient(to right, rgb(59, 130, 246), rgb(37, 99, 235))',
+                                    borderColor: 'rgba(96, 165, 250, 0.5)',
+                                    boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)',
+                                  };
+                                default:
+                                  return {
+                                    background: 'rgb(55, 65, 81)',
+                                    borderColor: 'rgba(75, 85, 99, 0.8)',
+                                  };
+                              }
+                            })()}
+                          >
+                            {user.role?.name || 'UNKNOWN'}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-serif text-gray-400">
                           {formattedDate}
