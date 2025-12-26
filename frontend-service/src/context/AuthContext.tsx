@@ -42,17 +42,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (storedToken && storedUser) {
       try {
-        const parsedUser: UserDto = JSON.parse(storedUser);
+        const parsedUser: any = JSON.parse(storedUser);
+
+        // Migrate old role object structure to string
+        if (parsedUser.role && typeof parsedUser.role === 'object' && parsedUser.role.name) {
+          parsedUser.role = parsedUser.role.name;
+        }
 
         // If user doesn't have ID, decode it from token
         if (!parsedUser.id && storedToken) {
           parsedUser.id = getUserIdFromToken(storedToken);
-          // Update localStorage with the ID
-          localStorage.setItem('user', JSON.stringify(parsedUser));
         }
 
+        // Update localStorage with migrated data
+        localStorage.setItem('user', JSON.stringify(parsedUser));
+
         setToken(storedToken);
-        setUser(parsedUser);
+        setUser(parsedUser as UserDto);
       } catch (error) {
         // Invalid stored data, clear it
         localStorage.removeItem('auth_token');
