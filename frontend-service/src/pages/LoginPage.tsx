@@ -29,64 +29,79 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Tarology</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse-slow" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse-slow" style={{ backgroundColor: 'rgba(192, 38, 211, 0.1)', animationDelay: '1s' }} />
+      </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
+      <div className="max-w-md w-full mx-4 relative z-10">
+        <div className="mystical-card p-10">
+          <div className="text-center mb-10">
+            <h1 className="text-5xl font-display font-bold bg-gradient-to-r from-mystic-400 via-cosmic-400 to-mystic-400 bg-clip-text text-transparent mb-3">
+              Tarology
+            </h1>
+            <p className="text-gold-400 font-accent text-lg italic tracking-wide">Unveil Your Destiny</p>
+            <div className="mt-4 h-px w-32 mx-auto bg-gradient-to-r from-transparent via-mystic-500 to-transparent" />
+            <p className="text-gray-400 font-serif mt-4">Sign in to your account</p>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Enter your username"
+          {error && (
+            <div className="mb-6 p-4 bg-red-900/30 border border-red-500/50 text-red-300 rounded-lg backdrop-blur-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="username" className="block text-sm font-serif font-medium text-gray-300 mb-2">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="block w-full px-4 py-3 border rounded-lg backdrop-blur-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-mystic-500 focus:border-mystic-500 transition-all font-serif"
+                style={{ backgroundColor: 'rgba(3, 7, 18, 0.5)', borderColor: 'rgba(91, 33, 182, 0.5)' }}
+                placeholder="Enter your username"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-serif font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full px-4 py-3 border rounded-lg backdrop-blur-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-mystic-500 focus:border-mystic-500 transition-all font-serif"
+                style={{ backgroundColor: 'rgba(3, 7, 18, 0.5)', borderColor: 'rgba(91, 33, 182, 0.5)' }}
+                placeholder="Enter your password"
+                disabled={isLoading}
+              />
+            </div>
+
+            <button
+              type="submit"
               disabled={isLoading}
-            />
+              className="w-full flex justify-center py-3.5 px-6 border border-transparent rounded-lg shadow-mystic text-base font-serif font-medium text-white bg-gradient-to-r from-mystic-600 to-cosmic-600 hover:from-mystic-500 hover:to-cosmic-500 hover:shadow-cosmic focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-void-950 focus:ring-mystic-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300"
+            >
+              {isLoading ? 'Summoning the cards...' : 'Enter the Realm'}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-mystic-800/50 to-transparent mb-4" />
+            <p className="text-xs font-serif text-gray-500 uppercase tracking-wider mb-2">Demo Accounts</p>
+            <p className="text-sm font-accent text-mystic-400">Admin: <span className="text-gray-300">admin</span> / <span className="text-gray-300">Admin@123</span></p>
           </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Enter your password"
-              disabled={isLoading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Demo accounts:</p>
-          <p className="mt-1">Admin: admin / Admin@123</p>
         </div>
       </div>
     </div>

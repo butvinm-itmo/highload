@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+import { fadeInUp, scaleBounce } from '../utils/animations';
 
 interface EmptyStateProps {
   title: string;
@@ -38,18 +40,56 @@ export function EmptyState({ title, message, actionLabel, onAction, icon = 'spre
   };
 
   return (
-    <div className="text-center py-12">
-      {getIcon()}
-      <h3 className="mt-4 text-lg font-medium text-gray-900">{title}</h3>
-      <p className="mt-2 text-gray-600">{message}</p>
+    <motion.div
+      className="text-center py-16"
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div
+        className="text-mystic-600"
+        animate={{
+          y: [0, -10, 0],
+          opacity: [0.5, 1, 0.5],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        {getIcon()}
+      </motion.div>
+      <motion.h3
+        className="mt-6 text-2xl font-display font-semibold text-gray-200"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        {title}
+      </motion.h3>
+      <motion.p
+        className="mt-3 text-gray-400 font-serif"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        {message}
+      </motion.p>
       {actionLabel && onAction && (
-        <button
+        <motion.button
           onClick={onAction}
-          className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="mt-8 px-6 py-3 bg-gradient-to-r from-mystic-600 to-cosmic-600 text-white rounded-lg shadow-mystic hover:shadow-cosmic hover:from-mystic-500 hover:to-cosmic-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-void-950 focus:ring-mystic-500 transition-all duration-300 font-serif font-medium"
+          variants={scaleBounce}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.4 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           {actionLabel}
-        </button>
+        </motion.button>
       )}
-    </div>
+    </motion.div>
   );
 }
