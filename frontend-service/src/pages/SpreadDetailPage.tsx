@@ -112,7 +112,7 @@ export function SpreadDetailPage() {
             <h2 className="text-3xl font-display font-semibold text-gray-100 tracking-wide">Cards</h2>
             <div className="h-px flex-1 ml-6 bg-gradient-to-r from-mystic-600 via-cosmic-600 to-transparent"></div>
           </div>
-          <div className="flex flex-wrap gap-8 justify-center py-4">
+          <div className="flex flex-wrap gap-8 justify-center py-8 relative overflow-hidden" style={{ minHeight: '400px' }}>
             {sortedCards.map((spreadCard, index) => (
               <TarotCard
                 key={spreadCard.id}
@@ -120,7 +120,9 @@ export function SpreadDetailPage() {
                 isReversed={spreadCard.isReversed}
                 position={spreadCard.positionInSpread}
                 size="medium"
-                delay={index * 0.1}
+                delay={index * 0.2}
+                spreadFromDeck={true}
+                totalCards={sortedCards.length}
               />
             ))}
           </div>

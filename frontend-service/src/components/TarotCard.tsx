@@ -11,9 +11,11 @@ interface TarotCardProps {
   size?: 'small' | 'medium' | 'large';
   delay?: number;
   showBack?: boolean;
+  spreadFromDeck?: boolean;
+  totalCards?: number;
 }
 
-export function TarotCard({ card, isReversed = false, position, size = 'medium', delay = 0, showBack = false }: TarotCardProps) {
+export function TarotCard({ card, isReversed = false, position, size = 'medium', delay = 0, showBack = false, spreadFromDeck = false, totalCards = 1 }: TarotCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -31,20 +33,45 @@ export function TarotCard({ card, isReversed = false, position, size = 'medium',
   const imagePath = showBack ? CARD_BACK_IMAGE : getCardImagePath(card.id);
   const shouldShowImage = imagePath && !imageError;
 
+  // Deck spreading animation variants - cards fly in from top and settle into grid position
+  const deckSpreadVariants = spreadFromDeck ? {
+    hidden: {
+      x: 300,
+      y: -400,
+      rotateZ: 45,
+      opacity: 0,
+      scale: 0.6,
+    },
+    visible: {
+      x: 0,
+      y: 0,
+      rotateZ: 0,
+      opacity: 1,
+      scale: 1,
+    }
+  } : fadeInUp;
+
   return (
     <motion.div
       className="flex flex-col items-center group"
-      variants={fadeInUp}
+      variants={deckSpreadVariants}
       initial="hidden"
       animate="visible"
-      transition={{ delay }}
+      transition={spreadFromDeck ? {
+        delay,
+        duration: 0.7,
+        type: 'spring',
+        stiffness: 120,
+        damping: 18,
+        mass: 0.8
+      } : {
+        delay
+      }}
     >
       <motion.div
         className={`${sizeClasses[size]} border-3 ${
           isReversed ? 'border-red-500' : arcanaColor
-        } rounded-xl ${
-          isReversed ? 'transform rotate-180' : ''
-        } transition-all duration-500 ${glowColor} cursor-pointer relative overflow-hidden`}
+        } rounded-xl transition-all duration-500 ${glowColor} cursor-pointer relative overflow-hidden`}
         style={{
           perspective: 1000,
           backgroundColor: isReversed ? 'rgba(20, 5, 5, 0.9)' : 'rgba(3, 7, 18, 0.8)',
@@ -202,7 +229,7 @@ export function TarotCard({ card, isReversed = false, position, size = 'medium',
           </>
         ) : (
           /* Fallback to text display with mystical styling */
-          <div className={`flex flex-col items-center justify-center p-4 h-full ${isReversed ? 'transform rotate-180' : ''} relative z-10`}>
+          <div className="flex flex-col items-center justify-center p-4 h-full relative z-10">
             <div className={`text-xs font-accent mb-3 px-3 py-1 rounded-full ${isMajorArcana ? 'text-cosmic-400' : 'text-mystic-400'}`} style={{ backgroundColor: isMajorArcana ? 'rgba(112, 26, 117, 0.5)' : 'rgba(76, 29, 149, 0.5)' }}>
               {card.arcanaType.name}
             </div>
