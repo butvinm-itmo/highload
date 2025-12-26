@@ -24,13 +24,26 @@ export function UsersPage() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md';
+        return 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg border';
       case 'MEDIUM':
-        return 'bg-gradient-to-r from-cosmic-600 to-mystic-600 text-white shadow-mystic';
+        return 'bg-gradient-to-r from-cosmic-500 to-mystic-500 text-white shadow-mystic border';
       case 'USER':
-        return 'bg-gradient-to-r from-mystic-600 to-mystic-700 text-white shadow-md';
+        return 'bg-gradient-to-r from-mystic-500 to-blue-500 text-white shadow-md border';
       default:
-        return 'bg-void-700 text-gray-300';
+        return 'bg-void-700 text-gray-300 border border-gray-600';
+    }
+  };
+
+  const getRoleBadgeBorderColor = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'rgba(248, 113, 113, 0.3)';
+      case 'MEDIUM':
+        return 'rgba(240, 171, 252, 0.3)';
+      case 'USER':
+        return 'rgba(167, 139, 250, 0.3)';
+      default:
+        return 'rgba(75, 85, 99, 1)';
     }
   };
 
@@ -97,6 +110,7 @@ export function UsersPage() {
                             className={`px-3 py-1.5 inline-flex text-xs leading-5 font-display font-semibold rounded-full ${getRoleBadgeColor(
                               user.role.name
                             )}`}
+                            style={{ borderColor: getRoleBadgeBorderColor(user.role.name) }}
                           >
                             {user.role.name}
                           </span>
