@@ -4,8 +4,8 @@ import { Layout } from '../components/Layout';
 import { SpreadCard } from '../components/SpreadCard';
 import { CreateSpreadModal } from '../components/CreateSpreadModal';
 import { CreateUserModal } from '../components/CreateUserModal';
-import { Loading } from '../components/Loading';
 import { EmptyState } from '../components/EmptyState';
+import { SpreadCardSkeleton } from '../components/Skeleton';
 import { spreadsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -58,26 +58,32 @@ export function SpreadsFeedPage() {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Tarot Spreads</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tarot Spreads</h1>
           <div className="flex space-x-3">
             {hasRole('ADMIN') && (
               <button
                 onClick={() => setIsCreateUserModalOpen(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
                 Create User
               </button>
             )}
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Create Spread
             </button>
           </div>
         </div>
 
-        {isLoading && <Loading message="Loading spreads..." />}
+        {isLoading && (
+          <div className="grid gap-4">
+            {[...Array(5)].map((_, i) => (
+              <SpreadCardSkeleton key={i} />
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -96,16 +102,18 @@ export function SpreadsFeedPage() {
         )}
 
         <div className="grid gap-4">
-          {allSpreads.map((spread) => (
-            <SpreadCard key={spread.id} spread={spread} />
+          {allSpreads.map((spread, index) => (
+            <SpreadCard key={spread.id} spread={spread} delay={Math.min(index * 0.05, 0.5)} />
           ))}
         </div>
 
         {/* Infinite scroll trigger */}
         <div ref={observerTarget} className="py-4">
           {isFetchingNextPage && (
-            <div className="flex justify-center">
-              <div className="text-gray-600">Loading more spreads...</div>
+            <div className="grid gap-4">
+              {[...Array(2)].map((_, i) => (
+                <SpreadCardSkeleton key={i} />
+              ))}
             </div>
           )}
           {!hasNextPage && allSpreads.length > 0 && (

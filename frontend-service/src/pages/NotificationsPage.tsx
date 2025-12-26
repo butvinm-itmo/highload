@@ -45,7 +45,7 @@ export function NotificationsPage() {
         );
       default:
         return (
-          <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
@@ -87,7 +87,7 @@ export function NotificationsPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Notifications</h1>
         {hasUnread && (
           <button
             onClick={handleMarkAllAsRead}
@@ -123,7 +123,7 @@ export function NotificationsPage() {
                   onClick={() => handleMarkAsRead(notification)}
                   className={`block p-4 rounded-lg border transition-colors ${
                     notification.isRead
-                      ? 'bg-white border-gray-200 hover:bg-gray-50'
+                      ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50'
                       : 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
                   }`}
                 >
@@ -133,14 +133,14 @@ export function NotificationsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className={`text-sm font-medium ${notification.isRead ? 'text-gray-900' : 'text-indigo-900'}`}>
+                        <p className={`text-sm font-medium ${notification.isRead ? 'text-gray-900 dark:text-gray-100' : 'text-indigo-900'}`}>
                           {notification.title}
                         </p>
-                        <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                           {formattedDate}
                         </span>
                       </div>
-                      <p className={`text-sm mt-1 ${notification.isRead ? 'text-gray-600' : 'text-indigo-700'}`}>
+                      <p className={`text-sm mt-1 ${notification.isRead ? 'text-gray-600 dark:text-gray-400' : 'text-indigo-700'}`}>
                         {notification.message}
                       </p>
                     </div>
@@ -161,17 +161,17 @@ export function NotificationsPage() {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 Page {page + 1} of {totalPages}
               </span>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>

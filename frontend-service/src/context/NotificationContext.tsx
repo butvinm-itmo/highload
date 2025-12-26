@@ -5,6 +5,7 @@ import type { NotificationDto } from '../types';
 import { notificationsApi } from '../api/notificationsApi';
 import { NotificationWebSocket } from '../utils/websocket';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 
 interface NotificationContextType {
   unreadCount: number;
@@ -24,6 +25,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const [ws, setWs] = useState<NotificationWebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
+  const { showInfo } = useToast();
 
   // Fetch unread count
   const { data: unreadCount = 0 } = useQuery({
@@ -55,6 +57,9 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
       queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] });
+
+      // Show toast notification
+      showInfo(notification.title, notification.message);
 
       // Show browser notification if permission granted
       if (Notification.permission === 'granted') {
