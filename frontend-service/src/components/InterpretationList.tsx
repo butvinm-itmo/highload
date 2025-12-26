@@ -65,24 +65,24 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
           });
 
           return (
-            <div key={interpretation.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{interpretation.author.username}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</span>
+            <div key={interpretation.id} className="mystical-card p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-3">
+                  <span className="font-serif font-semibold text-gray-100">{interpretation.author.username}</span>
+                  <span className="text-xs font-serif text-gray-400">{formattedDate}</span>
                 </div>
                 {canEditOrDelete(interpretation) && (
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-3">
                     <button
                       onClick={() => setEditingInterpretation(interpretation)}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
+                      className="text-sm font-serif text-mystic-400 hover:text-mystic-300 transition-colors"
                       disabled={deletingId === interpretation.id}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(interpretation.id)}
-                      className="text-sm text-red-600 hover:text-red-800"
+                      className="text-sm font-serif text-red-400 hover:text-red-300 transition-colors"
                       disabled={deletingId === interpretation.id}
                     >
                       {deletingId === interpretation.id ? 'Deleting...' : 'Delete'}
@@ -90,14 +90,14 @@ export function InterpretationList({ interpretations, spreadId }: Interpretation
                   </div>
                 )}
               </div>
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{interpretation.text}</p>
+              <p className="text-gray-300 font-serif whitespace-pre-wrap leading-relaxed">{interpretation.text}</p>
 
               {interpretation.fileUrl && (
-                <div className="mt-3">
+                <div className="mt-4">
                   <AuthenticatedImage
                     src={interpretation.fileUrl}
                     alt="Interpretation attachment"
-                    className="max-w-md max-h-64 rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                    className="max-w-md max-h-64 rounded-lg border-2 border-mystic-600 shadow-mystic cursor-pointer hover:shadow-cosmic hover:border-cosmic-500 transition-all"
                     onClick={() => setLightboxImage(interpretation.fileUrl!)}
                   />
                 </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { FormEvent, ChangeEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { InterpretationDto } from '../types';
@@ -137,7 +138,7 @@ export function EditInterpretationModal({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
       <div className="mystical-card max-w-2xl w-full p-8 animate-fade-in">
         <div className="flex justify-between items-center mb-6">
@@ -261,4 +262,6 @@ export function EditInterpretationModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
