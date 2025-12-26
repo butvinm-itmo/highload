@@ -53,14 +53,9 @@ export function NotificationsPage() {
   };
 
   const getNotificationLink = (notification: NotificationDto): string => {
-    // For SPREAD notifications, referenceId is the spread ID
-    if (notification.referenceType === 'SPREAD') {
-      return `/spreads/${notification.referenceId}`;
-    }
-    // For INTERPRETATION notifications, referenceId should be the spread ID
-    // (backend stores spread ID in referenceId for interpretation events)
-    if (notification.referenceType === 'INTERPRETATION') {
-      return `/spreads/${notification.referenceId}`;
+    // Use spreadId if available
+    if (notification.spreadId) {
+      return `/spreads/${notification.spreadId}`;
     }
     return '#';
   };

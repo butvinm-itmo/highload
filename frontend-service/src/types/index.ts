@@ -131,8 +131,8 @@ export interface NotificationDto {
   message: string;
   isRead: boolean;
   createdAt: string;
-  referenceId: string;
-  referenceType: ReferenceType;
+  spreadId?: string;
+  interpretationId?: string;
 }
 
 export interface UnreadCountResponse {
