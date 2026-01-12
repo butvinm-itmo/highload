@@ -11,7 +11,11 @@ import java.util.UUID
  * Used by user-service to delete user data before deleting the user.
  * This client bypasses the gateway and calls divination-service directly via Eureka.
  */
-@FeignClient(name = "divination-service-internal", url = "\${services.divination-service.url:}")
+@FeignClient(
+    name = "divination-service",
+    contextId = "divinationServiceInternalClient",
+    url = "\${services.divination-service.url:}",
+)
 interface DivinationServiceInternalClient {
     /**
      * Deletes all data associated with a user (spreads and interpretations).
