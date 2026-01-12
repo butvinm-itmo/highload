@@ -237,6 +237,25 @@ Feign clients use pattern: `@FeignClient(name = "service-name", url = "${service
 
 Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`.
 
-### Configuration Repository
+### Configuration Repository (highload-config)
 
 Config files are in the `highload-config/` submodule. After changes, push to submodule and restart config-server.
+
+**Two remotes setup:**
+- `origin` (HTTPS) - Used for git submodule so anyone can clone without SSH keys
+- `ssh` - Used for pushing changes (owner uses SSH authentication)
+
+**To push config changes:**
+```bash
+cd highload-config
+git add <files>
+git commit -m "message"
+git push ssh <branch>
+```
+
+**To update submodule reference in main project:**
+```bash
+cd ..  # back to main project
+git add highload-config
+git commit -m "Update highload-config"
+```
