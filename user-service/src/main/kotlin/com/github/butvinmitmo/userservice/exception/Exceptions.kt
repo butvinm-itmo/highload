@@ -15,3 +15,7 @@ class UnauthorizedException(
 class ForbiddenException(
     message: String,
 ) : RuntimeException(message)
+
+class ServiceUnavailableException(
+    message: String,
+) : RuntimeException(message)

@@ -1,11 +1,17 @@
 package com.github.butvinmitmo.userservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
 import com.github.butvinmitmo.userservice.repository.UserRepository
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.http.ResponseEntity
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
@@ -25,6 +31,15 @@ abstract class BaseControllerIntegrationTest {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @MockBean
+    protected lateinit var divinationServiceInternalClient: DivinationServiceInternalClient
+
+    @BeforeEach
+    fun setupMocks() {
+        // Default mock behavior: cleanup always succeeds
+        whenever(divinationServiceInternalClient.deleteUserData(any())).thenReturn(ResponseEntity.noContent().build())
+    }
 
     @AfterEach
     fun cleanupDatabase() {

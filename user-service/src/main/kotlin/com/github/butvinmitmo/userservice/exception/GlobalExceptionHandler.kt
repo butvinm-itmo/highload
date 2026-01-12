@@ -104,6 +104,22 @@ class GlobalExceptionHandler {
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
 
+    @ExceptionHandler(ServiceUnavailableException::class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    fun handleServiceUnavailableException(
+        ex: ServiceUnavailableException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "SERVICE_UNAVAILABLE",
+                message = ex.message ?: "Service unavailable",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+    }
+
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleGenericException(

@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.userservice.service
 
+import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
 import com.github.butvinmitmo.shared.dto.AuthTokenResponse
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.CreateUserResponse
@@ -10,11 +11,13 @@ import com.github.butvinmitmo.shared.dto.UserDto
 import com.github.butvinmitmo.userservice.entity.User
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
+import com.github.butvinmitmo.userservice.exception.ServiceUnavailableException
 import com.github.butvinmitmo.userservice.exception.UnauthorizedException
 import com.github.butvinmitmo.userservice.mapper.UserMapper
 import com.github.butvinmitmo.userservice.repository.RoleRepository
 import com.github.butvinmitmo.userservice.repository.UserRepository
 import com.github.butvinmitmo.userservice.security.JwtUtil
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -29,7 +32,10 @@ class UserService(
     private val userMapper: UserMapper,
     private val passwordEncoder: PasswordEncoder,
     private val jwtUtil: JwtUtil,
+    private val divinationServiceInternalClient: DivinationServiceInternalClient,
 ) {
+    private val logger = LoggerFactory.getLogger(UserService::class.java)
+
     @Transactional(readOnly = true)
     fun authenticate(request: LoginRequest): AuthTokenResponse {
         val user =
@@ -117,6 +123,18 @@ class UserService(
     fun deleteUser(id: UUID) {
         if (!userRepository.existsById(id)) {
             throw NotFoundException("User not found")
+        }
+
+        // Clean up user data in divination-service first
+        try {
+            logger.info("Deleting user data in divination-service for user $id")
+            divinationServiceInternalClient.deleteUserData(id)
+            logger.info("Successfully deleted user data in divination-service for user $id")
+        } catch (e: Exception) {
+            logger.error("Failed to delete user data in divination-service for user $id: ${e.message}", e)
+            throw ServiceUnavailableException(
+                "Failed to delete user data from divination service. Please try again later.",
+            )
         }
 
         userRepository.deleteById(id)
