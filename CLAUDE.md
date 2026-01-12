@@ -190,6 +190,26 @@ Base path: `/api/v0.0.1`
 
 **Note:** Internal endpoints are not exposed through the gateway and are only accessible via Eureka service discovery.
 
+## API Documentation (Swagger UI)
+
+**Centralized Swagger UI** is available at the API Gateway:
+- **URL:** `http://localhost:8080/swagger-ui.html`
+- **Features:**
+  - Dropdown selector to switch between services (User Service, Tarot Service, Divination Service)
+  - "Try it out" functionality for testing endpoints
+  - Full OpenAPI 3.1 specification for each service
+
+**Architecture:**
+- Gateway hosts the Swagger UI (`springdoc-openapi-starter-webflux-ui`)
+- Backend services expose only `/api-docs` (no UI) using `springdoc-openapi-starter-*-api`
+- Gateway proxies `/v3/api-docs/{service}` to backend `/api-docs` endpoints
+- Swagger-related paths are excluded from JWT authentication
+
+**Configuration:**
+- Springdoc settings: `highload-config/gateway-service.yml` (springdoc section)
+- Proxy routes: `highload-config/gateway-service.yml` (openapi-* routes)
+- Public paths: `security.public-paths` includes `/swagger-ui`, `/v3/api-docs`, `/webjars/swagger-ui`
+
 ## Build & Development Commands
 
 ```bash

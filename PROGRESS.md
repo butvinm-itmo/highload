@@ -22,4 +22,6 @@
   - Build successful, services start correctly
   - Per-service Swagger UI disabled, API docs still available for gateway proxying
 
-- [ ] **Phase 4:** Update CLAUDE.md Documentation
+- [x] **Phase 4:** Update CLAUDE.md Documentation
+  - Added "API Documentation (Swagger UI)" section with architecture and configuration details
+  - Documented centralized URL, features, and configuration locations
