@@ -359,4 +359,21 @@ class DivinationService(
                 allCards.filter { it.id in cardIds }.associateBy { it.id }
             }.subscribeOn(Schedulers.boundedElastic())
     }
+
+    /**
+     * Deletes all data associated with a user (spreads and interpretations).
+     * Called by user-service before deleting a user to ensure cascade cleanup.
+     * Spread cards are automatically deleted via database cascade (internal FK).
+     *
+     * @param userId The ID of the user whose data should be deleted
+     * @return Mono<Void> that completes when deletion is done
+     */
+    @Transactional
+    fun deleteUserData(userId: UUID): Mono<Void> =
+        // First delete all interpretations by this user
+        interpretationRepository
+            .deleteByAuthorId(userId)
+            // Then delete all spreads by this user (spread_cards cascade via internal FK)
+            .then(spreadRepository.deleteByAuthorId(userId))
+            .then()
 }

@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.divinationservice.repository
 
 import com.github.butvinmitmo.divinationservice.entity.Interpretation
+import org.springframework.data.r2dbc.repository.Modifying
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.r2dbc.repository.R2dbcRepository
 import org.springframework.r2dbc.core.DatabaseClient
@@ -39,6 +40,10 @@ interface InterpretationRepository :
 
     @Query("SELECT COUNT(*) FROM interpretation WHERE spread_id = :spreadId")
     fun countBySpreadId(spreadId: UUID): Mono<Long>
+
+    @Modifying
+    @Query("DELETE FROM interpretation WHERE author_id = :authorId")
+    fun deleteByAuthorId(authorId: UUID): Mono<Void>
 }
 
 interface InterpretationRepositoryCustom {

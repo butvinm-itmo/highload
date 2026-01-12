@@ -400,4 +400,27 @@ class DivinationServiceTest {
         assertNotNull(result)
         assertEquals(2, result!!.content.size)
     }
+
+    @Test
+    fun `deleteUserData should delete interpretations and spreads for user`() {
+        whenever(interpretationRepository.deleteByAuthorId(userId)).thenReturn(Mono.empty())
+        whenever(spreadRepository.deleteByAuthorId(userId)).thenReturn(Mono.empty())
+
+        divinationService.deleteUserData(userId).block()
+
+        verify(interpretationRepository).deleteByAuthorId(userId)
+        verify(spreadRepository).deleteByAuthorId(userId)
+    }
+
+    @Test
+    fun `deleteUserData should complete successfully even if user has no data`() {
+        whenever(interpretationRepository.deleteByAuthorId(userId)).thenReturn(Mono.empty())
+        whenever(spreadRepository.deleteByAuthorId(userId)).thenReturn(Mono.empty())
+
+        // Should complete without exception
+        divinationService.deleteUserData(userId).block()
+
+        verify(interpretationRepository).deleteByAuthorId(userId)
+        verify(spreadRepository).deleteByAuthorId(userId)
+    }
 }
