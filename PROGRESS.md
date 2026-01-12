@@ -15,7 +15,11 @@
   - Verified: http://localhost:8080/swagger-ui.html shows dropdown with all 3 services
   - All API endpoints properly documented and accessible
 
-- [ ] **Phase 3:** Remove per-service Swagger UI
-  - Change service dependencies from -ui to -api variant
+- [x] **Phase 3:** Remove per-service Swagger UI
+  - Changed user-service from webmvc-ui to webmvc-api
+  - Changed tarot-service from webflux-ui to webflux-api
+  - Changed divination-service from webflux-ui to webflux-api
+  - Build successful, services start correctly
+  - Per-service Swagger UI disabled, API docs still available for gateway proxying
 
 - [ ] **Phase 4:** Update CLAUDE.md Documentation
