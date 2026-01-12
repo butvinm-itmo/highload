@@ -4,17 +4,16 @@ A Kotlin/Spring Boot microservices application for Tarot card readings and inter
 
 ## Architecture
 
-The application consists of 7 microservices with centralized configuration, service discovery, and API gateway:
+The application consists of 6 microservices with centralized configuration, service discovery, and API gateway:
 
-| Service                  | Port | Description                          | Swagger UI                                       |
-| ------------------------ | ---- | ------------------------------------ | ------------------------------------------------ |
-| **config-server**        | 8888 | Centralized configuration            | -                                                |
-| **eureka-server**        | 8761 | Service discovery (Netflix Eureka)   | [Dashboard](http://localhost:8761)               |
-| **gateway-service**      | 8080 | API Gateway (routing, resilience)    | -                                                |
-| **user-service**         | 8081 | User management, authentication      | [Swagger](http://localhost:8081/swagger-ui.html) |
-| **tarot-service**        | 8082 | Cards & LayoutTypes catalog          | [Swagger](http://localhost:8082/swagger-ui.html) |
-| **divination-service**   | 8083 | Spreads & Interpretations (reactive) | [Swagger](http://localhost:8083/swagger-ui.html) |
-| **notification-service** | 8084 | In-app notifications (reactive)      | [Swagger](http://localhost:8084/swagger-ui.html) |
+| Service                | Port | Description                           | Swagger UI                                                                                 |
+| ---------------------- | ---- | ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **config-server**      | 8888 | Centralized configuration management  | -                                                                                          |
+| **eureka-server**      | 8761 | Service discovery (Netflix Eureka)    | [http://localhost:8761](http://localhost:8761)                                             |
+| **gateway-service**    | 8080 | API Gateway (routing, resilience)     | -                                                                                          |
+| **user-service**       | 8081 | User management                       | [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html) |
+| **tarot-service**      | 8082 | Cards & LayoutTypes catalog           | [http://localhost:8082/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html) |
+| **divination-service** | 8083 | Spreads & Interpretations             | [http://localhost:8083/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html) |
 
 **API Gateway:** `gateway-service` provides a unified entry point for external clients. All API requests route through the gateway (port 8080) to backend services via Eureka discovery. The gateway includes circuit breaker protection and centralized monitoring.
 
@@ -36,7 +35,12 @@ git submodule update --init
 docker compose up -d
 
 # Verify services are running
-curl http://localhost:8080/actuator/health  # Gateway (main entry point)
+curl http://localhost:8888/actuator/health  # Config Server
+curl http://localhost:8761/actuator/health  # Eureka Server
+curl http://localhost:8080/actuator/health  # Gateway Service
+curl http://localhost:8081/actuator/health  # User Service
+curl http://localhost:8082/actuator/health  # Tarot Service
+curl http://localhost:8083/actuator/health  # Divination Service
 
 # Check Eureka dashboard for registered services
 open http://localhost:8761
@@ -46,8 +50,10 @@ curl http://localhost:8080/api/v0.0.1/users
 curl http://localhost:8080/api/v0.0.1/cards
 curl http://localhost:8080/api/v0.0.1/spreads
 
-# Run E2E tests (automatically rebuilds containers and waits for health)
+# Run E2E tests (requires services to be running)
+docker compose up -d
 ./gradlew :e2e-tests:test
+docker compose down
 ```
 
 ## API Overview
@@ -73,27 +79,18 @@ curl http://localhost:8080/api/v0.0.1/spreads
 
 ### divination-service (port 8083)
 
-| Method | Endpoint                                              | Description                     |
-| ------ | ----------------------------------------------------- | ------------------------------- |
-| POST   | `/api/v0.0.1/spreads`                                 | Create spread                   |
-| GET    | `/api/v0.0.1/spreads?page=N&size=M`                   | List spreads (paginated)        |
-| GET    | `/api/v0.0.1/spreads/scroll?after=ID&size=N`          | Scroll spreads (cursor-based)   |
-| GET    | `/api/v0.0.1/spreads/{id}`                            | Get spread with cards & interps |
-| DELETE | `/api/v0.0.1/spreads/{id}`                            | Delete spread (author only)     |
-| GET    | `/api/v0.0.1/spreads/{id}/interpretations`            | List interpretations for spread |
-| GET    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}` | Get interpretation              |
-| POST   | `/api/v0.0.1/spreads/{id}/interpretations`            | Add interpretation              |
-| PUT    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}` | Update interpretation (author)  |
-| DELETE | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}` | Delete interpretation (author)  |
-
-### notification-service (port 8084)
-
-| Method | Endpoint                                  | Description               |
-| ------ | ----------------------------------------- | ------------------------- |
-| GET    | `/api/v0.0.1/notifications`               | List user notifications   |
-| GET    | `/api/v0.0.1/notifications/unread-count`  | Get unread count          |
-| PATCH  | `/api/v0.0.1/notifications/{id}/read`     | Mark notification as read |
-| POST   | `/api/v0.0.1/notifications/mark-all-read` | Mark all as read          |
+| Method | Endpoint                                               | Description                      |
+| ------ | ------------------------------------------------------ | -------------------------------- |
+| POST   | `/api/v0.0.1/spreads`                                  | Create spread                    |
+| GET    | `/api/v0.0.1/spreads?page=N&size=M`                    | List spreads (paginated)         |
+| GET    | `/api/v0.0.1/spreads/scroll?after=ID&size=N`           | Scroll spreads (cursor-based)    |
+| GET    | `/api/v0.0.1/spreads/{id}`                             | Get spread with cards & interps  |
+| DELETE | `/api/v0.0.1/spreads/{id}`                             | Delete spread (author only)      |
+| GET    | `/api/v0.0.1/spreads/{id}/interpretations`             | List interpretations for spread  |
+| GET    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}`  | Get interpretation               |
+| POST   | `/api/v0.0.1/spreads/{id}/interpretations`             | Add interpretation               |
+| PUT    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}`  | Update interpretation (author)   |
+| DELETE | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}`  | Delete interpretation (author)   |
 
 ## Configuration Management
 
@@ -121,14 +118,12 @@ docker compose restart config-server
 ```
 
 **Configuration files:**
-
 - `application.yml` - Shared configuration (database, JPA, Flyway, SpringDoc)
 - `eureka-server.yml` - Eureka server settings
 - `gateway-service.yml` - Gateway routes and Resilience4j settings
 - `user-service.yml` - User service specific
 - `tarot-service.yml` - Tarot service specific
 - `divination-service.yml` - Divination service + Resilience4j settings
-- `notification-service.yml` - Notification service + Kafka settings
 
 ## Development
 
@@ -147,13 +142,19 @@ docker compose restart config-server
 ./gradlew test
 
 # Run tests for specific service
-./gradlew :<service-name>:test
+./gradlew :gateway-service:test
+./gradlew :user-service:test
+./gradlew :tarot-service:test
+./gradlew :divination-service:test
 
 # Clean build artifacts
 ./gradlew clean
 ```
 
-Coverage reports: `<service-name>/build/reports/jacoco/test/html/index.html`
+Coverage reports are located at:
+- `user-service/build/reports/jacoco/test/html/index.html`
+- `tarot-service/build/reports/jacoco/test/html/index.html`
+- `divination-service/build/reports/jacoco/test/html/index.html`
 
 ### Code Quality
 
@@ -172,7 +173,6 @@ Coverage reports: `<service-name>/build/reports/jacoco/test/html/index.html`
 **Pre-commit hooks:** The project uses [pre-commit](https://pre-commit.com/) to automatically run ktlint format before each commit.
 
 First-time setup:
-
 ```bash
 python -m venv .venv
 .venv/bin/pip install pre-commit
@@ -192,56 +192,65 @@ docker compose up -d --build
 docker compose logs -f
 
 # View logs for specific service
-docker compose logs -f <service-name>
+docker compose logs -f config-server
+docker compose logs -f eureka-server
+docker compose logs -f gateway-service
+docker compose logs -f user-service
+docker compose logs -f tarot-service
+docker compose logs -f divination-service
 
 # Stop all services
 docker compose down
 ```
 
 **Service startup order** (enforced by docker-compose health checks):
-
-1. `config-server`, `postgres`, `kafka-1/2/3` - Infrastructure
-2. `eureka-server` - Service discovery
-3. `gateway-service` - API Gateway
-4. `user-service`, `tarot-service` - Core services
-5. `divination-service`, `notification-service` - Dependent services
+1. `config-server` - Must be healthy first
+2. `eureka-server` - Fetches config, then starts
+3. `gateway-service` - Registers with Eureka for routing
+4. `postgres` - Database
+5. `user-service`, `tarot-service` - Register with Eureka
+6. `divination-service` - Discovers other services via Eureka
 
 **Environment variables:**
-
 - `CONFIG_SERVER_URL` - Config Server URL (default: http://localhost:8888)
-- `EUREKA_URL` - Eureka Server URL (required)
-- `KAFKA_BOOTSTRAP_SERVERS` - Kafka brokers (required for divination/notification services)
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Database connection
+- `EUREKA_URL` - Eureka Server URL (required, no default)
+- Database env vars: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 
 ### Running Locally (Development)
 
 ```bash
-# Start infrastructure (config, eureka, gateway, postgres, kafka)
-docker compose up -d config-server eureka-server gateway-service postgres kafka-1 kafka-2 kafka-3
+# Start infrastructure services (config-server, eureka-server, gateway-service, postgres)
+docker compose up -d config-server eureka-server gateway-service postgres
 
-# Run services locally (in separate terminals)
+# Wait for services to be healthy, then run individual services (in separate terminals)
 ./gradlew :user-service:bootRun
 ./gradlew :tarot-service:bootRun
 ./gradlew :divination-service:bootRun
-./gradlew :notification-service:bootRun
+
+# Or run config-server, eureka-server, and gateway-service locally too
+./gradlew :config-server:bootRun   # Terminal 1
+./gradlew :eureka-server:bootRun   # Terminal 2
+./gradlew :gateway-service:bootRun # Terminal 3
+# ... then run other services
 ```
 
 ### E2E Testing
 
-E2E tests automatically rebuild containers and wait for health checks before running.
+E2E tests run against a pre-running application. Services must be started before running tests.
 
+**Local Development:**
 ```bash
+# 1. Start all services (required)
+docker compose up -d
+
+# 2. Run E2E tests
 ./gradlew :e2e-tests:test
-```
 
-**Stop containers after testing:**
-
-```bash
+# 3. Stop services when done
 docker compose down
 ```
 
 **Custom Gateway URL:**
-
 ```bash
 # Via environment variable
 GATEWAY_URL=http://localhost:8080 ./gradlew :e2e-tests:test
@@ -251,29 +260,35 @@ GATEWAY_URL=http://localhost:8080 ./gradlew :e2e-tests:test
 ```
 
 **Test coverage (31 tests):**
-
 - All tests route through gateway-service (simulating external client access)
 - User CRUD, duplicate username (409), not found (404), authentication
 - Cards pagination (78 total cards), layout types, random cards
 - Spreads with inter-service Feign calls, interpretations CRUD
 - Delete operations, authorization verification (403)
 
+**Health Check:**
+- Tests verify gateway health before execution (GET /actuator/health)
+- 3 retry attempts with 1-second delays
+- Fail-fast with clear error message if services aren't running
+- Error message includes `docker compose up -d` command
+
 ## Project Structure
 
 ```
 highload/
-├── config-server/        # Centralized configuration
-├── eureka-server/        # Service discovery
-├── gateway-service/      # API Gateway
-├── user-service/         # User management
-├── tarot-service/        # Cards & Layouts
-├── divination-service/   # Spreads & Interpretations
-├── notification-service/ # In-app notifications
-├── shared-dto/           # Shared DTOs
+├── config-server/        # Config Server (port 8888)
+├── eureka-server/        # Eureka Server (port 8761)
+├── gateway-service/      # API Gateway (port 8080)
+├── highload-config/      # Git submodule - configuration repository
+├── shared-dto/           # Shared DTOs between services
 ├── shared-clients/       # Shared Feign clients
-├── e2e-tests/            # End-to-end tests
-├── highload-config/      # Configuration repository (git submodule)
-└── docker-compose.yml    # Docker orchestration
+├── user-service/         # User management (port 8081)
+├── tarot-service/        # Cards & Layouts (port 8082)
+├── divination-service/   # Spreads & Interpretations (port 8083)
+├── e2e-tests/            # End-to-end tests (requires pre-running services)
+├── docker-compose.yml    # Docker orchestration
+├── settings.gradle.kts   # Multi-project Gradle config
+└── CLAUDE.md            # Project instructions for Claude Code
 ```
 
 ## Technology Stack
@@ -289,7 +304,6 @@ highload/
 - **Configuration:** Spring Cloud Config Server (Git backend)
 - **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
 - **Resilience:** Resilience4j (circuit breaker, retry, time limiter)
-- **Messaging:** Apache Kafka 3.7 (KRaft mode, 3 replicas)
-- **Testing:** Spring Boot Test, JUnit 5, TestContainers
+- **Testing:** Spring Boot Test for E2E tests (pre-running services)
 - **API Docs:** SpringDoc OpenAPI (Swagger)
 - **Code Style:** ktlint 1.5.0

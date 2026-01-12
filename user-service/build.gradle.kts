@@ -42,9 +42,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
 
-    // Spring Security for authentication and authorization
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation(project(":shared-security"))
+    // Spring Security for BCrypt password encoding
+    implementation("org.springframework.security:spring-security-crypto")
 
     // JWT library for token generation
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")

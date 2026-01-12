@@ -33,13 +33,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    // Apache HttpClient5 for PATCH method support
-    implementation("io.github.openfeign:feign-hc5:13.5")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-websocket")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -51,8 +47,8 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-    dependsOn(":dockerComposeUp")
 
+    // Pass GATEWAY_URL system property/env var to tests
     systemProperty(
         "GATEWAY_URL",
         System.getProperty("GATEWAY_URL") ?: System.getenv("GATEWAY_URL") ?: "http://localhost:8080",

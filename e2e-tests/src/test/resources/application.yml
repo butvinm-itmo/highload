@@ -20,8 +20,6 @@ services:
     url: ${gateway.url}
   divination-service:
     url: ${gateway.url}
-  notification-service:
-    url: ${gateway.url}
 
 logging:
   level:

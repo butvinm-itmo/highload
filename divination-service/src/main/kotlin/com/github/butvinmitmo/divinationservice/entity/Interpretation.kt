@@ -16,8 +16,6 @@ data class Interpretation(
     val authorId: UUID,
     @Column("spread_id")
     val spreadId: UUID,
-    @Column("file_key")
-    var fileKey: String? = null,
     @Column("created_at")
     val createdAt: Instant? = null,
 )
