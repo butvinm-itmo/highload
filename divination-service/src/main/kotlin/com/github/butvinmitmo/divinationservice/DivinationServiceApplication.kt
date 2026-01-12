@@ -1,5 +1,10 @@
 package com.github.butvinmitmo.divinationservice
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.security.SecurityScheme
+import io.swagger.v3.oas.annotations.servers.Server
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
@@ -17,6 +22,16 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = ["com.github.butvinmitmo.shared.client"])
 @EnableR2dbcRepositories
+@OpenAPIDefinition(
+    servers = [Server(url = "http://localhost:8080", description = "API Gateway")],
+    security = [SecurityRequirement(name = "bearerAuth")],
+)
+@SecurityScheme(
+    name = "bearerAuth",
+    type = SecuritySchemeType.HTTP,
+    scheme = "bearer",
+    bearerFormat = "JWT",
+)
 class DivinationServiceApplication
 
 fun main(args: Array<String>) {
