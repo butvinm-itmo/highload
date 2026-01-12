@@ -4,6 +4,7 @@ import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.CreateUserResponse
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.shared.dto.UserDto
+import com.github.butvinmitmo.userservice.exception.ForbiddenException
 import com.github.butvinmitmo.userservice.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -19,7 +20,6 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -40,7 +40,12 @@ import java.util.UUID
 class UserController(
     private val userService: UserService,
 ) {
-    @PreAuthorize("hasRole('ADMIN')")
+    private fun requireAdmin(role: String?) {
+        if (role != "ADMIN") {
+            throw ForbiddenException("Only ADMIN users can perform this operation")
+        }
+    }
+
     @PostMapping
     @Operation(
         summary = "Create a new user",
@@ -106,6 +111,7 @@ class UserController(
         role: String,
         @Valid @RequestBody request: CreateUserRequest,
     ): ResponseEntity<CreateUserResponse> {
+        requireAdmin(role)
         val response = userService.createUser(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
@@ -211,7 +217,6 @@ class UserController(
         return ResponseEntity.ok(user)
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     @Operation(
         summary = "Update user",
@@ -277,11 +282,11 @@ class UserController(
         id: UUID,
         @Valid @RequestBody request: UpdateUserRequest,
     ): ResponseEntity<UserDto> {
+        requireAdmin(role)
         val updatedUser = userService.updateUser(id, request)
         return ResponseEntity.ok(updatedUser)
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(
         summary = "Delete user",
@@ -330,6 +335,7 @@ class UserController(
         @PathVariable
         id: UUID,
     ): ResponseEntity<Void> {
+        requireAdmin(role)
         userService.deleteUser(id)
         return ResponseEntity.noContent().build()
     }

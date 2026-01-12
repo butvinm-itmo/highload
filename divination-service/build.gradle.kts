@@ -34,7 +34,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-    implementation("org.springframework:spring-test")
     runtimeOnly("org.postgresql:r2dbc-postgresql")
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     implementation("org.springframework.cloud:spring-cloud-starter-config")
@@ -45,13 +44,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.4")
-
-    // Spring Security for authentication and authorization
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation(project(":shared-security"))
     implementation("org.postgresql:postgresql")
-    implementation("io.projectreactor.kafka:reactor-kafka:1.3.23")
-    implementation("org.springframework.kafka:spring-kafka")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-autoconfigure")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
@@ -60,11 +53,8 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.testcontainers:testcontainers:1.19.8")
     testImplementation("org.testcontainers:postgresql:1.19.8")
-    testImplementation("org.testcontainers:kafka:1.19.8")
     testImplementation("org.testcontainers:junit-jupiter:1.19.8")
     testImplementation("org.wiremock:wiremock-standalone:3.5.4")
-    testImplementation("org.springframework.kafka:spring-kafka-test")
-    testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

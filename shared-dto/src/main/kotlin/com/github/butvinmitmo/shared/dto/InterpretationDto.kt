@@ -11,7 +11,6 @@ data class InterpretationDto(
     val createdAt: Instant,
     val author: UserDto,
     val spreadId: UUID,
-    val fileUrl: String? = null,
 )
 
 data class CreateInterpretationRequest(

@@ -10,9 +10,6 @@ import com.github.butvinmitmo.divinationservice.repository.InterpretationReposit
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
 import com.github.butvinmitmo.divinationservice.service.DivinationService
-import com.github.butvinmitmo.divinationservice.service.EventPublisher
-import com.github.butvinmitmo.divinationservice.util.FileValidator
-import com.github.butvinmitmo.shared.client.FileStorageServiceClient
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
@@ -63,15 +60,6 @@ class DivinationServiceTest {
     @Mock
     private lateinit var interpretationMapper: InterpretationMapper
 
-    @Mock
-    private lateinit var eventPublisher: EventPublisher
-
-    @Mock
-    private lateinit var fileStorageServiceClient: FileStorageServiceClient
-
-    @Mock
-    private lateinit var fileValidator: FileValidator
-
     private lateinit var divinationService: DivinationService
 
     private val userId = UUID.randomUUID()
@@ -99,11 +87,8 @@ class DivinationServiceTest {
                 interpretationRepository,
                 userServiceClient,
                 tarotServiceClient,
-                fileStorageServiceClient,
                 spreadMapper,
                 interpretationMapper,
-                eventPublisher,
-                fileValidator,
             )
     }
 
@@ -137,7 +122,6 @@ class DivinationServiceTest {
             org.springframework.http.ResponseEntity
                 .ok(testCards),
         )
-        whenever(eventPublisher.publishSpreadCreated(any())).thenReturn(Mono.empty())
 
         val result = divinationService.createSpread(request, userId, "USER").block()
 
@@ -238,7 +222,6 @@ class DivinationServiceTest {
         )
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
-        whenever(eventPublisher.publishInterpretationCreated(any())).thenReturn(Mono.empty())
 
         val result = divinationService.addInterpretation(spreadId, request, userId, "USER").block()
 
