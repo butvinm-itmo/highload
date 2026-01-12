@@ -89,10 +89,20 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
                 ),
             ).block()
 
+        // Create interpretation by otherUser on their own spread (this should remain)
+        interpretationRepository
+            .save(
+                Interpretation(
+                    text = "Other user interpretation on their own spread",
+                    authorId = otherUserId,
+                    spreadId = otherUserSpread.id!!,
+                ),
+            ).block()
+
         // Verify initial state
         assertEquals(3, spreadRepository.count().block())
         assertEquals(
-            3,
+            4,
             interpretationRepository
                 .findAll()
                 .collectList()
