@@ -13,7 +13,6 @@ import java.util.UUID
 @FeignClient(
     name = "tarot-service",
     url = "\${services.tarot-service.url:}",
-    fallbackFactory = TarotServiceFallbackFactory::class,
 )
 interface TarotServiceClient {
     @GetMapping("/api/v0.0.1/cards")

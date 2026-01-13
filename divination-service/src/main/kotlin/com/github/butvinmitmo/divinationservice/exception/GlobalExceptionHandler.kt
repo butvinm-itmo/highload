@@ -1,9 +1,10 @@
 package com.github.butvinmitmo.divinationservice.exception
 
-import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import feign.FeignException
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
@@ -90,20 +91,44 @@ class GlobalExceptionHandler {
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
 
-    @ExceptionHandler(ServiceUnavailableException::class)
+    @ExceptionHandler(CallNotPermittedException::class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    fun handleServiceUnavailableException(
-        ex: ServiceUnavailableException,
+    fun handleCircuitBreakerOpen(
+        ex: CallNotPermittedException,
         exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "SERVICE_UNAVAILABLE",
-                message = ex.message ?: "Service temporarily unavailable",
+                message = "Service temporarily unavailable (circuit breaker open)",
                 timestamp = Instant.now(),
                 path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+    }
+
+    @ExceptionHandler(NoFallbackAvailableException::class)
+    fun handleNoFallbackAvailable(
+        ex: NoFallbackAvailableException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        // Unwrap the cause and handle appropriately
+        val cause = ex.cause
+        return when (cause) {
+            is FeignException.NotFound -> handleFeignNotFoundException(cause, exchange)
+            is FeignException -> handleFeignException(cause, exchange)
+            is CallNotPermittedException -> handleCircuitBreakerOpen(cause, exchange)
+            else -> {
+                val response =
+                    ErrorResponse(
+                        error = "SERVICE_UNAVAILABLE",
+                        message = "Service temporarily unavailable",
+                        timestamp = Instant.now(),
+                        path = exchange.request.path.value(),
+                    )
+                ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+            }
+        }
     }
 
     @ExceptionHandler(FeignException.NotFound::class)

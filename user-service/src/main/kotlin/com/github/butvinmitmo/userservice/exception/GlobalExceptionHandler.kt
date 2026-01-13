@@ -1,8 +1,10 @@
 package com.github.butvinmitmo.userservice.exception
 
-import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
+import feign.FeignException
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
@@ -105,16 +107,54 @@ class GlobalExceptionHandler {
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
 
-    @ExceptionHandler(ServiceUnavailableException::class)
+    @ExceptionHandler(CallNotPermittedException::class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    fun handleServiceUnavailableException(
-        ex: ServiceUnavailableException,
+    fun handleCircuitBreakerOpen(
+        ex: CallNotPermittedException,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "SERVICE_UNAVAILABLE",
-                message = ex.message ?: "Service unavailable",
+                message = "Service temporarily unavailable (circuit breaker open)",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+    }
+
+    @ExceptionHandler(NoFallbackAvailableException::class)
+    fun handleNoFallbackAvailable(
+        ex: NoFallbackAvailableException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val cause = ex.cause
+        return when (cause) {
+            is CallNotPermittedException -> handleCircuitBreakerOpen(cause, request)
+            is FeignException -> handleFeignException(cause, request)
+            else -> {
+                val response =
+                    ErrorResponse(
+                        error = "SERVICE_UNAVAILABLE",
+                        message = "Service temporarily unavailable",
+                        timestamp = Instant.now(),
+                        path = request.getDescription(false).removePrefix("uri="),
+                    )
+                ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+            }
+        }
+    }
+
+    @ExceptionHandler(FeignException::class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    fun handleFeignException(
+        ex: FeignException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "SERVICE_UNAVAILABLE",
+                message = "Service temporarily unavailable",
                 timestamp = Instant.now(),
                 path = request.getDescription(false).removePrefix("uri="),
             )

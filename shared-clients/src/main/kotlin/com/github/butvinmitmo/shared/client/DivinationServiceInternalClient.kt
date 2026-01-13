@@ -15,7 +15,6 @@ import java.util.UUID
     name = "divination-service",
     contextId = "divinationServiceInternalClient",
     url = "\${services.divination-service.url:}",
-    fallbackFactory = DivinationServiceInternalFallbackFactory::class,
 )
 interface DivinationServiceInternalClient {
     /**
