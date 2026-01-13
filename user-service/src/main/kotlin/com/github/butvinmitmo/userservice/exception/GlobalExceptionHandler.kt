@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.userservice.exception
 
+import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import org.springframework.http.HttpStatus

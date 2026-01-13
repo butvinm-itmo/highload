@@ -11,7 +11,6 @@ import com.github.butvinmitmo.shared.dto.UserDto
 import com.github.butvinmitmo.userservice.entity.User
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
-import com.github.butvinmitmo.userservice.exception.ServiceUnavailableException
 import com.github.butvinmitmo.userservice.exception.UnauthorizedException
 import com.github.butvinmitmo.userservice.mapper.UserMapper
 import com.github.butvinmitmo.userservice.repository.RoleRepository
@@ -126,16 +125,10 @@ class UserService(
         }
 
         // Clean up user data in divination-service first
-        try {
-            logger.info("Deleting user data in divination-service for user $id")
-            divinationServiceInternalClient.deleteUserData(id)
-            logger.info("Successfully deleted user data in divination-service for user $id")
-        } catch (e: Exception) {
-            logger.error("Failed to delete user data in divination-service for user $id: ${e.message}", e)
-            throw ServiceUnavailableException(
-                "Failed to delete user data from divination service. Please try again later.",
-            )
-        }
+        // Fallback factory handles service unavailability with proper error message
+        logger.info("Deleting user data in divination-service for user $id")
+        divinationServiceInternalClient.deleteUserData(id)
+        logger.info("Successfully deleted user data in divination-service for user $id")
 
         userRepository.deleteById(id)
     }

@@ -10,7 +10,11 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import java.util.UUID
 
-@FeignClient(name = "tarot-service", url = "\${services.tarot-service.url:}")
+@FeignClient(
+    name = "tarot-service",
+    url = "\${services.tarot-service.url:}",
+    fallbackFactory = TarotServiceFallbackFactory::class,
+)
 interface TarotServiceClient {
     @GetMapping("/api/v0.0.1/cards")
     fun getCards(
