@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.userservice.unit.service
 
 import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
+import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.LoginRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
@@ -10,7 +11,6 @@ import com.github.butvinmitmo.userservice.entity.RoleType
 import com.github.butvinmitmo.userservice.entity.User
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
-import com.github.butvinmitmo.userservice.exception.ServiceUnavailableException
 import com.github.butvinmitmo.userservice.exception.UnauthorizedException
 import com.github.butvinmitmo.userservice.mapper.UserMapper
 import com.github.butvinmitmo.userservice.repository.RoleRepository
@@ -202,13 +202,13 @@ class UserServiceTest {
     fun `deleteUser should throw ServiceUnavailableException when cleanup fails`() {
         whenever(userRepository.existsById(userId)).thenReturn(true)
         whenever(divinationServiceInternalClient.deleteUserData(userId))
-            .thenThrow(RuntimeException("Service unavailable"))
+            .thenThrow(ServiceUnavailableException("divination-service"))
 
         val exception =
             assertThrows<ServiceUnavailableException> {
                 userService.deleteUser(userId)
             }
-        assertEquals("Failed to delete user data from divination service. Please try again later.", exception.message)
+        assertEquals("Service 'divination-service' is temporarily unavailable", exception.message)
 
         verify(divinationServiceInternalClient).deleteUserData(userId)
         verify(userRepository, never()).deleteById(any())
