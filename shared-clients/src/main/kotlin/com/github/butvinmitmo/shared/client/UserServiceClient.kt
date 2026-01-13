@@ -21,6 +21,7 @@ import java.util.UUID
 @FeignClient(
     name = "user-service",
     url = "\${services.user-service.url:}",
+    fallbackFactory = UserServiceFallbackFactory::class,
 )
 interface UserServiceClient {
     @PostMapping("/api/v0.0.1/auth/login")

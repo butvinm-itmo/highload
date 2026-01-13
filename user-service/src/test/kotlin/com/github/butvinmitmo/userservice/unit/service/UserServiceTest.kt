@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.userservice.unit.service
 
 import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
+import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.LoginRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
@@ -198,14 +199,16 @@ class UserServiceTest {
     }
 
     @Test
-    fun `deleteUser should propagate exception when cleanup fails`() {
+    fun `deleteUser should throw ServiceUnavailableException when cleanup fails`() {
         whenever(userRepository.existsById(userId)).thenReturn(true)
         whenever(divinationServiceInternalClient.deleteUserData(userId))
-            .thenThrow(RuntimeException("Service unavailable"))
+            .thenThrow(ServiceUnavailableException("divination-service"))
 
-        assertThrows<RuntimeException> {
-            userService.deleteUser(userId)
-        }
+        val exception =
+            assertThrows<ServiceUnavailableException> {
+                userService.deleteUser(userId)
+            }
+        assertEquals("divination-service", exception.serviceName)
 
         verify(divinationServiceInternalClient).deleteUserData(userId)
         verify(userRepository, never()).deleteById(any())
