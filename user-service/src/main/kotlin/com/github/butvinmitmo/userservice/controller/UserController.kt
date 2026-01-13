@@ -4,7 +4,6 @@ import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.CreateUserResponse
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.shared.dto.UserDto
-import com.github.butvinmitmo.userservice.exception.ForbiddenException
 import com.github.butvinmitmo.userservice.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -20,6 +19,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -40,13 +39,8 @@ import java.util.UUID
 class UserController(
     private val userService: UserService,
 ) {
-    private fun requireAdmin(role: String?) {
-        if (role != "ADMIN") {
-            throw ForbiddenException("Only ADMIN users can perform this operation")
-        }
-    }
-
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Create a new user",
         description =
@@ -103,15 +97,8 @@ class UserController(
         ],
     )
     fun createUser(
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Valid @RequestBody request: CreateUserRequest,
     ): ResponseEntity<CreateUserResponse> {
-        requireAdmin(role)
         val response = userService.createUser(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
@@ -147,12 +134,6 @@ class UserController(
         ],
     )
     fun getUsers(
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Parameter(description = "Page number (0-based)", example = "0")
         @RequestParam(defaultValue = "0")
         @Min(0)
@@ -203,12 +184,6 @@ class UserController(
         ],
     )
     fun getUser(
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
@@ -218,6 +193,7 @@ class UserController(
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Update user",
         description = "Updates an existing user's information. ADMIN only.",
@@ -271,23 +247,17 @@ class UserController(
         ],
     )
     fun updateUser(
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateUserRequest,
     ): ResponseEntity<UserDto> {
-        requireAdmin(role)
         val updatedUser = userService.updateUser(id, request)
         return ResponseEntity.ok(updatedUser)
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Delete user",
         description = "Deletes a user and all their associated data. ADMIN only.",
@@ -325,17 +295,10 @@ class UserController(
         ],
     )
     fun deleteUser(
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
     ): ResponseEntity<Void> {
-        requireAdmin(role)
         userService.deleteUser(id)
         return ResponseEntity.noContent().build()
     }

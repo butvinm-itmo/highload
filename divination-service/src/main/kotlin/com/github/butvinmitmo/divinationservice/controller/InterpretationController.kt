@@ -1,6 +1,5 @@
 package com.github.butvinmitmo.divinationservice.controller
 
-import com.github.butvinmitmo.divinationservice.exception.ForbiddenException
 import com.github.butvinmitmo.divinationservice.service.DivinationService
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
@@ -20,6 +19,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -40,12 +39,6 @@ import java.util.UUID
 class InterpretationController(
     private val divinationService: DivinationService,
 ) {
-    private fun requireMediumOrAdmin(role: String?) {
-        if (role != "MEDIUM" && role != "ADMIN") {
-            throw ForbiddenException("Only MEDIUM and ADMIN users can create interpretations")
-        }
-    }
-
     @GetMapping
     @Operation(
         summary = "Get all interpretations for a spread",
@@ -136,6 +129,7 @@ class InterpretationController(
             .map { interpretation -> ResponseEntity.ok(interpretation) }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('MEDIUM', 'ADMIN')")
     @Operation(
         summary = "Add interpretation to a spread",
         description =
@@ -204,19 +198,11 @@ class InterpretationController(
         @Parameter(description = "Spread ID to add interpretation to", required = true)
         @PathVariable
         spreadId: UUID,
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Valid @RequestBody request: CreateInterpretationRequest,
-    ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> {
-        requireMediumOrAdmin(role)
-        return divinationService
-            .addInterpretation(spreadId, request, userId, role)
+    ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
+        divinationService
+            .addInterpretation(spreadId, request)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
-    }
 
     @PutMapping("/{id}")
     @Operation(
@@ -278,16 +264,10 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to update", required = true)
         @PathVariable
         id: UUID,
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Valid @RequestBody request: UpdateInterpretationRequest,
     ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
         divinationService
-            .updateInterpretation(spreadId, id, userId, role, request)
+            .updateInterpretation(spreadId, id, request)
             .map { updatedInterpretation -> ResponseEntity.ok(updatedInterpretation) }
 
     @DeleteMapping("/{id}")
@@ -334,15 +314,9 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to delete", required = true)
         @PathVariable
         id: UUID,
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
     ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
         divinationService
-            .deleteInterpretation(spreadId, id, userId, role)
+            .deleteInterpretation(spreadId, id)
             .then(
                 reactor.core.publisher.Mono
                     .just(ResponseEntity.noContent().build()),

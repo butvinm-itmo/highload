@@ -45,8 +45,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.4")
 
-    // Spring Security for BCrypt password encoding
-    implementation("org.springframework.security:spring-security-crypto")
+    // Spring Security for method-level authorization
+    implementation("org.springframework.boot:spring-boot-starter-security")
 
     // JWT library for token generation
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
@@ -55,6 +55,7 @@ dependencies {
 
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
     testImplementation("org.mockito:mockito-junit-jupiter")

@@ -11,6 +11,7 @@ import com.github.butvinmitmo.divinationservice.mapper.SpreadMapper
 import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
+import com.github.butvinmitmo.divinationservice.security.AuthorizationService
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.CardDto
@@ -41,60 +42,66 @@ class DivinationService(
     private val tarotServiceClient: TarotServiceClient,
     private val spreadMapper: SpreadMapper,
     private val interpretationMapper: InterpretationMapper,
+    private val authorizationService: AuthorizationService,
 ) {
     @Transactional
-    fun createSpread(
-        request: CreateSpreadRequest,
-        authorId: UUID,
-        role: String,
-    ): Mono<CreateSpreadResponse> {
-        // Validate user exists via Feign (blocking call on boundedElastic)
-        return Mono
-            .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .flatMap {
-                // Validate layout type exists via Feign (blocking call on boundedElastic)
+    fun createSpread(request: CreateSpreadRequest): Mono<CreateSpreadResponse> =
+        authorizationService.getCurrentUserId().flatMap { authorId ->
+            authorizationService.getCurrentRole().flatMap { role ->
+                // Validate user exists via Feign (blocking call on boundedElastic)
                 Mono
-                    .fromCallable { tarotServiceClient.getLayoutTypeById(authorId, role, request.layoutTypeId).body!! }
+                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
                     .subscribeOn(Schedulers.boundedElastic())
-            }.flatMap { layoutType ->
-                val spread =
-                    Spread(
-                        question = request.question,
-                        authorId = authorId,
-                        layoutTypeId = request.layoutTypeId,
-                    )
-                spreadRepository
-                    .save(spread)
-                    .flatMap { savedSpread ->
-                        // Get random cards via Feign
+                    .flatMap {
+                        // Validate layout type exists via Feign (blocking call on boundedElastic)
                         Mono
                             .fromCallable {
                                 tarotServiceClient
-                                    .getRandomCards(
+                                    .getLayoutTypeById(
                                         authorId,
                                         role,
-                                        layoutType.cardsCount,
+                                        request.layoutTypeId,
                                     ).body!!
                             }.subscribeOn(Schedulers.boundedElastic())
-                            .flatMapMany { cards ->
-                                // Save all spread cards reactively
-                                Flux.fromIterable(
-                                    cards.mapIndexed { index, card ->
-                                        SpreadCard(
-                                            spreadId = savedSpread.id!!,
-                                            cardId = card.id,
-                                            positionInSpread = index + 1,
-                                            isReversed = Random.nextBoolean(),
+                    }.flatMap { layoutType ->
+                        val spread =
+                            Spread(
+                                question = request.question,
+                                authorId = authorId,
+                                layoutTypeId = request.layoutTypeId,
+                            )
+                        spreadRepository
+                            .save(spread)
+                            .flatMap { savedSpread ->
+                                // Get random cards via Feign
+                                Mono
+                                    .fromCallable {
+                                        tarotServiceClient
+                                            .getRandomCards(
+                                                authorId,
+                                                role,
+                                                layoutType.cardsCount,
+                                            ).body!!
+                                    }.subscribeOn(Schedulers.boundedElastic())
+                                    .flatMapMany { cards ->
+                                        // Save all spread cards reactively
+                                        Flux.fromIterable(
+                                            cards.mapIndexed { index, card ->
+                                                SpreadCard(
+                                                    spreadId = savedSpread.id!!,
+                                                    cardId = card.id,
+                                                    positionInSpread = index + 1,
+                                                    isReversed = Random.nextBoolean(),
+                                                )
+                                            },
                                         )
-                                    },
-                                )
-                            }.flatMap { spreadCard ->
-                                spreadCardRepository.save(spreadCard)
-                            }.then(Mono.just(CreateSpreadResponse(id = savedSpread.id!!)))
+                                    }.flatMap { spreadCard ->
+                                        spreadCardRepository.save(spreadCard)
+                                    }.then(Mono.just(CreateSpreadResponse(id = savedSpread.id!!)))
+                            }
                     }
             }
-    }
+        }
 
     fun getSpreads(
         page: Int,
@@ -198,19 +205,17 @@ class DivinationService(
             }
 
     @Transactional
-    fun deleteSpread(
-        id: UUID,
-        userId: UUID,
-        role: String,
-    ): Mono<Void> =
+    fun deleteSpread(id: UUID): Mono<Void> =
         spreadRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Spread not found")))
             .flatMap { spread ->
-                if (spread.authorId != userId && role != "ADMIN") {
-                    Mono.error(ForbiddenException("You can only delete your own spreads"))
-                } else {
-                    spreadRepository.deleteById(id)
+                authorizationService.canModify(spread.authorId).flatMap { canModify ->
+                    if (!canModify) {
+                        Mono.error(ForbiddenException("You can only delete your own spreads"))
+                    } else {
+                        spreadRepository.deleteById(id)
+                    }
                 }
             }
 
@@ -223,52 +228,54 @@ class DivinationService(
     fun addInterpretation(
         spreadId: UUID,
         request: CreateInterpretationRequest,
-        authorId: UUID,
-        role: String,
     ): Mono<CreateInterpretationResponse> =
-        getSpreadEntity(spreadId)
-            .flatMap {
-                // Validate user exists via Feign (blocking call on boundedElastic)
-                Mono
-                    .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
-                    .subscribeOn(Schedulers.boundedElastic())
-            }.flatMap {
-                interpretationRepository.existsByAuthorAndSpread(authorId, spreadId)
-            }.flatMap { exists ->
-                if (exists) {
-                    Mono.error(ConflictException("You already have an interpretation for this spread"))
-                } else {
-                    val interpretation =
-                        Interpretation(
-                            text = request.text,
-                            authorId = authorId,
-                            spreadId = spreadId,
-                        )
-                    interpretationRepository
-                        .save(interpretation)
-                        .map { saved -> CreateInterpretationResponse(id = saved.id!!) }
-                }
+        authorizationService.getCurrentUserId().flatMap { authorId ->
+            authorizationService.getCurrentRole().flatMap { role ->
+                getSpreadEntity(spreadId)
+                    .flatMap {
+                        // Validate user exists via Feign (blocking call on boundedElastic)
+                        Mono
+                            .fromCallable { userServiceClient.getUserById(authorId, role, authorId) }
+                            .subscribeOn(Schedulers.boundedElastic())
+                    }.flatMap {
+                        interpretationRepository.existsByAuthorAndSpread(authorId, spreadId)
+                    }.flatMap { exists ->
+                        if (exists) {
+                            Mono.error(ConflictException("You already have an interpretation for this spread"))
+                        } else {
+                            val interpretation =
+                                Interpretation(
+                                    text = request.text,
+                                    authorId = authorId,
+                                    spreadId = spreadId,
+                                )
+                            interpretationRepository
+                                .save(interpretation)
+                                .map { saved -> CreateInterpretationResponse(id = saved.id!!) }
+                        }
+                    }
             }
+        }
 
     @Transactional
     fun updateInterpretation(
         spreadId: UUID,
         id: UUID,
-        userId: UUID,
-        role: String,
         request: UpdateInterpretationRequest,
     ): Mono<InterpretationDto> =
         interpretationRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
             .flatMap { interpretation ->
-                if (interpretation.authorId != userId && role != "ADMIN") {
-                    Mono.error(ForbiddenException("You can only edit your own interpretations"))
-                } else {
-                    interpretation.text = request.text
-                    interpretationRepository
-                        .save(interpretation)
-                        .map { saved -> interpretationMapper.toDto(saved) }
+                authorizationService.canModify(interpretation.authorId).flatMap { canModify ->
+                    if (!canModify) {
+                        Mono.error(ForbiddenException("You can only edit your own interpretations"))
+                    } else {
+                        interpretation.text = request.text
+                        interpretationRepository
+                            .save(interpretation)
+                            .map { saved -> interpretationMapper.toDto(saved) }
+                    }
                 }
             }
 
@@ -276,17 +283,17 @@ class DivinationService(
     fun deleteInterpretation(
         spreadId: UUID,
         id: UUID,
-        userId: UUID,
-        role: String,
     ): Mono<Void> =
         interpretationRepository
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("Interpretation not found")))
             .flatMap { interpretation ->
-                if (interpretation.authorId != userId && role != "ADMIN") {
-                    Mono.error(ForbiddenException("You can only delete your own interpretations"))
-                } else {
-                    interpretationRepository.deleteById(id)
+                authorizationService.canModify(interpretation.authorId).flatMap { canModify ->
+                    if (!canModify) {
+                        Mono.error(ForbiddenException("You can only delete your own interpretations"))
+                    } else {
+                        interpretationRepository.deleteById(id)
+                    }
                 }
             }
 

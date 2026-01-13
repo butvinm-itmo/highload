@@ -6,6 +6,7 @@ import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import feign.FeignException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -84,6 +85,22 @@ class GlobalExceptionHandler {
             ErrorResponse(
                 error = "FORBIDDEN",
                 message = ex.message ?: "Access forbidden",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(
+        ex: AccessDeniedException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = "Access denied",
                 timestamp = Instant.now(),
                 path = exchange.request.path.value(),
             )
