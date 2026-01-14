@@ -4,8 +4,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 abstract class BaseIntegrationTest {
     companion object {
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> =
+        val postgres: PostgreSQLContainer =
             PostgreSQLContainer("postgres:15-alpine")
                 .withDatabaseName("tarot_db_test")
                 .withUsername("test_user")
@@ -25,9 +25,9 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
+            registry.add("spring.datasource.url") { postgres.jdbcUrl }
+            registry.add("spring.datasource.username") { postgres.username }
+            registry.add("spring.datasource.password") { postgres.password }
             registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
         }
     }

@@ -73,7 +73,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Services register with Eureka and discover each other dynamically
 - `divination-service` calls other services via Feign clients
 - External clients access through `gateway-service`
-- All services share a single PostgreSQL database with separate Flyway history tables
+- Currently all services share a single PostgreSQL database with separate Flyway history tables, but are designed for independent database deployment
+
+**Cascade Delete (User Deletion):**
+- When a user is deleted, user-service calls divination-service's internal API first
+- Internal endpoint: `DELETE /internal/users/{userId}/data`
+- Deletes all user's spreads and interpretations before user record is removed
+- User deletion fails (503 Service Unavailable) if cleanup fails
 
 **Configuration:** External Git repository (`highload-config/` submodule) served by config-server.
 
@@ -127,12 +133,17 @@ Minimum 8 chars, uppercase, lowercase, digit, special character (@$!%*?&#).
 
 ### divination-service tables
 
-**spread** - (id UUID PK, question TEXT, layout_type_id UUID FK, author_id UUID FK CASCADE, created_at TIMESTAMPTZ)
+**IMPORTANT:** divination-service has NO foreign keys to tables owned by other services (user, card, layout_type). This enables independent database deployment. Data integrity is enforced at the application level via Feign client validation.
 
-**spread_card** - (id UUID PK, spread_id UUID FK CASCADE, card_id UUID FK, position_in_spread INTEGER, is_reversed BOOLEAN)
+**spread** - (id UUID PK, question TEXT, layout_type_id UUID, author_id UUID, created_at TIMESTAMPTZ)
+- layout_type_id and author_id are stored as UUIDs without FK constraints
+
+**spread_card** - (id UUID PK, spread_id UUID FK CASCADE, card_id UUID, position_in_spread INTEGER, is_reversed BOOLEAN)
+- FK to spread only (internal); card_id stored without FK constraint
 - Unique constraint: (spread_id, position_in_spread)
 
-**interpretation** - (id UUID PK, text TEXT, author_id UUID FK CASCADE, spread_id UUID FK CASCADE, created_at TIMESTAMPTZ)
+**interpretation** - (id UUID PK, text TEXT, author_id UUID, spread_id UUID FK CASCADE, created_at TIMESTAMPTZ)
+- FK to spread only (internal); author_id stored without FK constraint
 - Unique constraint: (author_id, spread_id)
 
 ## API Endpoints
@@ -171,6 +182,33 @@ Base path: `/api/v0.0.1`
 | POST | `/spreads/{spreadId}/interpretations` | Add interpretation | MEDIUM/ADMIN |
 | PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation | Author/ADMIN |
 | DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation | Author/ADMIN |
+
+### divination-service (Internal API)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| DELETE | `/internal/users/{userId}/data` | Delete all user's spreads and interpretations | Service-to-service only |
+
+**Note:** Internal endpoints are not exposed through the gateway and are only accessible via Eureka service discovery.
+
+## API Documentation (Swagger UI)
+
+**Centralized Swagger UI** is available at the API Gateway:
+- **URL:** `http://localhost:8080/swagger-ui.html`
+- **Features:**
+  - Dropdown selector to switch between services (User Service, Tarot Service, Divination Service)
+  - "Try it out" functionality for testing endpoints
+  - Full OpenAPI 3.1 specification for each service
+
+**Architecture:**
+- Gateway hosts the Swagger UI (`springdoc-openapi-starter-webflux-ui`)
+- Backend services expose only `/api-docs` (no UI) using `springdoc-openapi-starter-*-api`
+- Gateway proxies `/v3/api-docs/{service}` to backend `/api-docs` endpoints
+- Swagger-related paths are excluded from JWT authentication
+
+**Configuration:**
+- Springdoc settings: `highload-config/gateway-service.yml` (springdoc section)
+- Proxy routes: `highload-config/gateway-service.yml` (openapi-* routes)
+- Public paths: `security.public-paths` includes `/swagger-ui`, `/v3/api-docs`, `/webjars/swagger-ui`
 
 ## Build & Development Commands
 

@@ -12,8 +12,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 import reactor.core.publisher.Mono
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -55,7 +55,7 @@ abstract class BaseIntegrationTest {
                 ).build()
 
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> =
+        val postgres: PostgreSQLContainer =
             PostgreSQLContainer("postgres:15-alpine")
                 .withDatabaseName("tarot_db_test")
                 .withUsername("test_user")
@@ -68,14 +68,14 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
+            registry.add("spring.datasource.url") { postgres.jdbcUrl }
+            registry.add("spring.datasource.username") { postgres.username }
+            registry.add("spring.datasource.password") { postgres.password }
             registry.add("spring.r2dbc.url") {
                 "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
             }
-            registry.add("spring.r2dbc.username", postgres::getUsername)
-            registry.add("spring.r2dbc.password", postgres::getPassword)
+            registry.add("spring.r2dbc.username") { postgres.username }
+            registry.add("spring.r2dbc.password") { postgres.password }
             registry.add("spring.flyway.enabled") { "true" }
             registry.add("services.user-service.url") { wireMock.baseUrl() }
             registry.add("services.tarot-service.url") { wireMock.baseUrl() }

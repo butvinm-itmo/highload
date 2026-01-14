@@ -31,7 +31,10 @@ dependencyManagement {
 dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-config")
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
     implementation(project(":shared-dto"))
+    implementation(project(":shared-clients"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -40,10 +43,10 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.4")
 
-    // Spring Security for BCrypt password encoding
-    implementation("org.springframework.security:spring-security-crypto")
+    // Spring Security for method-level authorization
+    implementation("org.springframework.boot:spring-boot-starter-security")
 
     // JWT library for token generation
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
@@ -52,12 +55,14 @@ dependencies {
 
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
     testImplementation("org.mockito:mockito-junit-jupiter")
-    testImplementation("org.testcontainers:testcontainers:1.19.8")
-    testImplementation("org.testcontainers:postgresql:1.19.8")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.8")
+    testImplementation("org.testcontainers:testcontainers:2.0.2")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.2")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.2")
+    testImplementation("org.wiremock:wiremock-standalone:3.9.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

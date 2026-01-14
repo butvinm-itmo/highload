@@ -40,6 +40,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
 
+    // OpenAPI/Swagger UI for centralized API documentation
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.4")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")

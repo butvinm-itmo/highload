@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -86,16 +85,10 @@ class SpreadController(
         ],
     )
     fun createSpread(
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
         @Valid @RequestBody request: CreateSpreadRequest,
     ): Mono<ResponseEntity<CreateSpreadResponse>> =
         divinationService
-            .createSpread(request, userId, role)
+            .createSpread(request)
             .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
 
     @GetMapping
@@ -256,14 +249,8 @@ class SpreadController(
         @Parameter(description = "Spread ID", required = true)
         @PathVariable
         id: UUID,
-        @Parameter(description = "User ID from JWT", required = true)
-        @RequestHeader("X-User-Id")
-        userId: UUID,
-        @Parameter(description = "User role from JWT", required = true)
-        @RequestHeader("X-User-Role")
-        role: String,
     ): Mono<ResponseEntity<Void>> =
         divinationService
-            .deleteSpread(id, userId, role)
+            .deleteSpread(id)
             .then(Mono.just(ResponseEntity.noContent().build()))
 }

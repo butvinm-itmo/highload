@@ -1,5 +1,7 @@
 package com.github.butvinmitmo.userservice.unit.service
 
+import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
+import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.LoginRequest
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
@@ -31,6 +33,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
 import java.util.Optional
@@ -53,6 +56,9 @@ class UserServiceTest {
     @Mock
     private lateinit var jwtUtil: JwtUtil
 
+    @Mock
+    private lateinit var divinationServiceInternalClient: DivinationServiceInternalClient
+
     private lateinit var userService: UserService
     private val userMapper = UserMapper()
 
@@ -62,7 +68,16 @@ class UserServiceTest {
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, roleRepository, roleService, userMapper, passwordEncoder, jwtUtil)
+        userService =
+            UserService(
+                userRepository,
+                roleRepository,
+                roleService,
+                userMapper,
+                passwordEncoder,
+                jwtUtil,
+                divinationServiceInternalClient,
+            )
     }
 
     @Test
@@ -159,11 +174,13 @@ class UserServiceTest {
     }
 
     @Test
-    fun `deleteUser should delete user when exists`() {
+    fun `deleteUser should delete user when exists and cleanup succeeds`() {
         whenever(userRepository.existsById(userId)).thenReturn(true)
+        whenever(divinationServiceInternalClient.deleteUserData(userId)).thenReturn(ResponseEntity.noContent().build())
 
         userService.deleteUser(userId)
 
+        verify(divinationServiceInternalClient).deleteUserData(userId)
         verify(userRepository).deleteById(userId)
     }
 
@@ -177,6 +194,23 @@ class UserServiceTest {
             }
         assertEquals("User not found", exception.message)
 
+        verify(divinationServiceInternalClient, never()).deleteUserData(any())
+        verify(userRepository, never()).deleteById(any())
+    }
+
+    @Test
+    fun `deleteUser should throw ServiceUnavailableException when cleanup fails`() {
+        whenever(userRepository.existsById(userId)).thenReturn(true)
+        whenever(divinationServiceInternalClient.deleteUserData(userId))
+            .thenThrow(ServiceUnavailableException("divination-service"))
+
+        val exception =
+            assertThrows<ServiceUnavailableException> {
+                userService.deleteUser(userId)
+            }
+        assertEquals("divination-service", exception.serviceName)
+
+        verify(divinationServiceInternalClient).deleteUserData(userId)
         verify(userRepository, never()).deleteById(any())
     }
 

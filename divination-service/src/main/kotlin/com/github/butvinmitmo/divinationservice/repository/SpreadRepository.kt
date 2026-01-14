@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.divinationservice.repository
 
 import com.github.butvinmitmo.divinationservice.entity.Spread
+import org.springframework.data.r2dbc.repository.Modifying
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.r2dbc.repository.R2dbcRepository
 import org.springframework.r2dbc.core.DatabaseClient
@@ -26,6 +27,10 @@ interface SpreadRepository :
 
     @Query("SELECT COUNT(*) FROM spread")
     override fun count(): Mono<Long>
+
+    @Modifying
+    @Query("DELETE FROM spread WHERE author_id = :authorId")
+    fun deleteByAuthorId(authorId: UUID): Mono<Void>
 }
 
 interface SpreadRepositoryCustom {

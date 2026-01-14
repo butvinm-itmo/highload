@@ -23,6 +23,7 @@ dependencies {
     api("org.springframework.cloud:spring-cloud-starter-openfeign")
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
+    api("org.springframework.security:spring-security-core:6.4.7")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 }
 

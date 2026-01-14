@@ -1,9 +1,11 @@
 package com.github.butvinmitmo.userservice.exception
 
+import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -102,6 +104,38 @@ class GlobalExceptionHandler {
                 path = request.getDescription(false).removePrefix("uri="),
             )
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(
+        ex: AccessDeniedException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = "Access denied",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(ServiceUnavailableException::class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    fun handleServiceUnavailable(
+        ex: ServiceUnavailableException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "SERVICE_UNAVAILABLE",
+                message = ex.message ?: "Service temporarily unavailable",
+                timestamp = Instant.now(),
+                path = request.getDescription(false).removePrefix("uri="),
+            )
+        return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
     }
 
     @ExceptionHandler(Exception::class)

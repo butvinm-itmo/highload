@@ -17,8 +17,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 import reactor.core.publisher.Mono
 import java.util.UUID
 
@@ -74,7 +74,7 @@ abstract class BaseControllerIntegrationTest {
 
     companion object {
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> =
+        val postgres: PostgreSQLContainer =
             PostgreSQLContainer("postgres:15-alpine")
                 .withDatabaseName("tarot_db_test")
                 .withUsername("test_user")
@@ -90,12 +90,12 @@ abstract class BaseControllerIntegrationTest {
             registry.add("spring.r2dbc.url") {
                 "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
             }
-            registry.add("spring.r2dbc.username", postgres::getUsername)
-            registry.add("spring.r2dbc.password", postgres::getPassword)
+            registry.add("spring.r2dbc.username") { postgres.username }
+            registry.add("spring.r2dbc.password") { postgres.password }
             registry.add("spring.flyway.enabled") { "true" }
-            registry.add("spring.flyway.url", postgres::getJdbcUrl)
-            registry.add("spring.flyway.user", postgres::getUsername)
-            registry.add("spring.flyway.password", postgres::getPassword)
+            registry.add("spring.flyway.url") { postgres.jdbcUrl }
+            registry.add("spring.flyway.user") { postgres.username }
+            registry.add("spring.flyway.password") { postgres.password }
         }
     }
 }

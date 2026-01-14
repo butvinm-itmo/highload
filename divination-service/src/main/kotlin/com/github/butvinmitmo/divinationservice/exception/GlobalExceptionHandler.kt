@@ -1,12 +1,12 @@
 package com.github.butvinmitmo.divinationservice.exception
 
+import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.shared.dto.ErrorResponse
 import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
 import feign.FeignException
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException
-import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -91,6 +91,38 @@ class GlobalExceptionHandler {
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
 
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(
+        ex: AccessDeniedException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = "Access denied",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(ServiceUnavailableException::class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    fun handleServiceUnavailable(
+        ex: ServiceUnavailableException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "SERVICE_UNAVAILABLE",
+                message = ex.message ?: "Service temporarily unavailable",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
+    }
+
     @ExceptionHandler(FeignException.NotFound::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleFeignNotFoundException(
@@ -105,36 +137,6 @@ class GlobalExceptionHandler {
                 path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler(NoFallbackAvailableException::class)
-    fun handleNoFallbackAvailableException(
-        ex: NoFallbackAvailableException,
-        exchange: ServerWebExchange,
-    ): ResponseEntity<ErrorResponse> {
-        // Unwrap the cause and delegate to appropriate handler
-        val cause = ex.cause
-        return when (cause) {
-            is FeignException.NotFound -> handleFeignNotFoundException(cause, exchange)
-            is FeignException -> handleFeignException(cause, exchange)
-            else -> handleGenericException(ex, exchange)
-        }
-    }
-
-    @ExceptionHandler(CallNotPermittedException::class)
-    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    fun handleCircuitBreakerOpenException(
-        ex: CallNotPermittedException,
-        exchange: ServerWebExchange,
-    ): ResponseEntity<ErrorResponse> {
-        val response =
-            ErrorResponse(
-                error = "SERVICE_UNAVAILABLE",
-                message = "Service temporarily unavailable. Please try again later.",
-                timestamp = Instant.now(),
-                path = exchange.request.path.value(),
-            )
-        return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
     }
 
     @ExceptionHandler(FeignException::class)
