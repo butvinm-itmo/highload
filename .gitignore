@@ -45,5 +45,5 @@ out/
 .env
 _workflow.md
 _workflow.log
-_signal.json
+_state.json
 run_workflow.py
