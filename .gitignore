@@ -43,3 +43,5 @@ out/
 .venv
 
 .env
+_plan.md
+_state.json
