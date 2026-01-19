@@ -22,10 +22,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **BEHAVIOR EXAMPLES:**
 
-* **[Handling JPA Lazy Loading]**
-    * **BAD:** Accessing collection fields to trigger loading (`val _ = entity.items.size`).
-    * **GOOD:** Using `@Query("SELECT e FROM Entity e JOIN FETCH e.items WHERE ...")`.
-
 * **[Handling Test Failures]**
     * **BAD:** Adding `@Disabled("fix later")` or commenting out assertions.
     * **GOOD:** Analyzing TestContainer/WireMock logs and fixing the root cause.
@@ -49,7 +45,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Framework:** Spring Boot 3.5.6, Spring Cloud 2025.0.0
 - **Build:** Gradle with Kotlin DSL (multi-project)
 - **Database:** PostgreSQL 15, Flyway migrations
-- **ORM:** Spring Data JPA (user/tarot services), Spring Data R2DBC (divination-service)
+- **ORM:** Spring Data R2DBC (all services - fully reactive)
 - **Service Discovery:** Netflix Eureka
 - **API Gateway:** Spring Cloud Gateway
 - **Inter-service:** Spring Cloud OpenFeign
@@ -63,8 +59,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **config-server** | 8888 | Spring Cloud Config | Centralized configuration |
 | **eureka-server** | 8761 | Netflix Eureka | Service discovery |
 | **gateway-service** | 8080 | Spring Cloud Gateway | API Gateway, JWT validation |
-| **user-service** | 8081 | Spring MVC + JPA | User management, authentication |
-| **tarot-service** | 8082 | Spring MVC + JPA | Cards & layout types reference data |
+| **user-service** | 8081 | WebFlux + R2DBC | User management, authentication (reactive) |
+| **tarot-service** | 8082 | WebFlux + R2DBC | Cards & layout types reference data (reactive) |
 | **divination-service** | 8083 | WebFlux + R2DBC | Spreads & interpretations (reactive) |
 
 **Shared modules:** `shared-dto` (DTOs), `shared-clients` (Feign clients), `e2e-tests`
@@ -252,18 +248,28 @@ docker compose up -d && ./gradlew :e2e-tests:test
 
 ## Key Implementation Notes
 
-### Reactive Programming (divination-service)
+### Reactive Programming (All Services)
 
-**IMPORTANT:** The `tarot-service` uses blocking JPA - this is intentional, not a bug. The `divination-service` is reactive (WebFlux + R2DBC) while other services use traditional Spring MVC + JPA.
+All backend services (user-service, tarot-service, divination-service) use Spring WebFlux + R2DBC for fully reactive, non-blocking operation.
 
 **Blocking Feign in Reactive Context:**
-Feign clients are blocking. In divination-service, wrap calls with `Mono.fromCallable().subscribeOn(Schedulers.boundedElastic())` to avoid blocking the reactive event loop.
+Feign clients are blocking. Wrap all Feign calls with `Mono.fromCallable().subscribeOn(Schedulers.boundedElastic())` to avoid blocking the reactive event loop.
 
 **R2DBC Entities:**
 - Use `@Table` instead of `@Entity`
 - Store foreign key IDs directly (no `@ManyToOne`)
 - ID is nullable for database generation
 - Always use returned entity from `save()`
+
+**Reactive Security (user-service):**
+- Uses `@EnableWebFluxSecurity` and `@EnableReactiveMethodSecurity`
+- Authentication filter implements `WebFilter` (not servlet filter)
+- Security context via `ReactiveSecurityContextHolder`
+
+**Testing:**
+- Use `WebTestClient` for controller tests (not MockMvc)
+- Use `StepVerifier` for service tests
+- Reactive cleanup with `repository.deleteAll().block()` in `@BeforeEach`
 
 ### Service Discovery (Eureka)
 
