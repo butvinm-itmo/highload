@@ -1,37 +1,35 @@
 package com.github.butvinmitmo.userservice.config
 
-import com.github.butvinmitmo.userservice.security.GatewayAuthenticationFilter
+import com.github.butvinmitmo.userservice.security.GatewayAuthenticationWebFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder
+import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.server.SecurityWebFilterChain
 
 @Configuration
-@EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableWebFluxSecurity
+@EnableReactiveMethodSecurity(useAuthorizationManager = true)
 class SecurityConfig(
-    private val gatewayAuthenticationFilter: GatewayAuthenticationFilter,
+    private val gatewayAuthenticationWebFilter: GatewayAuthenticationWebFilter,
 ) {
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(10)
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
+    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
         http
             .csrf { it.disable() }
-            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authorizeHttpRequests {
+            .authorizeExchange {
                 it
-                    .requestMatchers("/api/v0.0.1/auth/**", "/actuator/**", "/api-docs/**")
+                    .pathMatchers("/api/v0.0.1/auth/**", "/actuator/**", "/api-docs/**")
                     .permitAll()
-                    .anyRequest()
+                    .anyExchange()
                     .authenticated()
-            }.addFilterBefore(gatewayAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            }.addFilterAt(gatewayAuthenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
             .build()
 }

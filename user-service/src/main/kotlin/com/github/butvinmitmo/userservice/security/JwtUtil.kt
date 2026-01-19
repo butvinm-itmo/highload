@@ -1,5 +1,6 @@
 package com.github.butvinmitmo.userservice.security
 
+import com.github.butvinmitmo.userservice.entity.Role
 import com.github.butvinmitmo.userservice.entity.User
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
@@ -21,7 +22,10 @@ class JwtUtil(
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
 
-    fun generateToken(user: User): Pair<String, Instant> {
+    fun generateToken(
+        user: User,
+        role: Role,
+    ): Pair<String, Instant> {
         val now = Instant.now()
         val expiresAt = now.plus(expirationHours, ChronoUnit.HOURS)
 
@@ -30,7 +34,7 @@ class JwtUtil(
                 .builder()
                 .subject(user.id.toString())
                 .claim("username", user.username)
-                .claim("role", user.role.name)
+                .claim("role", role.name)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)

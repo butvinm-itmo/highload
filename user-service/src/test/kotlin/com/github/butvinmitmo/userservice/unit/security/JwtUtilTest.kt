@@ -18,6 +18,7 @@ class JwtUtilTest {
     private val testSecret = "testSecretKeyThatIsLongEnoughForHS256AlgorithmRequirements!!"
     private val expirationHours = 24L
     private val userId = UUID.randomUUID()
+    private val testUserRole = TestEntityFactory.testUserRole
 
     @BeforeEach
     fun setup() {
@@ -29,7 +30,7 @@ class JwtUtilTest {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
         val beforeGeneration = Instant.now()
 
-        val (token, expiresAt) = jwtUtil.generateToken(user)
+        val (token, expiresAt) = jwtUtil.generateToken(user, testUserRole)
 
         assertNotNull(token)
         assertNotNull(expiresAt)
@@ -43,7 +44,7 @@ class JwtUtilTest {
     fun `generateToken should include user ID as subject`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
 
-        val (token, _) = jwtUtil.generateToken(user)
+        val (token, _) = jwtUtil.generateToken(user, testUserRole)
 
         val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
         val claims =
@@ -61,7 +62,7 @@ class JwtUtilTest {
     fun `generateToken should include username claim`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
 
-        val (token, _) = jwtUtil.generateToken(user)
+        val (token, _) = jwtUtil.generateToken(user, testUserRole)
 
         val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
         val claims =
@@ -79,7 +80,7 @@ class JwtUtilTest {
     fun `generateToken should include role claim`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
 
-        val (token, _) = jwtUtil.generateToken(user)
+        val (token, _) = jwtUtil.generateToken(user, testUserRole)
 
         val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
         val claims =
@@ -98,7 +99,7 @@ class JwtUtilTest {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
         val beforeGeneration = Instant.now()
 
-        val (token, _) = jwtUtil.generateToken(user)
+        val (token, _) = jwtUtil.generateToken(user, testUserRole)
 
         val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
         val claims =
@@ -118,7 +119,7 @@ class JwtUtilTest {
     fun `generateToken should be verifiable with correct secret`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
 
-        val (token, _) = jwtUtil.generateToken(user)
+        val (token, _) = jwtUtil.generateToken(user, testUserRole)
 
         val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
         val claims =
@@ -135,7 +136,7 @@ class JwtUtilTest {
     fun `generateToken should include expiration claim matching returned instant`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = Instant.now())
 
-        val (token, expiresAt) = jwtUtil.generateToken(user)
+        val (token, expiresAt) = jwtUtil.generateToken(user, testUserRole)
 
         val secretKey = Keys.hmacShaKeyFor(testSecret.toByteArray())
         val claims =

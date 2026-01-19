@@ -1,18 +1,15 @@
 package com.github.butvinmitmo.userservice.entity
 
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import org.springframework.data.annotation.Id
+import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 import java.util.UUID
 
-@Entity
-@Table(name = "role")
-class Role(
+@Table("role")
+data class Role(
     @Id
-    @Column(columnDefinition = "uuid")
-    val id: UUID = UUID.randomUUID(),
-    @Column(nullable = false, unique = true, length = 50)
+    val id: UUID? = null,
+    @Column("name")
     val name: String,
 )
 

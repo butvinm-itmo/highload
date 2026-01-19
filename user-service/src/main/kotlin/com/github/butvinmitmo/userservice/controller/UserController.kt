@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @RestController
@@ -98,10 +99,8 @@ class UserController(
     )
     fun createUser(
         @Valid @RequestBody request: CreateUserRequest,
-    ): ResponseEntity<CreateUserResponse> {
-        val response = userService.createUser(request)
-        return ResponseEntity.status(HttpStatus.CREATED).body(response)
-    }
+    ): Mono<ResponseEntity<CreateUserResponse>> =
+        userService.createUser(request).map { ResponseEntity.status(HttpStatus.CREATED).body(it) }
 
     @GetMapping
     @Operation(
@@ -143,13 +142,13 @@ class UserController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): ResponseEntity<List<UserDto>> {
-        val response = userService.getUsers(page, size)
-        return ResponseEntity
-            .ok()
-            .header("X-Total-Count", response.totalElements.toString())
-            .body(response.content)
-    }
+    ): Mono<ResponseEntity<List<UserDto>>> =
+        userService.getUsers(page, size).map { response ->
+            ResponseEntity
+                .ok()
+                .header("X-Total-Count", response.totalElements.toString())
+                .body(response.content)
+        }
 
     @GetMapping("/{id}")
     @Operation(
@@ -187,10 +186,7 @@ class UserController(
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
-    ): ResponseEntity<UserDto> {
-        val user = userService.getUser(id)
-        return ResponseEntity.ok(user)
-    }
+    ): Mono<ResponseEntity<UserDto>> = userService.getUser(id).map { ResponseEntity.ok(it) }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -251,10 +247,7 @@ class UserController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateUserRequest,
-    ): ResponseEntity<UserDto> {
-        val updatedUser = userService.updateUser(id, request)
-        return ResponseEntity.ok(updatedUser)
-    }
+    ): Mono<ResponseEntity<UserDto>> = userService.updateUser(id, request).map { ResponseEntity.ok(it) }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -298,8 +291,5 @@ class UserController(
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
-    ): ResponseEntity<Void> {
-        userService.deleteUser(id)
-        return ResponseEntity.noContent().build()
-    }
+    ): Mono<ResponseEntity<Void>> = userService.deleteUser(id).then(Mono.just(ResponseEntity.noContent().build()))
 }

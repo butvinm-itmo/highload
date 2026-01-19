@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/v0.0.1/auth")
@@ -36,8 +37,5 @@ class AuthController(
     )
     fun login(
         @Valid @RequestBody request: LoginRequest,
-    ): ResponseEntity<AuthTokenResponse> {
-        val response = userService.authenticate(request)
-        return ResponseEntity.ok(response)
-    }
+    ): Mono<ResponseEntity<AuthTokenResponse>> = userService.authenticate(request).map { ResponseEntity.ok(it) }
 }

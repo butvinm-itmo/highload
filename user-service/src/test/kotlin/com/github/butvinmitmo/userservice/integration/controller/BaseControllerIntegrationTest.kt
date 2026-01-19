@@ -8,23 +8,23 @@ import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.ResponseEntity
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
 import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
+@ActiveProfiles("test")
 @Testcontainers
 abstract class BaseControllerIntegrationTest {
     @Autowired
-    protected lateinit var mockMvc: MockMvc
+    protected lateinit var webTestClient: WebTestClient
 
     @Autowired
     protected lateinit var objectMapper: ObjectMapper
@@ -37,7 +37,6 @@ abstract class BaseControllerIntegrationTest {
 
     @BeforeEach
     fun setupMocks() {
-        // Default mock behavior: cleanup always succeeds
         whenever(divinationServiceInternalClient.deleteUserData(any())).thenReturn(ResponseEntity.noContent().build())
     }
 
@@ -47,7 +46,8 @@ abstract class BaseControllerIntegrationTest {
         userRepository
             .findAll()
             .filter { it.id != seedUserId }
-            .forEach { userRepository.delete(it) }
+            .flatMap { userRepository.delete(it) }
+            .blockLast()
     }
 
     companion object {
@@ -64,12 +64,15 @@ abstract class BaseControllerIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url") { postgres.jdbcUrl }
-            registry.add("spring.datasource.username") { postgres.username }
-            registry.add("spring.datasource.password") { postgres.password }
-            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
-
-            // JWT configuration for testing
+            registry.add("spring.r2dbc.url") {
+                "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
+            }
+            registry.add("spring.r2dbc.username") { postgres.username }
+            registry.add("spring.r2dbc.password") { postgres.password }
+            registry.add("spring.flyway.url") { postgres.jdbcUrl }
+            registry.add("spring.flyway.user") { postgres.username }
+            registry.add("spring.flyway.password") { postgres.password }
+            registry.add("spring.flyway.enabled") { "true" }
             registry.add("jwt.secret") { "testSecretKeyThatIsLongEnoughForHS256AlgorithmRequirements!!" }
             registry.add("jwt.expiration-hours") { "24" }
         }
