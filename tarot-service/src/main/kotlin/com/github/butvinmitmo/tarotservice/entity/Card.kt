@@ -1,26 +1,16 @@
 package com.github.butvinmitmo.tarotservice.entity
 
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.Table
-import org.hibernate.annotations.Generated
+import org.springframework.data.annotation.Id
+import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 import java.util.UUID
 
-@Entity
-@Table(name = "card")
-class Card(
-    @Column(nullable = false, length = 128)
-    val name: String,
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "arcana_type_id", nullable = false)
-    val arcanaType: ArcanaType,
-) {
+@Table("card")
+data class Card(
     @Id
-    @Generated
-    @Column(columnDefinition = "uuid", insertable = false, nullable = false)
-    lateinit var id: UUID
-}
+    val id: UUID? = null,
+    @Column("name")
+    val name: String,
+    @Column("arcana_type_id")
+    val arcanaTypeId: UUID,
+)

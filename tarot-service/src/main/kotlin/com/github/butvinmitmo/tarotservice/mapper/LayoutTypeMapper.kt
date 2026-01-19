@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 class LayoutTypeMapper {
     fun toDto(layoutType: LayoutType): LayoutTypeDto =
         LayoutTypeDto(
-            id = layoutType.id,
+            id = layoutType.id!!,
             name = layoutType.name,
             cardsCount = layoutType.cardsCount,
         )

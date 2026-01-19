@@ -32,10 +32,15 @@ abstract class BaseControllerIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url") { postgres.jdbcUrl }
-            registry.add("spring.datasource.username") { postgres.username }
-            registry.add("spring.datasource.password") { postgres.password }
-            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
+            registry.add("spring.r2dbc.url") {
+                "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
+            }
+            registry.add("spring.r2dbc.username") { postgres.username }
+            registry.add("spring.r2dbc.password") { postgres.password }
+            registry.add("spring.flyway.url") { postgres.jdbcUrl }
+            registry.add("spring.flyway.user") { postgres.username }
+            registry.add("spring.flyway.password") { postgres.password }
+            registry.add("spring.flyway.enabled") { "true" }
         }
     }
 }

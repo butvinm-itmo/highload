@@ -1,22 +1,16 @@
 package com.github.butvinmitmo.tarotservice.entity
 
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.Table
-import org.hibernate.annotations.Generated
+import org.springframework.data.annotation.Id
+import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 import java.util.UUID
 
-@Entity
-@Table(name = "layout_type")
-class LayoutType(
-    @Column(nullable = false, length = 32)
-    val name: String,
-    @Column(name = "cards_count", nullable = false)
-    val cardsCount: Int,
-) {
+@Table("layout_type")
+data class LayoutType(
     @Id
-    @Generated
-    @Column(columnDefinition = "uuid", insertable = false, nullable = false)
-    lateinit var id: UUID
-}
+    val id: UUID? = null,
+    @Column("name")
+    val name: String,
+    @Column("cards_count")
+    val cardsCount: Int,
+)
