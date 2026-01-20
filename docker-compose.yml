@@ -197,12 +197,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
       EUREKA_URL: http://eureka-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-my-secret-key-for-development-only-change-in-production}
+      KAFKA_BOOTSTRAP_SERVERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
     depends_on:
       config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      kafka-1:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
@@ -253,12 +256,15 @@ services:
       DB_USER: ${DB_USER:-tarot_user}
       DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
       EUREKA_URL: http://eureka-server:8761/eureka/
+      KAFKA_BOOTSTRAP_SERVERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
     depends_on:
       config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      kafka-1:
         condition: service_healthy
       user-service:
         condition: service_healthy
