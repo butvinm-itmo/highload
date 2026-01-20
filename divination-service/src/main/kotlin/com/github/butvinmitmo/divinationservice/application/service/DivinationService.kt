@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 
@@ -80,7 +81,7 @@ class DivinationService(
                                 question = question,
                                 authorId = authorId,
                                 layoutTypeId = layoutTypeId,
-                                createdAt = null,
+                                createdAt = Instant.now(),
                             )
                         spreadRepository
                             .save(spread)
@@ -358,7 +359,7 @@ class DivinationService(
                                     text = text,
                                     authorId = authorId,
                                     spreadId = spreadId,
-                                    createdAt = null,
+                                    createdAt = Instant.now(),
                                 )
                             interpretationRepository
                                 .save(interpretation)

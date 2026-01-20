@@ -91,7 +91,7 @@ class UserService(
                                         username = username,
                                         passwordHash = passwordHash,
                                         role = role,
-                                        createdAt = null,
+                                        createdAt = Instant.now(),
                                     )
                                 userRepository
                                     .save(user)
