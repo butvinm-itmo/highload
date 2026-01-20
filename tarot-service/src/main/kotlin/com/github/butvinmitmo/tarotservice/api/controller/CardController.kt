@@ -1,7 +1,8 @@
-package com.github.butvinmitmo.tarotservice.controller
+package com.github.butvinmitmo.tarotservice.api.controller
 
 import com.github.butvinmitmo.shared.dto.CardDto
-import com.github.butvinmitmo.tarotservice.service.TarotService
+import com.github.butvinmitmo.tarotservice.api.mapper.CardDtoMapper
+import com.github.butvinmitmo.tarotservice.application.service.TarotService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -29,6 +30,7 @@ import java.util.UUID
 @Validated
 class CardController(
     private val tarotService: TarotService,
+    private val cardDtoMapper: CardDtoMapper,
 ) {
     @GetMapping
     @Operation(
@@ -79,11 +81,12 @@ class CardController(
     ): Mono<ResponseEntity<List<CardDto>>> =
         tarotService
             .getCards(page, size)
-            .map { response ->
+            .map { result ->
+                val totalPages = if (result.totalElements == 0L) 0 else ((result.totalElements - 1) / size + 1).toInt()
                 ResponseEntity
                     .ok()
-                    .header("X-Total-Count", response.totalElements.toString())
-                    .body(response.content)
+                    .header("X-Total-Count", result.totalElements.toString())
+                    .body(result.content.map { cardDtoMapper.toDto(it) })
             }
 
     @GetMapping("/random")
@@ -135,6 +138,8 @@ class CardController(
         count: Int,
     ): Mono<ResponseEntity<List<CardDto>>> =
         tarotService
-            .getRandomCardDtos(count)
-            .map { cards -> ResponseEntity.ok(cards) }
+            .getRandomCards(count)
+            .map { cards ->
+                ResponseEntity.ok(cards.map { cardDtoMapper.toDto(it) })
+            }
 }

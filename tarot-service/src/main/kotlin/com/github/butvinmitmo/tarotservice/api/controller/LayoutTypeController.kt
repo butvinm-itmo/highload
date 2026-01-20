@@ -1,7 +1,8 @@
-package com.github.butvinmitmo.tarotservice.controller
+package com.github.butvinmitmo.tarotservice.api.controller
 
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
-import com.github.butvinmitmo.tarotservice.service.TarotService
+import com.github.butvinmitmo.tarotservice.api.mapper.LayoutTypeDtoMapper
+import com.github.butvinmitmo.tarotservice.application.service.TarotService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -30,6 +31,7 @@ import java.util.UUID
 @Validated
 class LayoutTypeController(
     private val tarotService: TarotService,
+    private val layoutTypeDtoMapper: LayoutTypeDtoMapper,
 ) {
     @GetMapping
     @Operation(
@@ -80,11 +82,11 @@ class LayoutTypeController(
     ): Mono<ResponseEntity<List<LayoutTypeDto>>> =
         tarotService
             .getLayoutTypes(page, size)
-            .map { response ->
+            .map { result ->
                 ResponseEntity
                     .ok()
-                    .header("X-Total-Count", response.totalElements.toString())
-                    .body(response.content)
+                    .header("X-Total-Count", result.totalElements.toString())
+                    .body(result.content.map { layoutTypeDtoMapper.toDto(it) })
             }
 
     @GetMapping("/{id}")
@@ -130,6 +132,8 @@ class LayoutTypeController(
         @PathVariable id: UUID,
     ): Mono<ResponseEntity<LayoutTypeDto>> =
         tarotService
-            .getLayoutTypeDtoById(id)
-            .map { layoutType -> ResponseEntity.ok(layoutType) }
+            .getLayoutTypeById(id)
+            .map { layoutType ->
+                ResponseEntity.ok(layoutTypeDtoMapper.toDto(layoutType))
+            }
 }

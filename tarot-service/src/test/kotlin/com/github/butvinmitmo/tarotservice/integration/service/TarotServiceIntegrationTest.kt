@@ -1,8 +1,8 @@
 package com.github.butvinmitmo.tarotservice.integration.service
 
+import com.github.butvinmitmo.tarotservice.application.service.TarotService
 import com.github.butvinmitmo.tarotservice.exception.NotFoundException
 import com.github.butvinmitmo.tarotservice.integration.BaseIntegrationTest
-import com.github.butvinmitmo.tarotservice.service.TarotService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -63,14 +63,16 @@ class TarotServiceIntegrationTest : BaseIntegrationTest() {
     }
 
     @Test
-    fun `getRandomCardDtos should return requested number of cards as DTOs`() {
-        val cardDtos = tarotService.getRandomCardDtos(5).block()
+    fun `getRandomCards should return cards with arcana type`() {
+        val cards = tarotService.getRandomCards(5).block()
 
-        assertEquals(5, cardDtos!!.size)
-        cardDtos.forEach { card ->
+        assertEquals(5, cards!!.size)
+        cards.forEach { card ->
             assertNotNull(card.id)
             assertNotNull(card.name)
             assertNotNull(card.arcanaType)
+            assertNotNull(card.arcanaType.id)
+            assertNotNull(card.arcanaType.name)
         }
     }
 }

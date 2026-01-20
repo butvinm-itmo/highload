@@ -1,14 +1,14 @@
-package com.github.butvinmitmo.tarotservice.mapper
+package com.github.butvinmitmo.tarotservice.api.mapper
 
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
-import com.github.butvinmitmo.tarotservice.entity.LayoutType
+import com.github.butvinmitmo.tarotservice.domain.model.LayoutType
 import org.springframework.stereotype.Component
 
 @Component
-class LayoutTypeMapper {
+class LayoutTypeDtoMapper {
     fun toDto(layoutType: LayoutType): LayoutTypeDto =
         LayoutTypeDto(
-            id = layoutType.id!!,
+            id = layoutType.id,
             name = layoutType.name,
             cardsCount = layoutType.cardsCount,
         )
