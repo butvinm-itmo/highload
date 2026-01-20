@@ -79,6 +79,83 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Configuration:** External Git repository (`highload-config/` submodule) served by config-server.
 
+## Clean Architecture
+
+All three backend services (user-service, tarot-service, divination-service) follow Clean Architecture with four layers:
+
+```
+{service}/
+├── domain/
+│   └── model/              # Pure domain objects (no annotations)
+│
+├── application/
+│   ├── service/            # Use cases / application services
+│   └── interfaces/
+│       ├── repository/     # Persistence interfaces
+│       └── provider/       # External service interfaces
+│
+├── infrastructure/
+│   ├── persistence/
+│   │   ├── entity/         # R2DBC @Table classes
+│   │   ├── repository/     # Spring Data R2DBC interfaces (internal)
+│   │   └── mapper/         # Entity ↔ Domain mappers
+│   ├── external/           # Feign implementations of provider interfaces
+│   └── security/           # Security implementations
+│
+├── api/
+│   ├── controller/         # REST controllers
+│   └── mapper/             # DTO ↔ Domain mappers
+│
+└── config/                 # Spring configurations
+```
+
+### Layer Dependencies
+
+| Layer | Contains | Depends on |
+|-------|----------|------------|
+| Domain | Pure business entities | Nothing |
+| Application | Use cases, interfaces | Domain only |
+| Infrastructure | R2DBC, Feign, Security | Application, Domain |
+| API | HTTP boundary (controllers) | Application, Domain |
+
+### Three Model Types
+
+Each service has three model types:
+
+| Type | Location | Purpose | Annotations |
+|------|----------|---------|-------------|
+| Domain | `domain/model/` | Pure business objects | None |
+| Entity | `infrastructure/persistence/entity/` | Database persistence | `@Table`, `@Id` |
+| DTO | `shared-dto` module | API serialization | `@JsonProperty` |
+
+### Naming Convention
+
+No "Port", "Adapter", "Impl" suffixes. Technology prefix for implementations:
+
+| Interface (application/) | Implementation (infrastructure/) |
+|--------------------------|----------------------------------|
+| `CardRepository` | `R2dbcCardRepository` |
+| `UserProvider` | `FeignUserProvider` |
+| `TokenProvider` | `JwtTokenProvider` |
+| `CurrentUserProvider` | `SecurityContextCurrentUserProvider` |
+
+### Data Flow
+
+```
+HTTP Request → DTO → Domain Model → Entity → Database
+Database → Entity → Domain Model → DTO → HTTP Response
+```
+
+### Key Design Decisions
+
+1. **Application interfaces return `Mono/Flux`** - Pragmatic choice for reactive application, avoids blocking wrapper overhead.
+
+2. **Feign calls in infrastructure, not mappers** - Mappers are pure functions (Entity ↔ Domain, Domain ↔ DTO). External service calls happen in `FeignUserProvider`, `FeignCardProvider`, etc.
+
+3. **Spring Data interfaces are internal** - `SpringDataCardRepository` (extends `R2dbcRepository`) is internal to infrastructure. Application layer uses `CardRepository` interface.
+
+4. **Domain models have no framework annotations** - `domain/model/` classes are plain Kotlin data classes.
+
 ## Authentication & Authorization
 
 ### Authentication Flow
@@ -255,11 +332,12 @@ All backend services (user-service, tarot-service, divination-service) use Sprin
 **Blocking Feign in Reactive Context:**
 Feign clients are blocking. Wrap all Feign calls with `Mono.fromCallable().subscribeOn(Schedulers.boundedElastic())` to avoid blocking the reactive event loop.
 
-**R2DBC Entities:**
-- Use `@Table` instead of `@Entity`
+**R2DBC Entities (infrastructure/persistence/entity/):**
+- Use `@Table` annotation (not JPA `@Entity`)
 - Store foreign key IDs directly (no `@ManyToOne`)
 - ID is nullable for database generation
 - Always use returned entity from `save()`
+- Separate from domain models - use `EntityMapper` to convert
 
 **Reactive Security (user-service):**
 - Uses `@EnableWebFluxSecurity` and `@EnableReactiveMethodSecurity`
