@@ -2,6 +2,7 @@ package com.github.butvinmitmo.userservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.butvinmitmo.userservice.application.interfaces.provider.DivinationServiceProvider
+import com.github.butvinmitmo.userservice.application.interfaces.publisher.UserEventPublisher
 import com.github.butvinmitmo.userservice.infrastructure.persistence.repository.SpringDataUserRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -17,6 +18,7 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -35,9 +37,15 @@ abstract class BaseControllerIntegrationTest {
     @MockBean
     protected lateinit var divinationServiceProvider: DivinationServiceProvider
 
+    @MockBean
+    protected lateinit var userEventPublisher: UserEventPublisher
+
     @BeforeEach
     fun setupMocks() {
         doNothing().whenever(divinationServiceProvider).deleteUserData(any())
+        whenever(userEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+        whenever(userEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
+        whenever(userEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
     }
 
     @AfterEach

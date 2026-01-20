@@ -3,6 +3,7 @@ package com.github.butvinmitmo.userservice.application.service
 import com.github.butvinmitmo.userservice.application.interfaces.provider.DivinationServiceProvider
 import com.github.butvinmitmo.userservice.application.interfaces.provider.PasswordEncoder
 import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenProvider
+import com.github.butvinmitmo.userservice.application.interfaces.publisher.UserEventPublisher
 import com.github.butvinmitmo.userservice.application.interfaces.repository.RoleRepository
 import com.github.butvinmitmo.userservice.application.interfaces.repository.UserRepository
 import com.github.butvinmitmo.userservice.domain.model.Role
@@ -37,6 +38,7 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val tokenProvider: TokenProvider,
     private val divinationServiceProvider: DivinationServiceProvider,
+    private val userEventPublisher: UserEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(UserService::class.java)
 
@@ -91,7 +93,11 @@ class UserService(
                                         role = role,
                                         createdAt = null,
                                     )
-                                userRepository.save(user).map { saved -> saved.id!! }
+                                userRepository
+                                    .save(user)
+                                    .flatMap { saved ->
+                                        userEventPublisher.publishCreated(saved).thenReturn(saved.id!!)
+                                    }
                             }
                     }
                 },
@@ -157,27 +163,29 @@ class UserService(
                                 passwordHash = tuple.t2,
                                 role = tuple.t1,
                             )
-                        userRepository.save(updatedUser)
+                        userRepository
+                            .save(updatedUser)
+                            .flatMap { saved ->
+                                userEventPublisher.publishUpdated(saved).thenReturn(saved)
+                            }
                     }
             }
 
     fun deleteUser(id: UUID): Mono<Void> =
         userRepository
-            .existsById(id)
-            .flatMap { exists ->
-                if (!exists) {
-                    Mono.error(NotFoundException("User not found"))
-                } else {
-                    logger.info("Deleting user data in divination-service for user $id")
-                    Mono
-                        .fromCallable { divinationServiceProvider.deleteUserData(id) }
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .doOnSuccess {
-                            logger.info(
-                                "Successfully deleted user data in divination-service for user $id",
-                            )
-                        }.then(Mono.defer { userRepository.deleteById(id) })
-                }
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException("User not found")))
+            .flatMap { user ->
+                logger.info("Deleting user data in divination-service for user $id")
+                Mono
+                    .fromCallable { divinationServiceProvider.deleteUserData(id) }
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .doOnSuccess {
+                        logger.info(
+                            "Successfully deleted user data in divination-service for user $id",
+                        )
+                    }.then(Mono.defer { userRepository.deleteById(id) })
+                    .then(Mono.defer { userEventPublisher.publishDeleted(user) })
             }
 
     private fun getRoleByName(roleName: String?): Mono<Role> {
