@@ -1,10 +1,11 @@
-package com.github.butvinmitmo.userservice.controller
+package com.github.butvinmitmo.userservice.api.controller
 
 import com.github.butvinmitmo.shared.dto.CreateUserRequest
 import com.github.butvinmitmo.shared.dto.CreateUserResponse
 import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.shared.dto.UserDto
-import com.github.butvinmitmo.userservice.service.UserService
+import com.github.butvinmitmo.userservice.api.mapper.UserDtoMapper
+import com.github.butvinmitmo.userservice.application.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -39,6 +40,7 @@ import java.util.UUID
 @Validated
 class UserController(
     private val userService: UserService,
+    private val userDtoMapper: UserDtoMapper,
 ) {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -100,7 +102,9 @@ class UserController(
     fun createUser(
         @Valid @RequestBody request: CreateUserRequest,
     ): Mono<ResponseEntity<CreateUserResponse>> =
-        userService.createUser(request).map { ResponseEntity.status(HttpStatus.CREATED).body(it) }
+        userService
+            .createUser(request.username, request.password, request.role)
+            .map { id -> ResponseEntity.status(HttpStatus.CREATED).body(CreateUserResponse(id = id)) }
 
     @GetMapping
     @Operation(
@@ -147,7 +151,7 @@ class UserController(
             ResponseEntity
                 .ok()
                 .header("X-Total-Count", response.totalElements.toString())
-                .body(response.content)
+                .body(response.content.map { userDtoMapper.toDto(it) })
         }
 
     @GetMapping("/{id}")
@@ -186,7 +190,7 @@ class UserController(
         @Parameter(description = "User ID", required = true)
         @PathVariable
         id: UUID,
-    ): Mono<ResponseEntity<UserDto>> = userService.getUser(id).map { ResponseEntity.ok(it) }
+    ): Mono<ResponseEntity<UserDto>> = userService.getUser(id).map { ResponseEntity.ok(userDtoMapper.toDto(it)) }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -247,7 +251,10 @@ class UserController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateUserRequest,
-    ): Mono<ResponseEntity<UserDto>> = userService.updateUser(id, request).map { ResponseEntity.ok(it) }
+    ): Mono<ResponseEntity<UserDto>> =
+        userService
+            .updateUser(id, request.username, request.password, request.role)
+            .map { ResponseEntity.ok(userDtoMapper.toDto(it)) }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

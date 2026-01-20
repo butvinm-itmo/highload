@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.userservice.security
+package com.github.butvinmitmo.userservice.infrastructure.security
 
 import com.github.butvinmitmo.shared.security.GatewayAuthenticationToken
 import org.springframework.security.core.context.ReactiveSecurityContextHolder

@@ -1,15 +1,9 @@
-package com.github.butvinmitmo.userservice.entity
+package com.github.butvinmitmo.userservice.domain.model
 
-import org.springframework.data.annotation.Id
-import org.springframework.data.relational.core.mapping.Column
-import org.springframework.data.relational.core.mapping.Table
 import java.util.UUID
 
-@Table("role")
 data class Role(
-    @Id
-    val id: UUID? = null,
-    @Column("name")
+    val id: UUID,
     val name: String,
 )
 

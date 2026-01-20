@@ -1,13 +1,11 @@
 package com.github.butvinmitmo.userservice.integration.service
 
-import com.github.butvinmitmo.shared.dto.CreateUserRequest
-import com.github.butvinmitmo.shared.dto.UpdateUserRequest
-import com.github.butvinmitmo.userservice.entity.RoleType
+import com.github.butvinmitmo.userservice.application.service.UserService
+import com.github.butvinmitmo.userservice.domain.model.RoleType
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
+import com.github.butvinmitmo.userservice.infrastructure.persistence.repository.SpringDataRoleRepository
 import com.github.butvinmitmo.userservice.integration.BaseIntegrationTest
-import com.github.butvinmitmo.userservice.repository.RoleRepository
-import com.github.butvinmitmo.userservice.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -21,42 +19,35 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
     private lateinit var userService: UserService
 
     @Autowired
-    private lateinit var roleRepository: RoleRepository
+    private lateinit var springDataRoleRepository: SpringDataRoleRepository
 
     @Test
     fun `createUser should persist user to database`() {
-        val request = CreateUserRequest(username = "integrationuser", password = "Test@123")
+        val response = userService.createUser("integrationuser", "Test@123", null).block()!!
 
-        val response = userService.createUser(request).block()!!
-
-        assertNotNull(response.id)
-        val savedUser = userRepository.findById(response.id).block()
+        assertNotNull(response)
+        val savedUser = springDataUserRepository.findById(response).block()
         assertNotNull(savedUser)
         assertEquals("integrationuser", savedUser!!.username)
     }
 
     @Test
     fun `createUser should throw ConflictException for duplicate username`() {
-        val request = CreateUserRequest(username = "duplicateuser", password = "Test@123")
-        userService.createUser(request).block()
+        userService.createUser("duplicateuser", "Test@123", null).block()
 
         StepVerifier
-            .create(userService.createUser(request))
+            .create(userService.createUser("duplicateuser", "Test@123", null))
             .expectError(ConflictException::class.java)
             .verify()
     }
 
     @Test
     fun `getUser should return existing user`() {
-        val createResponse =
-            userService
-                .createUser(
-                    CreateUserRequest(username = "getuser", password = "Test@123"),
-                ).block()!!
+        val createResponse = userService.createUser("getuser", "Test@123", null).block()!!
 
-        val user = userService.getUser(createResponse.id).block()!!
+        val user = userService.getUser(createResponse).block()!!
 
-        assertEquals(createResponse.id, user.id)
+        assertEquals(createResponse, user.id)
         assertEquals("getuser", user.username)
     }
 
@@ -72,30 +63,22 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `updateUser should update username`() {
-        val createResponse =
-            userService
-                .createUser(
-                    CreateUserRequest(username = "originalname", password = "Test@123"),
-                ).block()!!
+        val createResponse = userService.createUser("originalname", "Test@123", null).block()!!
 
-        val updated = userService.updateUser(createResponse.id, UpdateUserRequest(username = "updatedname")).block()!!
+        val updated = userService.updateUser(createResponse, "updatedname", null, null).block()!!
 
         assertEquals("updatedname", updated.username)
-        val savedUser = userRepository.findById(createResponse.id).block()!!
+        val savedUser = springDataUserRepository.findById(createResponse).block()!!
         assertEquals("updatedname", savedUser.username)
     }
 
     @Test
     fun `deleteUser should remove user from database`() {
-        val createResponse =
-            userService
-                .createUser(
-                    CreateUserRequest(username = "todelete", password = "Test@123"),
-                ).block()!!
+        val createResponse = userService.createUser("todelete", "Test@123", null).block()!!
 
-        userService.deleteUser(createResponse.id).block()
+        userService.deleteUser(createResponse).block()
 
-        val exists = userRepository.existsById(createResponse.id).block()!!
+        val exists = springDataUserRepository.existsById(createResponse).block()!!
         assertTrue(!exists)
     }
 
@@ -111,8 +94,8 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `getUsers should return paginated list`() {
-        userService.createUser(CreateUserRequest(username = "pageuser1", password = "Test@123")).block()
-        userService.createUser(CreateUserRequest(username = "pageuser2", password = "Test@123")).block()
+        userService.createUser("pageuser1", "Test@123", null).block()
+        userService.createUser("pageuser2", "Test@123", null).block()
 
         val result = userService.getUsers(0, 10).block()!!
 
@@ -121,12 +104,10 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `createUser should create user with MEDIUM role when specified`() {
-        val request = CreateUserRequest(username = "mediumuser", password = "Test@123", role = "MEDIUM")
+        val response = userService.createUser("mediumuser", "Test@123", "MEDIUM").block()!!
 
-        val response = userService.createUser(request).block()!!
-
-        assertNotNull(response.id)
-        val savedUser = userRepository.findById(response.id).block()!!
+        assertNotNull(response)
+        val savedUser = springDataUserRepository.findById(response).block()!!
         assertNotNull(savedUser)
         assertEquals("mediumuser", savedUser.username)
         assertEquals(RoleType.MEDIUM_ID, savedUser.roleId)
@@ -134,12 +115,10 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `createUser should create user with ADMIN role when specified`() {
-        val request = CreateUserRequest(username = "adminuser", password = "Test@123", role = "ADMIN")
+        val response = userService.createUser("adminuser", "Test@123", "ADMIN").block()!!
 
-        val response = userService.createUser(request).block()!!
-
-        assertNotNull(response.id)
-        val savedUser = userRepository.findById(response.id).block()!!
+        assertNotNull(response)
+        val savedUser = springDataUserRepository.findById(response).block()!!
         assertNotNull(savedUser)
         assertEquals("adminuser", savedUser.username)
         assertEquals(RoleType.ADMIN_ID, savedUser.roleId)
@@ -147,12 +126,10 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `createUser should default to USER role when role not specified`() {
-        val request = CreateUserRequest(username = "defaultroleuser", password = "Test@123")
+        val response = userService.createUser("defaultroleuser", "Test@123", null).block()!!
 
-        val response = userService.createUser(request).block()!!
-
-        assertNotNull(response.id)
-        val savedUser = userRepository.findById(response.id).block()!!
+        assertNotNull(response)
+        val savedUser = springDataUserRepository.findById(response).block()!!
         assertNotNull(savedUser)
         assertEquals("defaultroleuser", savedUser.username)
         assertEquals(RoleType.USER_ID, savedUser.roleId)
@@ -160,39 +137,29 @@ class UserServiceIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun `createUser should throw NotFoundException for invalid role`() {
-        val request = CreateUserRequest(username = "invalidroleuser", password = "Test@123", role = "INVALID")
-
         StepVerifier
-            .create(userService.createUser(request))
+            .create(userService.createUser("invalidroleuser", "Test@123", "INVALID"))
             .expectError(NotFoundException::class.java)
             .verify()
     }
 
     @Test
     fun `updateUser should update user role`() {
-        val createResponse =
-            userService
-                .createUser(
-                    CreateUserRequest(username = "roleupdate", password = "Test@123"),
-                ).block()!!
+        val createResponse = userService.createUser("roleupdate", "Test@123", null).block()!!
 
-        val updated = userService.updateUser(createResponse.id, UpdateUserRequest(role = "MEDIUM")).block()!!
+        val updated = userService.updateUser(createResponse, null, null, "MEDIUM").block()!!
 
-        assertEquals("MEDIUM", updated.role)
-        val savedUser = userRepository.findById(createResponse.id).block()!!
+        assertEquals("MEDIUM", updated.role.name)
+        val savedUser = springDataUserRepository.findById(createResponse).block()!!
         assertEquals(RoleType.MEDIUM_ID, savedUser.roleId)
     }
 
     @Test
     fun `updateUser should throw NotFoundException for invalid role`() {
-        val createResponse =
-            userService
-                .createUser(
-                    CreateUserRequest(username = "invalidupdate", password = "Test@123"),
-                ).block()!!
+        val createResponse = userService.createUser("invalidupdate", "Test@123", null).block()!!
 
         StepVerifier
-            .create(userService.updateUser(createResponse.id, UpdateUserRequest(role = "INVALID")))
+            .create(userService.updateUser(createResponse, null, null, "INVALID"))
             .expectError(NotFoundException::class.java)
             .verify()
     }

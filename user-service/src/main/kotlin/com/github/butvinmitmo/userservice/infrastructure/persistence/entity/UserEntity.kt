@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.userservice.entity
+package com.github.butvinmitmo.userservice.infrastructure.persistence.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
@@ -7,7 +7,7 @@ import java.time.Instant
 import java.util.UUID
 
 @Table("\"user\"")
-data class User(
+data class UserEntity(
     @Id
     val id: UUID? = null,
     @Column("username")

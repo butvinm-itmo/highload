@@ -1,16 +1,16 @@
 package com.github.butvinmitmo.userservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
-import com.github.butvinmitmo.userservice.repository.UserRepository
+import com.github.butvinmitmo.userservice.application.interfaces.provider.DivinationServiceProvider
+import com.github.butvinmitmo.userservice.infrastructure.persistence.repository.SpringDataUserRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -30,23 +30,23 @@ abstract class BaseControllerIntegrationTest {
     protected lateinit var objectMapper: ObjectMapper
 
     @Autowired
-    private lateinit var userRepository: UserRepository
+    private lateinit var springDataUserRepository: SpringDataUserRepository
 
     @MockBean
-    protected lateinit var divinationServiceInternalClient: DivinationServiceInternalClient
+    protected lateinit var divinationServiceProvider: DivinationServiceProvider
 
     @BeforeEach
     fun setupMocks() {
-        whenever(divinationServiceInternalClient.deleteUserData(any())).thenReturn(ResponseEntity.noContent().build())
+        doNothing().whenever(divinationServiceProvider).deleteUserData(any())
     }
 
     @AfterEach
     fun cleanupDatabase() {
         val seedUserId = UUID.fromString("00000000-0000-0000-0000-000000000001")
-        userRepository
+        springDataUserRepository
             .findAll()
             .filter { it.id != seedUserId }
-            .flatMap { userRepository.delete(it) }
+            .flatMap { springDataUserRepository.delete(it) }
             .blockLast()
     }
 

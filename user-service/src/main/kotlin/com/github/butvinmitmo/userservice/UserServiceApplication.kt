@@ -23,7 +23,7 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = ["com.github.butvinmitmo.shared.client"])
 @ComponentScan(basePackages = ["com.github.butvinmitmo.userservice", "com.github.butvinmitmo.shared.client"])
-@EnableR2dbcRepositories
+@EnableR2dbcRepositories(basePackages = ["com.github.butvinmitmo.userservice.infrastructure.persistence.repository"])
 @OpenAPIDefinition(
     servers = [Server(url = "http://localhost:8080", description = "API Gateway")],
     security = [SecurityRequirement(name = "bearerAuth")],

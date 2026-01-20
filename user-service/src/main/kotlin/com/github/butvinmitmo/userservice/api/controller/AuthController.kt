@@ -1,8 +1,8 @@
-package com.github.butvinmitmo.userservice.controller
+package com.github.butvinmitmo.userservice.api.controller
 
 import com.github.butvinmitmo.shared.dto.AuthTokenResponse
 import com.github.butvinmitmo.shared.dto.LoginRequest
-import com.github.butvinmitmo.userservice.service.UserService
+import com.github.butvinmitmo.userservice.application.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
@@ -37,5 +37,17 @@ class AuthController(
     )
     fun login(
         @Valid @RequestBody request: LoginRequest,
-    ): Mono<ResponseEntity<AuthTokenResponse>> = userService.authenticate(request).map { ResponseEntity.ok(it) }
+    ): Mono<ResponseEntity<AuthTokenResponse>> =
+        userService
+            .authenticate(request.username, request.password)
+            .map { result ->
+                ResponseEntity.ok(
+                    AuthTokenResponse(
+                        token = result.token,
+                        expiresAt = result.expiresAt,
+                        username = result.username,
+                        role = result.role,
+                    ),
+                )
+            }
 }

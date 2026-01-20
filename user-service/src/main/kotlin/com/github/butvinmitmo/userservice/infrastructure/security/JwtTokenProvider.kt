@@ -1,7 +1,8 @@
-package com.github.butvinmitmo.userservice.security
+package com.github.butvinmitmo.userservice.infrastructure.security
 
-import com.github.butvinmitmo.userservice.entity.Role
-import com.github.butvinmitmo.userservice.entity.User
+import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenProvider
+import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenResult
+import com.github.butvinmitmo.userservice.domain.model.User
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
@@ -12,34 +13,31 @@ import java.util.Date
 import javax.crypto.SecretKey
 
 @Component
-class JwtUtil(
+class JwtTokenProvider(
     @Value("\${jwt.secret}")
     private val secret: String,
     @Value("\${jwt.expiration-hours}")
     private val expirationHours: Long,
-) {
+) : TokenProvider {
     private val secretKey: SecretKey by lazy {
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
 
-    fun generateToken(
-        user: User,
-        role: Role,
-    ): Pair<String, Instant> {
+    override fun generateToken(user: User): TokenResult {
         val now = Instant.now()
         val expiresAt = now.plus(expirationHours, ChronoUnit.HOURS)
 
         val token =
             Jwts
                 .builder()
-                .subject(user.id.toString())
+                .subject(user.id!!.toString())
                 .claim("username", user.username)
-                .claim("role", role.name)
+                .claim("role", user.role.name)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact()
 
-        return Pair(token, expiresAt)
+        return TokenResult(token, expiresAt)
     }
 }
