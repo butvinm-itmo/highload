@@ -1,13 +1,19 @@
 package com.github.butvinmitmo.divinationservice.integration
 
+import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.InterpretationEventPublisher
+import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.SpreadEventPublisher
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataInterpretationRepository
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadCardRepository
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadRepository
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -31,6 +37,21 @@ abstract class BaseIntegrationTest {
 
     @Autowired
     protected lateinit var interpretationRepository: SpringDataInterpretationRepository
+
+    @MockBean
+    protected lateinit var spreadEventPublisher: SpreadEventPublisher
+
+    @MockBean
+    protected lateinit var interpretationEventPublisher: InterpretationEventPublisher
+
+    @BeforeEach
+    fun setupPublisherMocks() {
+        whenever(spreadEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+        whenever(spreadEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
+        whenever(interpretationEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+        whenever(interpretationEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
+        whenever(interpretationEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
+    }
 
     @AfterEach
     fun cleanupDatabase() {

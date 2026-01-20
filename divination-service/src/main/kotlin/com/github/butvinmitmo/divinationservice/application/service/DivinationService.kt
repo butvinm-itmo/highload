@@ -3,6 +3,8 @@ package com.github.butvinmitmo.divinationservice.application.service
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CardProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CurrentUserProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.UserProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.InterpretationEventPublisher
+import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.SpreadEventPublisher
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadRepository
@@ -55,6 +57,8 @@ class DivinationService(
     private val userProvider: UserProvider,
     private val cardProvider: CardProvider,
     private val currentUserProvider: CurrentUserProvider,
+    private val spreadEventPublisher: SpreadEventPublisher,
+    private val interpretationEventPublisher: InterpretationEventPublisher,
 ) {
     @Transactional
     fun createSpread(
@@ -99,7 +103,8 @@ class DivinationService(
                                         )
                                     }.flatMap { spreadCard ->
                                         spreadCardRepository.save(spreadCard)
-                                    }.then(Mono.just(CreateSpreadResult(id = savedSpread.id!!)))
+                                    }.then(spreadEventPublisher.publishCreated(savedSpread))
+                                    .then(Mono.just(CreateSpreadResult(id = savedSpread.id!!)))
                             }
                     }
             }
@@ -318,7 +323,9 @@ class DivinationService(
                     if (!canModify) {
                         Mono.error(ForbiddenException("You can only delete your own spreads"))
                     } else {
-                        spreadRepository.deleteById(id)
+                        spreadRepository
+                            .deleteById(id)
+                            .then(spreadEventPublisher.publishDeleted(spread))
                     }
                 }
             }
@@ -355,7 +362,11 @@ class DivinationService(
                                 )
                             interpretationRepository
                                 .save(interpretation)
-                                .map { saved -> CreateInterpretationResult(id = saved.id!!) }
+                                .flatMap { saved ->
+                                    interpretationEventPublisher
+                                        .publishCreated(saved)
+                                        .then(Mono.just(CreateInterpretationResult(id = saved.id!!)))
+                                }
                         }
                     }
             }
@@ -379,17 +390,21 @@ class DivinationService(
                         interpretationRepository
                             .save(updated)
                             .flatMap { saved ->
-                                userProvider
-                                    .getSystemUser(saved.authorId)
-                                    .map { author ->
-                                        InterpretationDto(
-                                            id = saved.id!!,
-                                            text = saved.text,
-                                            author = author,
-                                            spreadId = saved.spreadId,
-                                            createdAt = saved.createdAt!!,
-                                        )
-                                    }
+                                interpretationEventPublisher
+                                    .publishUpdated(saved)
+                                    .then(
+                                        userProvider
+                                            .getSystemUser(saved.authorId)
+                                            .map { author ->
+                                                InterpretationDto(
+                                                    id = saved.id!!,
+                                                    text = saved.text,
+                                                    author = author,
+                                                    spreadId = saved.spreadId,
+                                                    createdAt = saved.createdAt!!,
+                                                )
+                                            },
+                                    )
                             }
                     }
                 }
@@ -408,7 +423,9 @@ class DivinationService(
                     if (!canModify) {
                         Mono.error(ForbiddenException("You can only delete your own interpretations"))
                     } else {
-                        interpretationRepository.deleteById(id)
+                        interpretationRepository
+                            .deleteById(id)
+                            .then(interpretationEventPublisher.publishDeleted(interpretation))
                     }
                 }
             }

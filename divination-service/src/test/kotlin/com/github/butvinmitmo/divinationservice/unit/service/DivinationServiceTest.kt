@@ -4,6 +4,8 @@ import com.github.butvinmitmo.divinationservice.TestEntityFactory
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CardProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CurrentUserProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.UserProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.InterpretationEventPublisher
+import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.SpreadEventPublisher
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadRepository
@@ -52,6 +54,12 @@ class DivinationServiceTest {
     @Mock
     private lateinit var currentUserProvider: CurrentUserProvider
 
+    @Mock
+    private lateinit var spreadEventPublisher: SpreadEventPublisher
+
+    @Mock
+    private lateinit var interpretationEventPublisher: InterpretationEventPublisher
+
     private lateinit var divinationService: DivinationService
 
     private val userId = UUID.randomUUID()
@@ -80,6 +88,8 @@ class DivinationServiceTest {
                 userProvider,
                 cardProvider,
                 currentUserProvider,
+                spreadEventPublisher,
+                interpretationEventPublisher,
             )
     }
 
@@ -103,6 +113,7 @@ class DivinationServiceTest {
             Mono.just(TestEntityFactory.createSpreadCard(spreadId = spreadId)),
         )
         whenever(cardProvider.getRandomCards(userId, "USER", 3)).thenReturn(Mono.just(testCards))
+        whenever(spreadEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
 
         val result = divinationService.createSpread("Test question", layoutTypeId).block()
 
@@ -111,6 +122,7 @@ class DivinationServiceTest {
         verify(userProvider).getUserById(userId, "USER", userId)
         verify(cardProvider).getLayoutTypeById(userId, "USER", layoutTypeId)
         verify(spreadRepository).save(any())
+        verify(spreadEventPublisher).publishCreated(any())
     }
 
     @Test
@@ -151,10 +163,12 @@ class DivinationServiceTest {
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
         whenever(currentUserProvider.canModify(userId)).thenReturn(Mono.just(true))
         whenever(spreadRepository.deleteById(spreadId)).thenReturn(Mono.empty())
+        whenever(spreadEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
 
         divinationService.deleteSpread(spreadId).block()
 
         verify(spreadRepository).deleteById(spreadId)
+        verify(spreadEventPublisher).publishDeleted(any())
     }
 
     @Test
@@ -205,11 +219,13 @@ class DivinationServiceTest {
         whenever(userProvider.getUserById(userId, "USER", userId)).thenReturn(Mono.just(testUser))
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
+        whenever(interpretationEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
 
         val result = divinationService.addInterpretation(spreadId, "Test interpretation").block()
 
         assertNotNull(result)
         assertEquals(interpretationId, result!!.id)
+        verify(interpretationEventPublisher).publishCreated(any())
     }
 
     @Test
@@ -245,11 +261,13 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(currentUserProvider.canModify(userId)).thenReturn(Mono.just(true))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation.copy(text = "Updated text")))
+        whenever(interpretationEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
         whenever(userProvider.getSystemUser(userId)).thenReturn(Mono.just(testUser))
 
         divinationService.updateInterpretation(spreadId, interpretationId, "Updated text").block()
 
         verify(interpretationRepository).save(any())
+        verify(interpretationEventPublisher).publishUpdated(any())
     }
 
     @Test
@@ -290,10 +308,12 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(currentUserProvider.canModify(userId)).thenReturn(Mono.just(true))
         whenever(interpretationRepository.deleteById(interpretationId)).thenReturn(Mono.empty())
+        whenever(interpretationEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
 
         divinationService.deleteInterpretation(spreadId, interpretationId).block()
 
         verify(interpretationRepository).deleteById(interpretationId)
+        verify(interpretationEventPublisher).publishDeleted(any())
     }
 
     @Test
