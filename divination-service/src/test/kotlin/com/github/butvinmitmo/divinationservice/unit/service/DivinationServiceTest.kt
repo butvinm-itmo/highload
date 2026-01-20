@@ -19,6 +19,7 @@ import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
+import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.UserDto
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
@@ -150,6 +152,20 @@ class DivinationServiceTest {
         whenever(spreadRepository.count()).thenReturn(Mono.just(2L))
         whenever(spreadRepository.findAllOrderByCreatedAtDesc(0L, 2)).thenReturn(Flux.fromIterable(spreads))
         whenever(interpretationRepository.countBySpreadIds(any())).thenReturn(Flux.empty())
+        whenever(spreadMapper.toSummaryDto(any(), any())).thenAnswer { invocation: InvocationOnMock ->
+            val spread = invocation.arguments[0] as com.github.butvinmitmo.divinationservice.entity.Spread
+            Mono.just(
+                SpreadSummaryDto(
+                    id = spread.id!!,
+                    question = spread.question,
+                    layoutTypeName = "Test Layout",
+                    cardsCount = 3,
+                    interpretationsCount = 0,
+                    authorUsername = "testuser",
+                    createdAt = spread.createdAt!!,
+                ),
+            )
+        }
 
         val result = divinationService.getSpreads(0, 2).block()
 
@@ -280,7 +296,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(authorizationService.canModify(userId)).thenReturn(Mono.just(true))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation))
-        whenever(interpretationMapper.toDto(any())).thenReturn(interpretationDto)
+        whenever(interpretationMapper.toDto(any())).thenReturn(Mono.just(interpretationDto))
 
         divinationService.updateInterpretation(spreadId, interpretationId, request).block()
 
@@ -370,7 +386,7 @@ class DivinationServiceTest {
         val interpretationDto = InterpretationDto(interpretationId, "Test", createdAt, testUser, spreadId)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
-        whenever(interpretationMapper.toDto(interpretation)).thenReturn(interpretationDto)
+        whenever(interpretationMapper.toDto(interpretation)).thenReturn(Mono.just(interpretationDto))
 
         divinationService.getInterpretation(spreadId, interpretationId).block()
 
@@ -411,6 +427,18 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, 0L, 2))
             .thenReturn(Flux.fromIterable(interpretations))
         whenever(interpretationRepository.countBySpreadId(spreadId)).thenReturn(Mono.just(2L))
+        whenever(interpretationMapper.toDto(any())).thenAnswer { invocation: InvocationOnMock ->
+            val interp = invocation.arguments[0] as com.github.butvinmitmo.divinationservice.entity.Interpretation
+            Mono.just(
+                InterpretationDto(
+                    id = interp.id!!,
+                    text = interp.text,
+                    author = testUser,
+                    spreadId = interp.spreadId,
+                    createdAt = interp.createdAt!!,
+                ),
+            )
+        }
 
         val result = divinationService.getInterpretations(spreadId, 0, 2).block()
 

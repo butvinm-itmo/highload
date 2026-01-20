@@ -17,6 +17,8 @@ import java.time.Instant
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    private val logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+
     @ExceptionHandler(WebExchangeBindException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleValidationExceptions(
@@ -161,6 +163,7 @@ class GlobalExceptionHandler {
         ex: Exception,
         exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error on ${exchange.request.path.value()}", ex)
         val response =
             ErrorResponse(
                 error = "INTERNAL_SERVER_ERROR",

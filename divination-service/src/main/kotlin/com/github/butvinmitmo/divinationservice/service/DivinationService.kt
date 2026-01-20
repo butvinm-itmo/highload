@@ -117,20 +117,24 @@ class DivinationService(
                     .flatMap { spreads ->
                         val spreadIds = spreads.map { it.id!! }
                         getInterpretationCounts(spreadIds)
-                            .map { interpretationCounts ->
+                            .flatMap { interpretationCounts ->
                                 val totalPages = (totalElements + size - 1) / size
-                                PageResponse(
-                                    content =
-                                        spreads.map { spread ->
-                                            spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
-                                        },
-                                    page = page,
-                                    size = size,
-                                    totalElements = totalElements,
-                                    totalPages = totalPages.toInt(),
-                                    isFirst = page == 0,
-                                    isLast = page >= totalPages - 1,
-                                )
+                                Flux
+                                    .fromIterable(spreads)
+                                    .flatMap { spread ->
+                                        spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
+                                    }.collectList()
+                                    .map { summaries ->
+                                        PageResponse(
+                                            content = summaries,
+                                            page = page,
+                                            size = size,
+                                            totalElements = totalElements,
+                                            totalPages = totalPages.toInt(),
+                                            isFirst = page == 0,
+                                            isLast = page >= totalPages - 1,
+                                        )
+                                    }
                             }
                     }
             }
@@ -157,14 +161,18 @@ class DivinationService(
 
                 val spreadIds = itemsToReturn.map { it.id!! }
                 getInterpretationCounts(spreadIds)
-                    .map { interpretationCounts ->
-                        ScrollResponse(
-                            items =
-                                itemsToReturn.map { spread ->
-                                    spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
-                                },
-                            nextCursor = nextCursor,
-                        )
+                    .flatMap { interpretationCounts ->
+                        Flux
+                            .fromIterable(itemsToReturn)
+                            .flatMap { spread ->
+                                spreadMapper.toSummaryDto(spread, interpretationCounts[spread.id] ?: 0)
+                            }.collectList()
+                            .map { summaries ->
+                                ScrollResponse(
+                                    items = summaries,
+                                    nextCursor = nextCursor,
+                                )
+                            }
                     }
             }
     }
@@ -198,7 +206,7 @@ class DivinationService(
                         // Build card cache
                         val cardIds = spreadCards.map { it.cardId }.toSet()
                         buildCardCache(cardIds)
-                            .map { cardCache ->
+                            .flatMap { cardCache ->
                                 spreadMapper.toDto(spread, spreadCards, interpretations, cardCache)
                             }
                     }
@@ -274,7 +282,7 @@ class DivinationService(
                         interpretation.text = request.text
                         interpretationRepository
                             .save(interpretation)
-                            .map { saved -> interpretationMapper.toDto(saved) }
+                            .flatMap { saved -> interpretationMapper.toDto(saved) }
                     }
                 }
             }
@@ -309,7 +317,7 @@ class DivinationService(
                 if (interpretation.spreadId != spreadId) {
                     Mono.error(NotFoundException("Interpretation not found in this spread"))
                 } else {
-                    Mono.just(interpretationMapper.toDto(interpretation))
+                    interpretationMapper.toDto(interpretation)
                 }
             }
 
@@ -332,20 +340,26 @@ class DivinationService(
 
                 Mono
                     .zip(interpretationsFlux.collectList(), countMono)
-                    .map { tuple ->
+                    .flatMap { tuple ->
                         val interpretations = tuple.t1
                         val totalElements = tuple.t2
                         val totalPages = (totalElements + size - 1) / size
 
-                        PageResponse(
-                            content = interpretations.map { interpretationMapper.toDto(it) },
-                            page = page,
-                            size = size,
-                            totalElements = totalElements,
-                            totalPages = totalPages.toInt(),
-                            isFirst = page == 0,
-                            isLast = page >= totalPages - 1,
-                        )
+                        Flux
+                            .fromIterable(interpretations)
+                            .flatMap { interpretationMapper.toDto(it) }
+                            .collectList()
+                            .map { dtos ->
+                                PageResponse(
+                                    content = dtos,
+                                    page = page,
+                                    size = size,
+                                    totalElements = totalElements,
+                                    totalPages = totalPages.toInt(),
+                                    isFirst = page == 0,
+                                    isLast = page >= totalPages - 1,
+                                )
+                            }
                     }
             }
 
