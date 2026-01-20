@@ -6,14 +6,16 @@ A Kotlin/Spring Boot microservices application for Tarot card readings and inter
 
 The application consists of 6 microservices with centralized configuration, service discovery, and API gateway:
 
-| Service                | Port | Description                           | Swagger UI                                                                                 |
-| ---------------------- | ---- | ------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **config-server**      | 8888 | Centralized configuration management  | -                                                                                          |
-| **eureka-server**      | 8761 | Service discovery (Netflix Eureka)    | [http://localhost:8761](http://localhost:8761)                                             |
-| **gateway-service**    | 8080 | API Gateway (routing, resilience)     | -                                                                                          |
-| **user-service**       | 8081 | User management                       | [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html) |
-| **tarot-service**      | 8082 | Cards & LayoutTypes catalog           | [http://localhost:8082/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html) |
-| **divination-service** | 8083 | Spreads & Interpretations             | [http://localhost:8083/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html) |
+| Service                | Port | Description                          |
+| ---------------------- | ---- | ------------------------------------ |
+| **config-server**      | 8888 | Centralized configuration management |
+| **eureka-server**      | 8761 | Service discovery (Netflix Eureka)   |
+| **gateway-service**    | 8080 | API Gateway (routing, resilience)    |
+| **user-service**       | 8081 | User management & authentication     |
+| **tarot-service**      | 8082 | Cards & LayoutTypes catalog          |
+| **divination-service** | 8083 | Spreads & Interpretations            |
+
+**API Documentation:** Centralized Swagger UI at [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 **API Gateway:** `gateway-service` provides a unified entry point for external clients. All API requests route through the gateway (port 8080) to backend services via Eureka discovery. The gateway includes circuit breaker protection and centralized monitoring.
 
@@ -34,26 +36,14 @@ git submodule update --init
 # Start all services
 docker compose up -d
 
-# Verify services are running
-curl http://localhost:8888/actuator/health  # Config Server
-curl http://localhost:8761/actuator/health  # Eureka Server
-curl http://localhost:8080/actuator/health  # Gateway Service
-curl http://localhost:8081/actuator/health  # User Service
-curl http://localhost:8082/actuator/health  # Tarot Service
-curl http://localhost:8083/actuator/health  # Divination Service
-
 # Check Eureka dashboard for registered services
 open http://localhost:8761
 
-# Access APIs through the gateway (recommended for external clients)
-curl http://localhost:8080/api/v0.0.1/users
-curl http://localhost:8080/api/v0.0.1/cards
-curl http://localhost:8080/api/v0.0.1/spreads
+# Access API documentation
+open http://localhost:8080/swagger-ui.html
 
-# Run E2E tests (requires services to be running)
-docker compose up -d
+# Run E2E tests
 ./gradlew :e2e-tests:test
-docker compose down
 ```
 
 ## API Overview
@@ -62,20 +52,23 @@ docker compose down
 
 ### user-service (port 8081)
 
-| Method | Endpoint                 | Description |
-| ------ | ------------------------ | ----------- |
-| POST   | `/api/v0.0.1/users`      | Create user |
-| GET    | `/api/v0.0.1/users`      | List users  |
-| GET    | `/api/v0.0.1/users/{id}` | Get user    |
-| PUT    | `/api/v0.0.1/users/{id}` | Update user |
-| DELETE | `/api/v0.0.1/users/{id}` | Delete user |
+| Method | Endpoint                 | Description        |
+| ------ | ------------------------ | ------------------ |
+| POST   | `/api/v0.0.1/auth/login` | Login, returns JWT |
+| POST   | `/api/v0.0.1/users`      | Create user        |
+| GET    | `/api/v0.0.1/users`      | List users         |
+| GET    | `/api/v0.0.1/users/{id}` | Get user           |
+| PUT    | `/api/v0.0.1/users/{id}` | Update user        |
+| DELETE | `/api/v0.0.1/users/{id}` | Delete user        |
 
 ### tarot-service (port 8082)
 
-| Method | Endpoint                   | Description                 |
-| ------ | -------------------------- | --------------------------- |
-| GET    | `/api/v0.0.1/cards`        | List tarot cards (78 cards) |
-| GET    | `/api/v0.0.1/layout-types` | List spread layouts         |
+| Method | Endpoint                       | Description          |
+| ------ | ------------------------------ | -------------------- |
+| GET    | `/api/v0.0.1/cards`            | List tarot cards     |
+| GET    | `/api/v0.0.1/cards/random`     | Get random cards     |
+| GET    | `/api/v0.0.1/layout-types`     | List spread layouts  |
+| GET    | `/api/v0.0.1/layout-types/{id}`| Get layout type      |
 
 ### divination-service (port 8083)
 
@@ -118,12 +111,10 @@ docker compose restart config-server
 ```
 
 **Configuration files:**
-- `application.yml` - Shared configuration (database, JPA, Flyway, SpringDoc)
+- `application.yml` - Shared configuration (database, R2DBC, Flyway, SpringDoc)
 - `eureka-server.yml` - Eureka server settings
-- `gateway-service.yml` - Gateway routes and Resilience4j settings
-- `user-service.yml` - User service specific
-- `tarot-service.yml` - Tarot service specific
-- `divination-service.yml` - Divination service + Resilience4j settings
+- `gateway-service.yml` - Gateway routes, Resilience4j, Swagger UI
+- `user-service.yml`, `tarot-service.yml`, `divination-service.yml` - Service-specific settings
 
 ## Development
 
@@ -149,128 +140,46 @@ docker compose restart config-server
 
 # Clean build artifacts
 ./gradlew clean
-```
-
-Coverage reports are located at:
-- `user-service/build/reports/jacoco/test/html/index.html`
-- `tarot-service/build/reports/jacoco/test/html/index.html`
-- `divination-service/build/reports/jacoco/test/html/index.html`
-
-### Code Quality
-
-```bash
-# Run ktlint checks
-./gradlew ktlintCheck
 
 # Auto-format code
 ./gradlew ktlintFormat
-
-# Pre-commit hooks (automatic formatting before commit)
-.venv/bin/pre-commit install              # Install hooks (one-time setup)
-.venv/bin/pre-commit run --all-files      # Manually run on all files
-```
-
-**Pre-commit hooks:** The project uses [pre-commit](https://pre-commit.com/) to automatically run ktlint format before each commit.
-
-First-time setup:
-```bash
-python -m venv .venv
-.venv/bin/pip install pre-commit
-.venv/bin/pre-commit install
 ```
 
 ### Running with Docker
 
 ```bash
-# Start all services (database + microservices)
-docker compose up -d
-
-# Rebuild and restart
-docker compose up -d --build
-
-# View logs
-docker compose logs -f
-
-# View logs for specific service
-docker compose logs -f config-server
-docker compose logs -f eureka-server
-docker compose logs -f gateway-service
-docker compose logs -f user-service
-docker compose logs -f tarot-service
-docker compose logs -f divination-service
-
-# Stop all services
-docker compose down
+docker compose up -d           # Start all services
+docker compose up -d --build   # Rebuild and restart
+docker compose logs -f         # View logs
+docker compose down            # Stop all services
 ```
 
-**Service startup order** (enforced by docker-compose health checks):
-1. `config-server` - Must be healthy first
-2. `eureka-server` - Fetches config, then starts
-3. `gateway-service` - Registers with Eureka for routing
-4. `postgres` - Database
-5. `user-service`, `tarot-service` - Register with Eureka
-6. `divination-service` - Discovers other services via Eureka
-
-**Environment variables:**
-- `CONFIG_SERVER_URL` - Config Server URL (default: http://localhost:8888)
-- `EUREKA_URL` - Eureka Server URL (required, no default)
-- Database env vars: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+Service startup order is enforced by docker-compose health checks.
 
 ### Running Locally (Development)
 
 ```bash
-# Start infrastructure services (config-server, eureka-server, gateway-service, postgres)
+# Start infrastructure
 docker compose up -d config-server eureka-server gateway-service postgres
 
-# Wait for services to be healthy, then run individual services (in separate terminals)
+# Run services locally
 ./gradlew :user-service:bootRun
 ./gradlew :tarot-service:bootRun
 ./gradlew :divination-service:bootRun
-
-# Or run config-server, eureka-server, and gateway-service locally too
-./gradlew :config-server:bootRun   # Terminal 1
-./gradlew :eureka-server:bootRun   # Terminal 2
-./gradlew :gateway-service:bootRun # Terminal 3
-# ... then run other services
 ```
 
 ### E2E Testing
 
-E2E tests run against a pre-running application. Services must be started before running tests.
+E2E tests run against a pre-running application (63 tests).
 
-**Local Development:**
 ```bash
-# 1. Start all services (required)
+# Start services and run tests
 docker compose up -d
-
-# 2. Run E2E tests
 ./gradlew :e2e-tests:test
 
-# 3. Stop services when done
-docker compose down
-```
-
-**Custom Gateway URL:**
-```bash
-# Via environment variable
+# Custom gateway URL
 GATEWAY_URL=http://localhost:8080 ./gradlew :e2e-tests:test
-
-# Via system property
-./gradlew :e2e-tests:test -DGATEWAY_URL=http://localhost:8080
 ```
-
-**Test coverage (31 tests):**
-- All tests route through gateway-service (simulating external client access)
-- User CRUD, duplicate username (409), not found (404), authentication
-- Cards pagination (78 total cards), layout types, random cards
-- Spreads with inter-service Feign calls, interpretations CRUD
-- Delete operations, authorization verification (403)
-
-**Health Check:**
-- Tests verify gateway health before execution (GET /actuator/health)
-- 3 retry attempts with 1-second delays
-- Fail-fast with clear error message if services aren't running
-- Error message includes `docker compose up -d` command
 
 ## Project Structure
 
@@ -293,17 +202,9 @@ highload/
 
 ## Technology Stack
 
-- **Language:** Kotlin 2.2.10
-- **Framework:** Spring Boot 3.5.6
-- **Build:** Gradle (Kotlin DSL)
-- **JVM:** Java 21
-- **Database:** PostgreSQL 15
-- **Migrations:** Flyway (per-service)
-- **Service Discovery:** Netflix Eureka (Spring Cloud Netflix)
-- **API Gateway:** Spring Cloud Gateway with circuit breaker
-- **Configuration:** Spring Cloud Config Server (Git backend)
-- **Inter-service:** Spring Cloud OpenFeign with Eureka discovery
+- **Language:** Kotlin 2.2.10, Java 21
+- **Framework:** Spring Boot 3.5.6, Spring Cloud 2025.0.0
+- **Database:** PostgreSQL 15, Spring Data R2DBC, Flyway
+- **Infrastructure:** Netflix Eureka, Spring Cloud Gateway, Spring Cloud Config
 - **Resilience:** Resilience4j (circuit breaker, retry, time limiter)
-- **Testing:** Spring Boot Test for E2E tests (pre-running services)
-- **API Docs:** SpringDoc OpenAPI (Swagger)
-- **Code Style:** ktlint 1.5.0
+- **API Docs:** SpringDoc OpenAPI
