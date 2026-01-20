@@ -1,24 +1,25 @@
-package com.github.butvinmitmo.divinationservice.security
+package com.github.butvinmitmo.divinationservice.infrastructure.security
 
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CurrentUserProvider
 import com.github.butvinmitmo.shared.security.GatewayAuthenticationToken
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import java.util.UUID
 
-@Service
-class AuthorizationService {
-    fun getCurrentUserId(): Mono<UUID> =
+@Component
+class SecurityContextCurrentUserProvider : CurrentUserProvider {
+    override fun getCurrentUserId(): Mono<UUID> =
         ReactiveSecurityContextHolder
             .getContext()
             .map { (it.authentication as GatewayAuthenticationToken).userId }
 
-    fun getCurrentRole(): Mono<String> =
+    override fun getCurrentRole(): Mono<String> =
         ReactiveSecurityContextHolder
             .getContext()
             .map { (it.authentication as GatewayAuthenticationToken).role }
 
-    fun canModify(authorId: UUID): Mono<Boolean> =
+    override fun canModify(authorId: UUID): Mono<Boolean> =
         ReactiveSecurityContextHolder
             .getContext()
             .map { auth ->

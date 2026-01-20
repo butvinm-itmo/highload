@@ -1,6 +1,6 @@
-package com.github.butvinmitmo.divinationservice.controller
+package com.github.butvinmitmo.divinationservice.api.controller
 
-import com.github.butvinmitmo.divinationservice.service.DivinationService
+import com.github.butvinmitmo.divinationservice.application.service.DivinationService
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateInterpretationResponse
 import com.github.butvinmitmo.shared.dto.InterpretationDto
@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @RestController
@@ -83,7 +84,7 @@ class InterpretationController(
         @Min(1)
         @Max(50)
         size: Int,
-    ): reactor.core.publisher.Mono<ResponseEntity<List<InterpretationDto>>> =
+    ): Mono<ResponseEntity<List<InterpretationDto>>> =
         divinationService
             .getInterpretations(spreadId, page, size)
             .map { response ->
@@ -123,7 +124,7 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID", required = true)
         @PathVariable
         id: UUID,
-    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
+    ): Mono<ResponseEntity<InterpretationDto>> =
         divinationService
             .getInterpretation(spreadId, id)
             .map { interpretation -> ResponseEntity.ok(interpretation) }
@@ -199,10 +200,12 @@ class InterpretationController(
         @PathVariable
         spreadId: UUID,
         @Valid @RequestBody request: CreateInterpretationRequest,
-    ): reactor.core.publisher.Mono<ResponseEntity<CreateInterpretationResponse>> =
+    ): Mono<ResponseEntity<CreateInterpretationResponse>> =
         divinationService
-            .addInterpretation(spreadId, request)
-            .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
+            .addInterpretation(spreadId, request.text)
+            .map { result ->
+                ResponseEntity.status(HttpStatus.CREATED).body(CreateInterpretationResponse(id = result.id))
+            }
 
     @PutMapping("/{id}")
     @Operation(
@@ -265,9 +268,9 @@ class InterpretationController(
         @PathVariable
         id: UUID,
         @Valid @RequestBody request: UpdateInterpretationRequest,
-    ): reactor.core.publisher.Mono<ResponseEntity<InterpretationDto>> =
+    ): Mono<ResponseEntity<InterpretationDto>> =
         divinationService
-            .updateInterpretation(spreadId, id, request)
+            .updateInterpretation(spreadId, id, request.text)
             .map { updatedInterpretation -> ResponseEntity.ok(updatedInterpretation) }
 
     @DeleteMapping("/{id}")
@@ -314,11 +317,8 @@ class InterpretationController(
         @Parameter(description = "Interpretation ID to delete", required = true)
         @PathVariable
         id: UUID,
-    ): reactor.core.publisher.Mono<ResponseEntity<Void>> =
+    ): Mono<ResponseEntity<Void>> =
         divinationService
             .deleteInterpretation(spreadId, id)
-            .then(
-                reactor.core.publisher.Mono
-                    .just(ResponseEntity.noContent().build()),
-            )
+            .then(Mono.just(ResponseEntity.noContent().build()))
 }

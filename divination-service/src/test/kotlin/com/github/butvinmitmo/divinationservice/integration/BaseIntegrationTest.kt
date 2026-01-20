@@ -1,8 +1,8 @@
 package com.github.butvinmitmo.divinationservice.integration
 
-import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
-import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
-import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataInterpretationRepository
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadCardRepository
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadRepository
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -24,13 +24,13 @@ abstract class BaseIntegrationTest {
     protected lateinit var webTestClient: WebTestClient
 
     @Autowired
-    protected lateinit var spreadRepository: SpreadRepository
+    protected lateinit var spreadRepository: SpringDataSpreadRepository
 
     @Autowired
-    protected lateinit var spreadCardRepository: SpreadCardRepository
+    protected lateinit var spreadCardRepository: SpringDataSpreadCardRepository
 
     @Autowired
-    protected lateinit var interpretationRepository: InterpretationRepository
+    protected lateinit var interpretationRepository: SpringDataInterpretationRepository
 
     @AfterEach
     fun cleanupDatabase() {

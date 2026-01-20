@@ -2,9 +2,9 @@ package com.github.butvinmitmo.divinationservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.butvinmitmo.divinationservice.config.TestFeignConfiguration
-import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
-import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
-import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataInterpretationRepository
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadCardRepository
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadRepository
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import org.junit.jupiter.api.AfterEach
@@ -34,13 +34,13 @@ abstract class BaseControllerIntegrationTest {
     protected lateinit var objectMapper: ObjectMapper
 
     @Autowired
-    protected lateinit var spreadRepository: SpreadRepository
+    protected lateinit var spreadRepository: SpringDataSpreadRepository
 
     @Autowired
-    protected lateinit var spreadCardRepository: SpreadCardRepository
+    protected lateinit var spreadCardRepository: SpringDataSpreadCardRepository
 
     @Autowired
-    protected lateinit var interpretationRepository: InterpretationRepository
+    protected lateinit var interpretationRepository: SpringDataInterpretationRepository
 
     @org.springframework.boot.test.mock.mockito.MockBean
     protected lateinit var userServiceClient: UserServiceClient
@@ -53,7 +53,7 @@ abstract class BaseControllerIntegrationTest {
     protected val threeCardsLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000021")
     protected val crossLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000022")
 
-    // System context used by mappers for internal Feign calls
+    // System context used by providers for internal Feign calls
     protected val systemUserId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000")
     protected val systemRole: String = "SYSTEM"
 

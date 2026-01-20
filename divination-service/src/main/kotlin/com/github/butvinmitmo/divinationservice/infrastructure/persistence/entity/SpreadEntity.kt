@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.divinationservice.entity
+package com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
@@ -7,7 +7,7 @@ import java.time.Instant
 import java.util.UUID
 
 @Table("spread")
-data class Spread(
+data class SpreadEntity(
     @Id
     val id: UUID? = null,
     @Column("question")

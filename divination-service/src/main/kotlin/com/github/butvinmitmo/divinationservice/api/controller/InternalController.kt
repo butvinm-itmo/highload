@@ -1,6 +1,6 @@
-package com.github.butvinmitmo.divinationservice.controller
+package com.github.butvinmitmo.divinationservice.api.controller
 
-import com.github.butvinmitmo.divinationservice.service.DivinationService
+import com.github.butvinmitmo.divinationservice.application.service.DivinationService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable

@@ -1,8 +1,8 @@
 package com.github.butvinmitmo.divinationservice.integration.controller
 
-import com.github.butvinmitmo.divinationservice.entity.Interpretation
-import com.github.butvinmitmo.divinationservice.entity.Spread
-import com.github.butvinmitmo.divinationservice.entity.SpreadCard
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.InterpretationEntity
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.SpreadCardEntity
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.SpreadEntity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -19,7 +19,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         val spread1 =
             spreadRepository
                 .save(
-                    Spread(
+                    SpreadEntity(
                         question = "Test question",
                         authorId = userId,
                         layoutTypeId = oneCardLayoutId,
@@ -29,7 +29,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         // Create spread cards for spread1
         spreadCardRepository
             .save(
-                SpreadCard(
+                SpreadCardEntity(
                     spreadId = spread1.id!!,
                     cardId = UUID.fromString("00000000-0000-0000-0000-000000000030"),
                     positionInSpread = 1,
@@ -41,7 +41,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         val spread2 =
             spreadRepository
                 .save(
-                    Spread(
+                    SpreadEntity(
                         question = "Another question",
                         authorId = userId,
                         layoutTypeId = oneCardLayoutId,
@@ -52,7 +52,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         val otherUserSpread =
             spreadRepository
                 .save(
-                    Spread(
+                    SpreadEntity(
                         question = "Other user question",
                         authorId = otherUserId,
                         layoutTypeId = oneCardLayoutId,
@@ -62,7 +62,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         // Create interpretation by userId on spread1
         interpretationRepository
             .save(
-                Interpretation(
+                InterpretationEntity(
                     text = "User interpretation",
                     authorId = userId,
                     spreadId = spread1.id!!,
@@ -72,7 +72,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         // Create interpretation by otherUser on spread1
         interpretationRepository
             .save(
-                Interpretation(
+                InterpretationEntity(
                     text = "Other user interpretation on spread1",
                     authorId = otherUserId,
                     spreadId = spread1.id!!,
@@ -82,7 +82,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         // Create interpretation by userId on otherUser's spread
         interpretationRepository
             .save(
-                Interpretation(
+                InterpretationEntity(
                     text = "User interpretation on other spread",
                     authorId = userId,
                     spreadId = otherUserSpread.id!!,
@@ -92,7 +92,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         // Create interpretation by otherUser on their own spread (this should remain)
         interpretationRepository
             .save(
-                Interpretation(
+                InterpretationEntity(
                     text = "Other user interpretation on their own spread",
                     authorId = otherUserId,
                     spreadId = otherUserSpread.id!!,
@@ -154,7 +154,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         val spread =
             spreadRepository
                 .save(
-                    Spread(
+                    SpreadEntity(
                         question = "Test question",
                         authorId = userId,
                         layoutTypeId = threeCardsLayoutId,
@@ -165,7 +165,7 @@ class InternalControllerIntegrationTest : BaseControllerIntegrationTest() {
         repeat(3) { index ->
             spreadCardRepository
                 .save(
-                    SpreadCard(
+                    SpreadCardEntity(
                         spreadId = spread.id!!,
                         cardId = UUID.fromString("00000000-0000-0000-0000-00000000003$index"),
                         positionInSpread = index + 1,

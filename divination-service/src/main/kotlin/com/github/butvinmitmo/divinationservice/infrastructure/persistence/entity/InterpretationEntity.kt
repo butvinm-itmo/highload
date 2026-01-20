@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.divinationservice.entity
+package com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
@@ -7,11 +7,11 @@ import java.time.Instant
 import java.util.UUID
 
 @Table("interpretation")
-data class Interpretation(
+data class InterpretationEntity(
     @Id
     val id: UUID? = null,
     @Column("text")
-    var text: String,
+    val text: String,
     @Column("author_id")
     val authorId: UUID,
     @Column("spread_id")

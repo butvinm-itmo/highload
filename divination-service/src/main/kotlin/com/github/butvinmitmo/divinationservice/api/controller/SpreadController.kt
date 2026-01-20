@@ -1,6 +1,6 @@
-package com.github.butvinmitmo.divinationservice.controller
+package com.github.butvinmitmo.divinationservice.api.controller
 
-import com.github.butvinmitmo.divinationservice.service.DivinationService
+import com.github.butvinmitmo.divinationservice.application.service.DivinationService
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadResponse
 import com.github.butvinmitmo.shared.dto.SpreadDto
@@ -88,8 +88,8 @@ class SpreadController(
         @Valid @RequestBody request: CreateSpreadRequest,
     ): Mono<ResponseEntity<CreateSpreadResponse>> =
         divinationService
-            .createSpread(request)
-            .map { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
+            .createSpread(request.question, request.layoutTypeId)
+            .map { result -> ResponseEntity.status(HttpStatus.CREATED).body(CreateSpreadResponse(id = result.id)) }
 
     @GetMapping
     @Operation(

@@ -1,4 +1,4 @@
-package com.github.butvinmitmo.divinationservice.entity
+package com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
@@ -6,7 +6,7 @@ import org.springframework.data.relational.core.mapping.Table
 import java.util.UUID
 
 @Table("spread_card")
-data class SpreadCard(
+data class SpreadCardEntity(
     @Id
     val id: UUID? = null,
     @Column("spread_id")

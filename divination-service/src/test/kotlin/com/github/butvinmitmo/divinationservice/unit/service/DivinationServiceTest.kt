@@ -1,26 +1,19 @@
 package com.github.butvinmitmo.divinationservice.unit.service
 
 import com.github.butvinmitmo.divinationservice.TestEntityFactory
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CardProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CurrentUserProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.UserProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationRepository
+import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadCardRepository
+import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadRepository
+import com.github.butvinmitmo.divinationservice.application.service.DivinationService
 import com.github.butvinmitmo.divinationservice.exception.ConflictException
 import com.github.butvinmitmo.divinationservice.exception.ForbiddenException
 import com.github.butvinmitmo.divinationservice.exception.NotFoundException
-import com.github.butvinmitmo.divinationservice.mapper.InterpretationMapper
-import com.github.butvinmitmo.divinationservice.mapper.SpreadMapper
-import com.github.butvinmitmo.divinationservice.repository.InterpretationRepository
-import com.github.butvinmitmo.divinationservice.repository.SpreadCardRepository
-import com.github.butvinmitmo.divinationservice.repository.SpreadRepository
-import com.github.butvinmitmo.divinationservice.security.AuthorizationService
-import com.github.butvinmitmo.divinationservice.service.DivinationService
-import com.github.butvinmitmo.shared.client.TarotServiceClient
-import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
-import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
-import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
-import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
-import com.github.butvinmitmo.shared.dto.SpreadSummaryDto
-import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.UserDto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -29,7 +22,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
@@ -52,19 +44,13 @@ class DivinationServiceTest {
     private lateinit var interpretationRepository: InterpretationRepository
 
     @Mock
-    private lateinit var userServiceClient: UserServiceClient
+    private lateinit var userProvider: UserProvider
 
     @Mock
-    private lateinit var tarotServiceClient: TarotServiceClient
+    private lateinit var cardProvider: CardProvider
 
     @Mock
-    private lateinit var spreadMapper: SpreadMapper
-
-    @Mock
-    private lateinit var interpretationMapper: InterpretationMapper
-
-    @Mock
-    private lateinit var authorizationService: AuthorizationService
+    private lateinit var currentUserProvider: CurrentUserProvider
 
     private lateinit var divinationService: DivinationService
 
@@ -91,17 +77,14 @@ class DivinationServiceTest {
                 spreadRepository,
                 spreadCardRepository,
                 interpretationRepository,
-                userServiceClient,
-                tarotServiceClient,
-                spreadMapper,
-                interpretationMapper,
-                authorizationService,
+                userProvider,
+                cardProvider,
+                currentUserProvider,
             )
     }
 
     @Test
     fun `createSpread should create new spread successfully`() {
-        val request = CreateSpreadRequest(question = "Test question", layoutTypeId = layoutTypeId)
         val savedSpread =
             TestEntityFactory.createSpread(
                 id = spreadId,
@@ -111,33 +94,22 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(authorizationService.getCurrentUserId()).thenReturn(Mono.just(userId))
-        whenever(authorizationService.getCurrentRole()).thenReturn(Mono.just("USER"))
-        whenever(userServiceClient.getUserById(userId, "USER", userId)).thenReturn(
-            org.springframework.http.ResponseEntity
-                .ok(testUser),
-        )
-        whenever(
-            tarotServiceClient.getLayoutTypeById(userId, "USER", layoutTypeId),
-        ).thenReturn(
-            org.springframework.http.ResponseEntity
-                .ok(testLayoutType),
-        )
+        whenever(currentUserProvider.getCurrentUserId()).thenReturn(Mono.just(userId))
+        whenever(currentUserProvider.getCurrentRole()).thenReturn(Mono.just("USER"))
+        whenever(userProvider.getUserById(userId, "USER", userId)).thenReturn(Mono.just(testUser))
+        whenever(cardProvider.getLayoutTypeById(userId, "USER", layoutTypeId)).thenReturn(Mono.just(testLayoutType))
         whenever(spreadRepository.save(any())).thenReturn(Mono.just(savedSpread))
-        whenever(
-            spreadCardRepository.save(any()),
-        ).thenReturn(Mono.just(TestEntityFactory.createSpreadCard(spreadId = spreadId)))
-        whenever(tarotServiceClient.getRandomCards(userId, "USER", 3)).thenReturn(
-            org.springframework.http.ResponseEntity
-                .ok(testCards),
+        whenever(spreadCardRepository.save(any())).thenReturn(
+            Mono.just(TestEntityFactory.createSpreadCard(spreadId = spreadId)),
         )
+        whenever(cardProvider.getRandomCards(userId, "USER", 3)).thenReturn(Mono.just(testCards))
 
-        val result = divinationService.createSpread(request).block()
+        val result = divinationService.createSpread("Test question", layoutTypeId).block()
 
         assertNotNull(result)
         assertEquals(spreadId, result!!.id)
-        verify(userServiceClient).getUserById(userId, "USER", userId)
-        verify(tarotServiceClient).getLayoutTypeById(userId, "USER", layoutTypeId)
+        verify(userProvider).getUserById(userId, "USER", userId)
+        verify(cardProvider).getLayoutTypeById(userId, "USER", layoutTypeId)
         verify(spreadRepository).save(any())
     }
 
@@ -152,20 +124,8 @@ class DivinationServiceTest {
         whenever(spreadRepository.count()).thenReturn(Mono.just(2L))
         whenever(spreadRepository.findAllOrderByCreatedAtDesc(0L, 2)).thenReturn(Flux.fromIterable(spreads))
         whenever(interpretationRepository.countBySpreadIds(any())).thenReturn(Flux.empty())
-        whenever(spreadMapper.toSummaryDto(any(), any())).thenAnswer { invocation: InvocationOnMock ->
-            val spread = invocation.arguments[0] as com.github.butvinmitmo.divinationservice.entity.Spread
-            Mono.just(
-                SpreadSummaryDto(
-                    id = spread.id!!,
-                    question = spread.question,
-                    layoutTypeName = "Test Layout",
-                    cardsCount = 3,
-                    interpretationsCount = 0,
-                    authorUsername = "testuser",
-                    createdAt = spread.createdAt!!,
-                ),
-            )
-        }
+        whenever(userProvider.getSystemUser(any())).thenReturn(Mono.just(testUser))
+        whenever(cardProvider.getSystemLayoutType(any())).thenReturn(Mono.just(testLayoutType))
 
         val result = divinationService.getSpreads(0, 2).block()
 
@@ -175,7 +135,7 @@ class DivinationServiceTest {
 
     @Test
     fun `getSpread should throw NotFoundException when spread not found`() {
-        whenever(spreadRepository.findByIdWithCards(spreadId)).thenReturn(Mono.empty())
+        whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.empty())
 
         val exception =
             assertThrows<NotFoundException> {
@@ -189,7 +149,7 @@ class DivinationServiceTest {
         val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId, authorId = userId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
-        whenever(authorizationService.canModify(userId)).thenReturn(Mono.just(true))
+        whenever(currentUserProvider.canModify(userId)).thenReturn(Mono.just(true))
         whenever(spreadRepository.deleteById(spreadId)).thenReturn(Mono.empty())
 
         divinationService.deleteSpread(spreadId).block()
@@ -203,7 +163,7 @@ class DivinationServiceTest {
         val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId, authorId = otherUserId)
 
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
-        whenever(authorizationService.canModify(otherUserId)).thenReturn(Mono.just(false))
+        whenever(currentUserProvider.canModify(otherUserId)).thenReturn(Mono.just(false))
 
         val exception =
             assertThrows<ForbiddenException> {
@@ -230,7 +190,6 @@ class DivinationServiceTest {
     @Test
     fun `addInterpretation should create new interpretation successfully`() {
         val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
-        val request = CreateInterpretationRequest(text = "Test interpretation")
         val savedInterpretation =
             TestEntityFactory.createInterpretation(
                 id = interpretationId,
@@ -240,17 +199,14 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        whenever(authorizationService.getCurrentUserId()).thenReturn(Mono.just(userId))
-        whenever(authorizationService.getCurrentRole()).thenReturn(Mono.just("USER"))
+        whenever(currentUserProvider.getCurrentUserId()).thenReturn(Mono.just(userId))
+        whenever(currentUserProvider.getCurrentRole()).thenReturn(Mono.just("USER"))
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
-        whenever(userServiceClient.getUserById(userId, "USER", userId)).thenReturn(
-            org.springframework.http.ResponseEntity
-                .ok(testUser),
-        )
+        whenever(userProvider.getUserById(userId, "USER", userId)).thenReturn(Mono.just(testUser))
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
 
-        val result = divinationService.addInterpretation(spreadId, request).block()
+        val result = divinationService.addInterpretation(spreadId, "Test interpretation").block()
 
         assertNotNull(result)
         assertEquals(interpretationId, result!!.id)
@@ -259,20 +215,16 @@ class DivinationServiceTest {
     @Test
     fun `addInterpretation should throw ConflictException when user already has interpretation`() {
         val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
-        val request = CreateInterpretationRequest(text = "Test interpretation")
 
-        whenever(authorizationService.getCurrentUserId()).thenReturn(Mono.just(userId))
-        whenever(authorizationService.getCurrentRole()).thenReturn(Mono.just("USER"))
+        whenever(currentUserProvider.getCurrentUserId()).thenReturn(Mono.just(userId))
+        whenever(currentUserProvider.getCurrentRole()).thenReturn(Mono.just("USER"))
         whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
-        whenever(userServiceClient.getUserById(userId, "USER", userId)).thenReturn(
-            org.springframework.http.ResponseEntity
-                .ok(testUser),
-        )
+        whenever(userProvider.getUserById(userId, "USER", userId)).thenReturn(Mono.just(testUser))
         whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(true))
 
         val exception =
             assertThrows<ConflictException> {
-                divinationService.addInterpretation(spreadId, request).block()
+                divinationService.addInterpretation(spreadId, "Test interpretation").block()
             }
         assertEquals("You already have an interpretation for this spread", exception.message)
 
@@ -289,16 +241,13 @@ class DivinationServiceTest {
                 spreadId = spreadId,
                 createdAt = createdAt,
             )
-        val request = UpdateInterpretationRequest(text = "Updated text")
-
-        val interpretationDto = InterpretationDto(interpretationId, "Updated text", createdAt, testUser, spreadId)
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
-        whenever(authorizationService.canModify(userId)).thenReturn(Mono.just(true))
-        whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation))
-        whenever(interpretationMapper.toDto(any())).thenReturn(Mono.just(interpretationDto))
+        whenever(currentUserProvider.canModify(userId)).thenReturn(Mono.just(true))
+        whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation.copy(text = "Updated text")))
+        whenever(userProvider.getSystemUser(userId)).thenReturn(Mono.just(testUser))
 
-        divinationService.updateInterpretation(spreadId, interpretationId, request).block()
+        divinationService.updateInterpretation(spreadId, interpretationId, "Updated text").block()
 
         verify(interpretationRepository).save(any())
     }
@@ -314,14 +263,13 @@ class DivinationServiceTest {
                 spreadId = spreadId,
                 createdAt = createdAt,
             )
-        val request = UpdateInterpretationRequest(text = "Updated text")
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
-        whenever(authorizationService.canModify(otherUserId)).thenReturn(Mono.just(false))
+        whenever(currentUserProvider.canModify(otherUserId)).thenReturn(Mono.just(false))
 
         val exception =
             assertThrows<ForbiddenException> {
-                divinationService.updateInterpretation(spreadId, interpretationId, request).block()
+                divinationService.updateInterpretation(spreadId, interpretationId, "Updated text").block()
             }
         assertEquals("You can only edit your own interpretations", exception.message)
 
@@ -340,7 +288,7 @@ class DivinationServiceTest {
             )
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
-        whenever(authorizationService.canModify(userId)).thenReturn(Mono.just(true))
+        whenever(currentUserProvider.canModify(userId)).thenReturn(Mono.just(true))
         whenever(interpretationRepository.deleteById(interpretationId)).thenReturn(Mono.empty())
 
         divinationService.deleteInterpretation(spreadId, interpretationId).block()
@@ -361,7 +309,7 @@ class DivinationServiceTest {
             )
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
-        whenever(authorizationService.canModify(otherUserId)).thenReturn(Mono.just(false))
+        whenever(currentUserProvider.canModify(otherUserId)).thenReturn(Mono.just(false))
 
         val exception =
             assertThrows<ForbiddenException> {
@@ -383,14 +331,13 @@ class DivinationServiceTest {
                 createdAt = createdAt,
             )
 
-        val interpretationDto = InterpretationDto(interpretationId, "Test", createdAt, testUser, spreadId)
-
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
-        whenever(interpretationMapper.toDto(interpretation)).thenReturn(Mono.just(interpretationDto))
+        whenever(userProvider.getSystemUser(userId)).thenReturn(Mono.just(testUser))
 
-        divinationService.getInterpretation(spreadId, interpretationId).block()
+        val result = divinationService.getInterpretation(spreadId, interpretationId).block()
 
-        verify(interpretationMapper).toDto(interpretation)
+        assertNotNull(result)
+        assertEquals(interpretationId, result!!.id)
     }
 
     @Test
@@ -427,18 +374,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.findBySpreadIdOrderByCreatedAtDesc(spreadId, 0L, 2))
             .thenReturn(Flux.fromIterable(interpretations))
         whenever(interpretationRepository.countBySpreadId(spreadId)).thenReturn(Mono.just(2L))
-        whenever(interpretationMapper.toDto(any())).thenAnswer { invocation: InvocationOnMock ->
-            val interp = invocation.arguments[0] as com.github.butvinmitmo.divinationservice.entity.Interpretation
-            Mono.just(
-                InterpretationDto(
-                    id = interp.id!!,
-                    text = interp.text,
-                    author = testUser,
-                    spreadId = interp.spreadId,
-                    createdAt = interp.createdAt!!,
-                ),
-            )
-        }
+        whenever(userProvider.getSystemUser(any())).thenReturn(Mono.just(testUser))
 
         val result = divinationService.getInterpretations(spreadId, 0, 2).block()
 
