@@ -47,6 +47,7 @@ dependencies {
 
     // Spring Security for method-level authorization
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.kafka:spring-kafka")
 
     // JWT library for token generation
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
