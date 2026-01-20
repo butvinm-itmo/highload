@@ -46,6 +46,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build:** Gradle with Kotlin DSL (multi-project)
 - **Database:** PostgreSQL 15, Flyway migrations
 - **ORM:** Spring Data R2DBC (all services - fully reactive)
+- **Event Streaming:** Apache Kafka 7.5 (3 brokers, KRaft mode)
 - **Service Discovery:** Netflix Eureka
 - **API Gateway:** Spring Cloud Gateway
 - **Inter-service:** Spring Cloud OpenFeign
@@ -62,12 +63,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **user-service** | 8081 | WebFlux + R2DBC | User management, authentication (reactive) |
 | **tarot-service** | 8082 | WebFlux + R2DBC | Cards & layout types reference data (reactive) |
 | **divination-service** | 8083 | WebFlux + R2DBC | Spreads & interpretations (reactive) |
+| **kafka-1/2/3** | 9092-9094 | Apache Kafka (KRaft) | Event streaming cluster (3 brokers) |
+| **kafka-ui** | 8090 | Provectus Kafka UI | Kafka cluster monitoring |
 
-**Shared modules:** `shared-dto` (DTOs), `shared-clients` (Feign clients), `e2e-tests`
+**Shared modules:** `shared-dto` (DTOs, event data classes), `shared-clients` (Feign clients), `e2e-tests`
 
 **Inter-service Communication:**
 - Services register with Eureka and discover each other dynamically
-- `divination-service` calls other services via Feign clients
+- `divination-service` calls other services via Feign clients (synchronous)
+- `user-service` and `divination-service` publish domain events to Kafka (asynchronous)
 - External clients access through `gateway-service`
 - Currently all services share a single PostgreSQL database with separate Flyway history tables, but are designed for independent database deployment
 
@@ -92,13 +96,17 @@ All three backend services (user-service, tarot-service, divination-service) fol
 │   ├── service/            # Use cases / application services
 │   └── interfaces/
 │       ├── repository/     # Persistence interfaces
-│       └── provider/       # External service interfaces
+│       ├── provider/       # External service interfaces
+│       └── publisher/      # Event publishing interfaces
 │
 ├── infrastructure/
 │   ├── persistence/
 │   │   ├── entity/         # R2DBC @Table classes
 │   │   ├── repository/     # Spring Data R2DBC interfaces (internal)
 │   │   └── mapper/         # Entity ↔ Domain mappers
+│   ├── messaging/
+│   │   ├── mapper/         # Domain ↔ Event DTO mappers
+│   │   └── Kafka*.kt       # Kafka publisher implementations
 │   ├── external/           # Feign implementations of provider interfaces
 │   └── security/           # Security implementations
 │
@@ -138,6 +146,8 @@ No "Port", "Adapter", "Impl" suffixes. Technology prefix for implementations:
 | `UserProvider` | `FeignUserProvider` |
 | `TokenProvider` | `JwtTokenProvider` |
 | `CurrentUserProvider` | `SecurityContextCurrentUserProvider` |
+| `UserEventPublisher` | `KafkaUserEventPublisher` |
+| `SpreadEventPublisher` | `KafkaSpreadEventPublisher` |
 
 ### Data Flow
 
@@ -309,6 +319,7 @@ docker compose up -d && ./gradlew :e2e-tests:test
 - `EUREKA_URL` - Eureka Server URL (required)
 - `JWT_SECRET` - JWT signing key (required for user-service, gateway-service)
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Database connection
+- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses (required for user-service, divination-service)
 
 ## Testing
 
@@ -381,3 +392,63 @@ cd ..  # back to main project
 git add highload-config
 git commit -m "Update highload-config"
 ```
+
+## Event-Driven Architecture
+
+### Kafka Infrastructure
+
+3-broker Kafka cluster running in KRaft mode (no Zookeeper):
+- **Brokers:** kafka-1 (9092), kafka-2 (9093), kafka-3 (9094)
+- **Internal port:** 29092 (used by services within Docker network)
+- **Replication factor:** 3, min.insync.replicas: 2
+- **Monitoring:** kafka-ui at http://localhost:8090
+
+### Topics
+
+| Topic | Publisher | Events |
+|-------|-----------|--------|
+| `users-events` | user-service | CREATED, UPDATED, DELETED |
+| `spreads-events` | divination-service | CREATED, DELETED |
+| `interpretations-events` | divination-service | CREATED, UPDATED, DELETED |
+
+### Event Message Format
+
+Events use Kafka headers for metadata and JSON body for payload:
+
+**Structure:**
+- **Key:** Entity ID (UUID string) - enables partitioning by entity
+- **Headers:**
+  - `eventType`: `CREATED` | `UPDATED` | `DELETED`
+  - `timestamp`: ISO-8601 instant
+- **Value:** Full entity state (JSON)
+
+**Example (users-events):**
+```
+Key: "550e8400-e29b-41d4-a716-446655440000"
+Headers: { eventType: "CREATED", timestamp: "2026-01-20T20:00:00Z" }
+Value: {"id":"550e8400-...","username":"john_doe","role":"USER","createdAt":"2026-01-20T20:00:00Z"}
+```
+
+### Event DTOs
+
+Located in `shared-dto` module (`com.github.butvinmitmo.shared.dto.events`):
+- `EventType` - Enum: CREATED, UPDATED, DELETED
+- `UserEventData` - id, username, role, createdAt
+- `SpreadEventData` - id, question, layoutTypeId, authorId, createdAt
+- `InterpretationEventData` - id, text, authorId, spreadId, createdAt
+
+### Publishing Pattern
+
+**Post-commit, at-least-once semantics:**
+1. Application service saves entity to database
+2. After successful save, publishes event to Kafka
+3. If Kafka publish fails, database transaction already committed (event may be lost)
+
+**Implementation:**
+- Publisher interfaces in `application/interfaces/publisher/`
+- Kafka implementations in `infrastructure/messaging/`
+- Blocking Kafka calls wrapped with `Mono.fromCallable().subscribeOn(Schedulers.boundedElastic())`
+
+**Testing:**
+- Unit tests mock publisher interfaces
+- Integration tests use `@MockBean` for publishers to avoid Kafka dependency
