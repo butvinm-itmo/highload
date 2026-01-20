@@ -4,16 +4,18 @@ A Kotlin/Spring Boot microservices application for Tarot card readings and inter
 
 ## Architecture
 
-The application consists of 6 microservices with centralized configuration, service discovery, and API gateway:
+The application consists of 6 microservices with centralized configuration, service discovery, API gateway, and event streaming:
 
-| Service                | Port | Description                          |
-| ---------------------- | ---- | ------------------------------------ |
-| **config-server**      | 8888 | Centralized configuration management |
-| **eureka-server**      | 8761 | Service discovery (Netflix Eureka)   |
-| **gateway-service**    | 8080 | API Gateway (routing, resilience)    |
-| **user-service**       | 8081 | User management & authentication     |
-| **tarot-service**      | 8082 | Cards & LayoutTypes catalog          |
-| **divination-service** | 8083 | Spreads & Interpretations            |
+| Service                | Port      | Description                          |
+| ---------------------- | --------- | ------------------------------------ |
+| **config-server**      | 8888      | Centralized configuration management |
+| **eureka-server**      | 8761      | Service discovery (Netflix Eureka)   |
+| **gateway-service**    | 8080      | API Gateway (routing, resilience)    |
+| **user-service**       | 8081      | User management & authentication     |
+| **tarot-service**      | 8082      | Cards & LayoutTypes catalog          |
+| **divination-service** | 8083      | Spreads & Interpretations            |
+| **kafka-1/2/3**        | 9092-9094 | Event streaming (3-broker cluster)   |
+| **kafka-ui**           | 8090      | Kafka cluster monitoring UI          |
 
 **API Documentation:** Centralized Swagger UI at [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
@@ -26,6 +28,41 @@ The application consists of 6 microservices with centralized configuration, serv
 **Resilience:** `gateway-service` and `divination-service` use Resilience4j circuit breaker, retry, and time limiter for fault tolerance.
 
 **Database:** All services share a single PostgreSQL database with separate Flyway migration history tables.
+
+**Event Streaming:** Apache Kafka cluster (3 brokers, KRaft mode) enables asynchronous event-driven communication. Services publish domain events after successful database operations.
+
+## Event-Driven Architecture
+
+### Kafka Infrastructure
+
+- **Cluster:** 3-broker setup running in KRaft mode (no Zookeeper dependency)
+- **Brokers:** kafka-1 (9092), kafka-2 (9093), kafka-3 (9094)
+- **Replication:** Factor 3, min.insync.replicas: 2
+- **Monitoring:** Kafka UI at [http://localhost:8090](http://localhost:8090)
+
+### Topics & Events
+
+| Topic                    | Publisher          | Events                    |
+| ------------------------ | ------------------ | ------------------------- |
+| `users-events`           | user-service       | CREATED, UPDATED, DELETED |
+| `spreads-events`         | divination-service | CREATED, DELETED          |
+| `interpretations-events` | divination-service | CREATED, UPDATED, DELETED |
+
+### Event Message Format
+
+Events use Kafka headers for metadata and JSON body for payload:
+
+- **Key:** Entity ID (UUID) - enables partitioning by entity
+- **Headers:** `eventType` (CREATED/UPDATED/DELETED), `timestamp` (ISO-8601)
+- **Value:** Full entity state as JSON
+
+Example (`users-events`):
+
+```
+Key: "550e8400-e29b-41d4-a716-446655440000"
+Headers: { eventType: "CREATED", timestamp: "2026-01-20T20:00:00Z" }
+Value: {"id":"550e8400-...","username":"john_doe","role":"USER","createdAt":"2026-01-20T20:00:00Z"}
+```
 
 ## Quick Start
 
@@ -41,6 +78,9 @@ open http://localhost:8761
 
 # Access API documentation
 open http://localhost:8080/swagger-ui.html
+
+# Monitor Kafka cluster
+open http://localhost:8090
 
 # Run E2E tests
 ./gradlew :e2e-tests:test
@@ -63,27 +103,27 @@ open http://localhost:8080/swagger-ui.html
 
 ### tarot-service (port 8082)
 
-| Method | Endpoint                       | Description          |
-| ------ | ------------------------------ | -------------------- |
-| GET    | `/api/v0.0.1/cards`            | List tarot cards     |
-| GET    | `/api/v0.0.1/cards/random`     | Get random cards     |
-| GET    | `/api/v0.0.1/layout-types`     | List spread layouts  |
-| GET    | `/api/v0.0.1/layout-types/{id}`| Get layout type      |
+| Method | Endpoint                        | Description         |
+| ------ | ------------------------------- | ------------------- |
+| GET    | `/api/v0.0.1/cards`             | List tarot cards    |
+| GET    | `/api/v0.0.1/cards/random`      | Get random cards    |
+| GET    | `/api/v0.0.1/layout-types`      | List spread layouts |
+| GET    | `/api/v0.0.1/layout-types/{id}` | Get layout type     |
 
 ### divination-service (port 8083)
 
-| Method | Endpoint                                               | Description                      |
-| ------ | ------------------------------------------------------ | -------------------------------- |
-| POST   | `/api/v0.0.1/spreads`                                  | Create spread                    |
-| GET    | `/api/v0.0.1/spreads?page=N&size=M`                    | List spreads (paginated)         |
-| GET    | `/api/v0.0.1/spreads/scroll?after=ID&size=N`           | Scroll spreads (cursor-based)    |
-| GET    | `/api/v0.0.1/spreads/{id}`                             | Get spread with cards & interps  |
-| DELETE | `/api/v0.0.1/spreads/{id}`                             | Delete spread (author only)      |
-| GET    | `/api/v0.0.1/spreads/{id}/interpretations`             | List interpretations for spread  |
-| GET    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}`  | Get interpretation               |
-| POST   | `/api/v0.0.1/spreads/{id}/interpretations`             | Add interpretation               |
-| PUT    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}`  | Update interpretation (author)   |
-| DELETE | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}`  | Delete interpretation (author)   |
+| Method | Endpoint                                              | Description                     |
+| ------ | ----------------------------------------------------- | ------------------------------- |
+| POST   | `/api/v0.0.1/spreads`                                 | Create spread                   |
+| GET    | `/api/v0.0.1/spreads?page=N&size=M`                   | List spreads (paginated)        |
+| GET    | `/api/v0.0.1/spreads/scroll?after=ID&size=N`          | Scroll spreads (cursor-based)   |
+| GET    | `/api/v0.0.1/spreads/{id}`                            | Get spread with cards & interps |
+| DELETE | `/api/v0.0.1/spreads/{id}`                            | Delete spread (author only)     |
+| GET    | `/api/v0.0.1/spreads/{id}/interpretations`            | List interpretations for spread |
+| GET    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}` | Get interpretation              |
+| POST   | `/api/v0.0.1/spreads/{id}/interpretations`            | Add interpretation              |
+| PUT    | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}` | Update interpretation (author)  |
+| DELETE | `/api/v0.0.1/spreads/{id}/interpretations/{interpId}` | Delete interpretation (author)  |
 
 ## Configuration Management
 
@@ -111,6 +151,7 @@ docker compose restart config-server
 ```
 
 **Configuration files:**
+
 - `application.yml` - Shared configuration (database, R2DBC, Flyway, SpringDoc)
 - `eureka-server.yml` - Eureka server settings
 - `gateway-service.yml` - Gateway routes, Resilience4j, Swagger UI
@@ -159,8 +200,8 @@ Service startup order is enforced by docker-compose health checks.
 ### Running Locally (Development)
 
 ```bash
-# Start infrastructure
-docker compose up -d config-server eureka-server gateway-service postgres
+# Start infrastructure (includes Kafka cluster)
+docker compose up -d config-server eureka-server gateway-service postgres kafka-1 kafka-2 kafka-3 kafka-ui
 
 # Run services locally
 ./gradlew :user-service:bootRun
@@ -205,6 +246,7 @@ highload/
 - **Language:** Kotlin 2.2.10, Java 21
 - **Framework:** Spring Boot 3.5.6, Spring Cloud 2025.0.0
 - **Database:** PostgreSQL 15, Spring Data R2DBC, Flyway
+- **Event Streaming:** Apache Kafka 7.5 (3 brokers, KRaft mode)
 - **Infrastructure:** Netflix Eureka, Spring Cloud Gateway, Spring Cloud Config
 - **Resilience:** Resilience4j (circuit breaker, retry, time limiter)
 - **API Docs:** SpringDoc OpenAPI
