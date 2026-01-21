@@ -1,6 +1,5 @@
 package com.github.butvinmitmo.userservice.application.service
 
-import com.github.butvinmitmo.userservice.application.interfaces.provider.DivinationServiceProvider
 import com.github.butvinmitmo.userservice.application.interfaces.provider.PasswordEncoder
 import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenProvider
 import com.github.butvinmitmo.userservice.application.interfaces.publisher.UserEventPublisher
@@ -37,7 +36,6 @@ class UserService(
     private val roleRepository: RoleRepository,
     private val passwordEncoder: PasswordEncoder,
     private val tokenProvider: TokenProvider,
-    private val divinationServiceProvider: DivinationServiceProvider,
     private val userEventPublisher: UserEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(UserService::class.java)
@@ -176,15 +174,8 @@ class UserService(
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("User not found")))
             .flatMap { user ->
-                logger.info("Deleting user data in divination-service for user $id")
-                Mono
-                    .fromCallable { divinationServiceProvider.deleteUserData(id) }
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .doOnSuccess {
-                        logger.info(
-                            "Successfully deleted user data in divination-service for user $id",
-                        )
-                    }.then(Mono.defer { userRepository.deleteById(id) })
+                userRepository
+                    .deleteById(id)
                     .then(Mono.defer { userEventPublisher.publishDeleted(user) })
             }
 
