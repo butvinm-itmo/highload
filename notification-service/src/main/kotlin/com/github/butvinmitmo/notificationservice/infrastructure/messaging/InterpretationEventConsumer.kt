@@ -2,6 +2,7 @@ package com.github.butvinmitmo.notificationservice.infrastructure.messaging
 
 import com.github.butvinmitmo.notificationservice.application.interfaces.provider.SpreadProvider
 import com.github.butvinmitmo.notificationservice.application.service.NotificationService
+import com.github.butvinmitmo.notificationservice.infrastructure.websocket.WebSocketSessionManager
 import com.github.butvinmitmo.shared.dto.events.EventType
 import com.github.butvinmitmo.shared.dto.events.InterpretationEventData
 import org.slf4j.LoggerFactory
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component
 class InterpretationEventConsumer(
     private val spreadProvider: SpreadProvider,
     private val notificationService: NotificationService,
+    private val webSocketSessionManager: WebSocketSessionManager,
 ) {
     private val logger = LoggerFactory.getLogger(InterpretationEventConsumer::class.java)
 
@@ -72,9 +74,16 @@ class InterpretationEventConsumer(
                     title = "New interpretation on your spread",
                     message = "Someone added an interpretation to your spread",
                 )
-            }.doOnSuccess { notification ->
+            }.flatMap { notification ->
                 if (notification != null) {
                     logger.info("Created notification {} for interpretation {}", notification.id, event.id)
+                    // Push real-time notification via WebSocket
+                    webSocketSessionManager
+                        .sendToUser(notification.recipientId, notification)
+                        .thenReturn(notification)
+                } else {
+                    reactor.core.publisher.Mono
+                        .empty()
                 }
             }.doOnError { e ->
                 logger.error(
