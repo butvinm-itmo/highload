@@ -80,11 +80,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - External clients access through `gateway-service`
 - Currently all services share a single PostgreSQL database with separate Flyway history tables, but are designed for independent database deployment
 
-**Cascade Delete (User Deletion):**
-- When a user is deleted, user-service calls divination-service's internal API first
-- Internal endpoint: `DELETE /internal/users/{userId}/data`
-- Deletes all user's spreads and interpretations before user record is removed
-- User deletion fails (503 Service Unavailable) if cleanup fails
+**Cascade Delete (User Deletion - Eventual Consistency):**
+- When a user is deleted, user-service publishes a `DELETED` event to `users-events` Kafka topic
+- divination-service consumes the event and asynchronously deletes all user's spreads and interpretations
+- User deletion completes immediately; cleanup happens asynchronously
+- If divination-service is temporarily unavailable, cleanup will occur when it recovers
+- During the eventual consistency window, orphaned spreads may briefly remain visible
 
 **Configuration:** External Git repository (`highload-config/` submodule) served by config-server.
 
@@ -333,7 +334,6 @@ WebSocket connections receive real-time notifications when interpretations are a
 ### divination-service (Internal API)
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| DELETE | `/internal/users/{userId}/data` | Delete all user's spreads and interpretations | Service-to-service only |
 | GET | `/internal/spreads/{spreadId}/owner` | Get spread author ID | Service-to-service only |
 
 **Note:** Internal endpoints are not exposed through the gateway and are only accessible via Eureka service discovery.
@@ -482,6 +482,7 @@ git commit -m "Update highload-config"
 
 | Topic | Consumer | Action |
 |-------|----------|--------|
+| `users-events` | divination-service | Deletes all user's spreads and interpretations when user DELETED |
 | `interpretations-events` | notification-service | Creates notification for spread owner when interpretation CREATED (if not self-action) |
 
 ### Event Message Format
