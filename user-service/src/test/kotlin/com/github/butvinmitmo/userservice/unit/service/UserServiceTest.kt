@@ -1,8 +1,6 @@
 package com.github.butvinmitmo.userservice.unit.service
 
-import com.github.butvinmitmo.shared.client.ServiceUnavailableException
 import com.github.butvinmitmo.userservice.TestEntityFactory
-import com.github.butvinmitmo.userservice.application.interfaces.provider.DivinationServiceProvider
 import com.github.butvinmitmo.userservice.application.interfaces.provider.PasswordEncoder
 import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenProvider
 import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenResult
@@ -24,8 +22,6 @@ import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doNothing
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -50,9 +46,6 @@ class UserServiceTest {
     private lateinit var tokenProvider: TokenProvider
 
     @Mock
-    private lateinit var divinationServiceProvider: DivinationServiceProvider
-
-    @Mock
     private lateinit var userEventPublisher: UserEventPublisher
 
     private lateinit var userService: UserService
@@ -73,7 +66,6 @@ class UserServiceTest {
                 roleRepository,
                 passwordEncoder,
                 tokenProvider,
-                divinationServiceProvider,
                 userEventPublisher,
             )
     }
@@ -172,18 +164,16 @@ class UserServiceTest {
     }
 
     @Test
-    fun `deleteUser should delete user when exists and cleanup succeeds`() {
+    fun `deleteUser should delete user when exists`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
         whenever(userRepository.findById(userId)).thenReturn(Mono.just(user))
-        doNothing().whenever(divinationServiceProvider).deleteUserData(userId)
         whenever(userRepository.deleteById(userId)).thenReturn(Mono.empty())
 
         StepVerifier
             .create(userService.deleteUser(userId))
             .verifyComplete()
 
-        verify(divinationServiceProvider).deleteUserData(userId)
         verify(userRepository).deleteById(userId)
         verify(userEventPublisher).publishDeleted(user)
     }
@@ -197,26 +187,6 @@ class UserServiceTest {
             .expectErrorMatches { it is NotFoundException && it.message == "User not found" }
             .verify()
 
-        verify(divinationServiceProvider, never()).deleteUserData(any<UUID>())
-        verify(userRepository, never()).deleteById(any<UUID>())
-        verify(userEventPublisher, never()).publishDeleted(any())
-    }
-
-    @Test
-    fun `deleteUser should throw ServiceUnavailableException when cleanup fails`() {
-        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
-
-        whenever(userRepository.findById(userId)).thenReturn(Mono.just(user))
-        doThrow(
-            ServiceUnavailableException("divination-service"),
-        ).whenever(divinationServiceProvider).deleteUserData(userId)
-
-        StepVerifier
-            .create(userService.deleteUser(userId))
-            .expectErrorMatches { it is ServiceUnavailableException && it.serviceName == "divination-service" }
-            .verify()
-
-        verify(divinationServiceProvider).deleteUserData(userId)
         verify(userRepository, never()).deleteById(any<UUID>())
         verify(userEventPublisher, never()).publishDeleted(any())
     }

@@ -1,13 +1,11 @@
 package com.github.butvinmitmo.userservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.butvinmitmo.userservice.application.interfaces.provider.DivinationServiceProvider
 import com.github.butvinmitmo.userservice.application.interfaces.publisher.UserEventPublisher
 import com.github.butvinmitmo.userservice.infrastructure.persistence.repository.SpringDataUserRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -35,14 +33,10 @@ abstract class BaseControllerIntegrationTest {
     private lateinit var springDataUserRepository: SpringDataUserRepository
 
     @MockBean
-    protected lateinit var divinationServiceProvider: DivinationServiceProvider
-
-    @MockBean
     protected lateinit var userEventPublisher: UserEventPublisher
 
     @BeforeEach
     fun setupMocks() {
-        doNothing().whenever(divinationServiceProvider).deleteUserData(any())
         whenever(userEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
         whenever(userEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
         whenever(userEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
