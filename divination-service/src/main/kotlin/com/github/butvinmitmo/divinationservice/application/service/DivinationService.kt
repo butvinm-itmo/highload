@@ -518,4 +518,9 @@ class DivinationService(
             // Then delete all spreads by this user (spread_cards cascade via internal FK)
             .then(spreadRepository.deleteByAuthorId(userId))
             .then()
+
+    fun getSpreadAuthorId(spreadId: UUID): Mono<UUID> =
+        spreadRepository
+            .findById(spreadId)
+            .map { it.authorId }
 }
