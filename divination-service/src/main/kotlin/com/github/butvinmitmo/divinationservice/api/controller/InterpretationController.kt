@@ -202,7 +202,7 @@ class InterpretationController(
         @Valid @RequestBody request: CreateInterpretationRequest,
     ): Mono<ResponseEntity<CreateInterpretationResponse>> =
         divinationService
-            .addInterpretation(spreadId, request.text)
+            .addInterpretation(spreadId, request.text, request.uploadId)
             .map { result ->
                 ResponseEntity.status(HttpStatus.CREATED).body(CreateInterpretationResponse(id = result.id))
             }

@@ -2,19 +2,23 @@ package com.github.butvinmitmo.divinationservice.application.service
 
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CardProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CurrentUserProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.FileProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.UserProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.InterpretationEventPublisher
 import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.SpreadEventPublisher
+import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationAttachmentRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadRepository
 import com.github.butvinmitmo.divinationservice.domain.model.Interpretation
+import com.github.butvinmitmo.divinationservice.domain.model.InterpretationAttachment
 import com.github.butvinmitmo.divinationservice.domain.model.Spread
 import com.github.butvinmitmo.divinationservice.domain.model.SpreadCard
 import com.github.butvinmitmo.divinationservice.exception.ConflictException
 import com.github.butvinmitmo.divinationservice.exception.ForbiddenException
 import com.github.butvinmitmo.divinationservice.exception.NotFoundException
 import com.github.butvinmitmo.shared.dto.CardDto
+import com.github.butvinmitmo.shared.dto.InterpretationAttachmentDto
 import com.github.butvinmitmo.shared.dto.InterpretationDto
 import com.github.butvinmitmo.shared.dto.SpreadCardDto
 import com.github.butvinmitmo.shared.dto.SpreadDto
@@ -55,9 +59,11 @@ class DivinationService(
     private val spreadRepository: SpreadRepository,
     private val spreadCardRepository: SpreadCardRepository,
     private val interpretationRepository: InterpretationRepository,
+    private val interpretationAttachmentRepository: InterpretationAttachmentRepository,
     private val userProvider: UserProvider,
     private val cardProvider: CardProvider,
     private val currentUserProvider: CurrentUserProvider,
+    private val fileProvider: FileProvider,
     private val spreadEventPublisher: SpreadEventPublisher,
     private val interpretationEventPublisher: InterpretationEventPublisher,
 ) {
@@ -277,19 +283,8 @@ class DivinationService(
         val interpretationsMono =
             Flux
                 .fromIterable(interpretations)
-                .flatMap { interpretation ->
-                    userProvider
-                        .getSystemUser(interpretation.authorId)
-                        .map { interpAuthor ->
-                            InterpretationDto(
-                                id = interpretation.id!!,
-                                text = interpretation.text,
-                                author = interpAuthor,
-                                spreadId = interpretation.spreadId,
-                                createdAt = interpretation.createdAt!!,
-                            )
-                        }
-                }.collectList()
+                .flatMap { interpretation -> buildInterpretationDto(interpretation) }
+                .collectList()
 
         return Mono
             .zip(authorMono, layoutTypeMono, spreadCardsMono, interpretationsMono)
@@ -340,6 +335,7 @@ class DivinationService(
     fun addInterpretation(
         spreadId: UUID,
         text: String,
+        uploadId: UUID? = null,
     ): Mono<CreateInterpretationResult> =
         currentUserProvider.getCurrentUserId().flatMap { authorId ->
             currentUserProvider.getCurrentRole().flatMap { role ->
@@ -364,13 +360,90 @@ class DivinationService(
                             interpretationRepository
                                 .save(interpretation)
                                 .flatMap { saved ->
-                                    interpretationEventPublisher
-                                        .publishCreated(saved)
+                                    // Handle optional file attachment
+                                    val attachmentMono =
+                                        if (uploadId != null) {
+                                            createAttachment(saved.id!!, uploadId, authorId)
+                                        } else {
+                                            Mono.empty()
+                                        }
+
+                                    attachmentMono
+                                        .then(interpretationEventPublisher.publishCreated(saved))
                                         .then(Mono.just(CreateInterpretationResult(id = saved.id!!)))
                                 }
                         }
                     }
             }
+        }
+
+    private fun createAttachment(
+        interpretationId: UUID,
+        uploadId: UUID,
+        userId: UUID,
+    ): Mono<InterpretationAttachment> =
+        fileProvider
+            .verifyAndCompleteUpload(uploadId, userId)
+            .flatMap { metadata ->
+                val attachment =
+                    InterpretationAttachment(
+                        id = null,
+                        interpretationId = interpretationId,
+                        fileUploadId = metadata.uploadId,
+                        originalFileName = metadata.originalFileName,
+                        contentType = metadata.contentType,
+                        fileSize = metadata.fileSize,
+                        createdAt = null,
+                    )
+                interpretationAttachmentRepository.save(attachment)
+            }
+
+    private fun toAttachmentDto(attachment: InterpretationAttachment): Mono<InterpretationAttachmentDto> =
+        fileProvider.getDownloadUrl(attachment.fileUploadId).map { downloadUrl ->
+            InterpretationAttachmentDto(
+                id = attachment.id!!,
+                originalFileName = attachment.originalFileName,
+                contentType = attachment.contentType,
+                fileSize = attachment.fileSize,
+                downloadUrl = downloadUrl,
+            )
+        }
+
+    private fun getAttachmentsForInterpretations(
+        interpretationIds: List<UUID>,
+    ): Mono<Map<UUID, InterpretationAttachment>> {
+        if (interpretationIds.isEmpty()) return Mono.just(emptyMap())
+        return interpretationAttachmentRepository
+            .findByInterpretationIds(interpretationIds)
+            .collectMap { it.interpretationId }
+    }
+
+    private fun buildInterpretationDto(interpretation: Interpretation): Mono<InterpretationDto> =
+        userProvider.getSystemUser(interpretation.authorId).flatMap { author ->
+            interpretationAttachmentRepository
+                .findByInterpretationId(interpretation.id!!)
+                .flatMap { toAttachmentDto(it) }
+                .map { attachmentDto ->
+                    InterpretationDto(
+                        id = interpretation.id!!,
+                        text = interpretation.text,
+                        author = author,
+                        spreadId = interpretation.spreadId,
+                        createdAt = interpretation.createdAt!!,
+                        attachment = attachmentDto,
+                    )
+                }.switchIfEmpty(
+                    Mono.just(
+                        InterpretationDto(
+                            id = interpretation.id!!,
+                            text = interpretation.text,
+                            author = author,
+                            spreadId = interpretation.spreadId,
+                            createdAt = interpretation.createdAt!!,
+                            attachment = null,
+                        ),
+                    ),
+                )
         }
 
     @Transactional
@@ -393,19 +466,7 @@ class DivinationService(
                             .flatMap { saved ->
                                 interpretationEventPublisher
                                     .publishUpdated(saved)
-                                    .then(
-                                        userProvider
-                                            .getSystemUser(saved.authorId)
-                                            .map { author ->
-                                                InterpretationDto(
-                                                    id = saved.id!!,
-                                                    text = saved.text,
-                                                    author = author,
-                                                    spreadId = saved.spreadId,
-                                                    createdAt = saved.createdAt!!,
-                                                )
-                                            },
-                                    )
+                                    .then(buildInterpretationDto(saved))
                             }
                     }
                 }
@@ -443,17 +504,7 @@ class DivinationService(
                 if (interpretation.spreadId != spreadId) {
                     Mono.error(NotFoundException("Interpretation not found in this spread"))
                 } else {
-                    userProvider
-                        .getSystemUser(interpretation.authorId)
-                        .map { author ->
-                            InterpretationDto(
-                                id = interpretation.id!!,
-                                text = interpretation.text,
-                                author = author,
-                                spreadId = interpretation.spreadId,
-                                createdAt = interpretation.createdAt!!,
-                            )
-                        }
+                    buildInterpretationDto(interpretation)
                 }
             }
 
@@ -483,19 +534,8 @@ class DivinationService(
 
                         Flux
                             .fromIterable(interpretations)
-                            .flatMap { interpretation ->
-                                userProvider
-                                    .getSystemUser(interpretation.authorId)
-                                    .map { author ->
-                                        InterpretationDto(
-                                            id = interpretation.id!!,
-                                            text = interpretation.text,
-                                            author = author,
-                                            spreadId = interpretation.spreadId,
-                                            createdAt = interpretation.createdAt!!,
-                                        )
-                                    }
-                            }.collectList()
+                            .flatMap { interpretation -> buildInterpretationDto(interpretation) }
+                            .collectList()
                             .map { dtos ->
                                 PageResult(
                                     content = dtos,
