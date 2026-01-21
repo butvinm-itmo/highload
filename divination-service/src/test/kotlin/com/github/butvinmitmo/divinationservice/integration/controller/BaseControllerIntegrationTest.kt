@@ -1,9 +1,11 @@
 package com.github.butvinmitmo.divinationservice.integration.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.FileProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.InterpretationEventPublisher
 import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.SpreadEventPublisher
 import com.github.butvinmitmo.divinationservice.config.TestFeignConfiguration
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataInterpretationAttachmentRepository
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataInterpretationRepository
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadCardRepository
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.repository.SpringDataSpreadRepository
@@ -46,6 +48,9 @@ abstract class BaseControllerIntegrationTest {
     @Autowired
     protected lateinit var interpretationRepository: SpringDataInterpretationRepository
 
+    @Autowired
+    protected lateinit var interpretationAttachmentRepository: SpringDataInterpretationAttachmentRepository
+
     @org.springframework.boot.test.mock.mockito.MockBean
     protected lateinit var userServiceClient: UserServiceClient
 
@@ -57,6 +62,9 @@ abstract class BaseControllerIntegrationTest {
 
     @org.springframework.boot.test.mock.mockito.MockBean
     protected lateinit var interpretationEventPublisher: InterpretationEventPublisher
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    protected lateinit var fileProvider: FileProvider
 
     protected val testUserId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
     protected val oneCardLayoutId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000020")
@@ -81,6 +89,7 @@ abstract class BaseControllerIntegrationTest {
     fun cleanupDatabase() {
         Mono
             .`when`(
+                interpretationAttachmentRepository.deleteAll(),
                 interpretationRepository.deleteAll(),
                 spreadCardRepository.deleteAll(),
                 spreadRepository.deleteAll(),

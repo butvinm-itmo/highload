@@ -3,9 +3,11 @@ package com.github.butvinmitmo.divinationservice.unit.service
 import com.github.butvinmitmo.divinationservice.TestEntityFactory
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CardProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.CurrentUserProvider
+import com.github.butvinmitmo.divinationservice.application.interfaces.provider.FileProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.provider.UserProvider
 import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.InterpretationEventPublisher
 import com.github.butvinmitmo.divinationservice.application.interfaces.publisher.SpreadEventPublisher
+import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationAttachmentRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.InterpretationRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadCardRepository
 import com.github.butvinmitmo.divinationservice.application.interfaces.repository.SpreadRepository
@@ -15,6 +17,7 @@ import com.github.butvinmitmo.divinationservice.exception.ForbiddenException
 import com.github.butvinmitmo.divinationservice.exception.NotFoundException
 import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
+import com.github.butvinmitmo.shared.dto.FileUploadMetadataDto
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.shared.dto.UserDto
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,6 +49,9 @@ class DivinationServiceTest {
     private lateinit var interpretationRepository: InterpretationRepository
 
     @Mock
+    private lateinit var interpretationAttachmentRepository: InterpretationAttachmentRepository
+
+    @Mock
     private lateinit var userProvider: UserProvider
 
     @Mock
@@ -53,6 +59,9 @@ class DivinationServiceTest {
 
     @Mock
     private lateinit var currentUserProvider: CurrentUserProvider
+
+    @Mock
+    private lateinit var fileProvider: FileProvider
 
     @Mock
     private lateinit var spreadEventPublisher: SpreadEventPublisher
@@ -85,9 +94,11 @@ class DivinationServiceTest {
                 spreadRepository,
                 spreadCardRepository,
                 interpretationRepository,
+                interpretationAttachmentRepository,
                 userProvider,
                 cardProvider,
                 currentUserProvider,
+                fileProvider,
                 spreadEventPublisher,
                 interpretationEventPublisher,
             )
@@ -263,6 +274,7 @@ class DivinationServiceTest {
         whenever(interpretationRepository.save(any())).thenReturn(Mono.just(interpretation.copy(text = "Updated text")))
         whenever(interpretationEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
         whenever(userProvider.getSystemUser(userId)).thenReturn(Mono.just(testUser))
+        whenever(interpretationAttachmentRepository.findByInterpretationId(interpretationId)).thenReturn(Mono.empty())
 
         divinationService.updateInterpretation(spreadId, interpretationId, "Updated text").block()
 
@@ -353,6 +365,7 @@ class DivinationServiceTest {
 
         whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
         whenever(userProvider.getSystemUser(userId)).thenReturn(Mono.just(testUser))
+        whenever(interpretationAttachmentRepository.findByInterpretationId(interpretationId)).thenReturn(Mono.empty())
 
         val result = divinationService.getInterpretation(spreadId, interpretationId).block()
 
@@ -395,6 +408,7 @@ class DivinationServiceTest {
             .thenReturn(Flux.fromIterable(interpretations))
         whenever(interpretationRepository.countBySpreadId(spreadId)).thenReturn(Mono.just(2L))
         whenever(userProvider.getSystemUser(any())).thenReturn(Mono.just(testUser))
+        whenever(interpretationAttachmentRepository.findByInterpretationId(any())).thenReturn(Mono.empty())
 
         val result = divinationService.getInterpretations(spreadId, 0, 2).block()
 
@@ -423,5 +437,122 @@ class DivinationServiceTest {
 
         verify(interpretationRepository).deleteByAuthorId(userId)
         verify(spreadRepository).deleteByAuthorId(userId)
+    }
+
+    @Test
+    fun `addInterpretation with uploadId should create interpretation with attachment`() {
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
+        val uploadId = UUID.randomUUID()
+        val savedInterpretation =
+            TestEntityFactory.createInterpretation(
+                id = interpretationId,
+                text = "Test interpretation",
+                authorId = userId,
+                spreadId = spreadId,
+                createdAt = createdAt,
+            )
+
+        val fileMetadata =
+            FileUploadMetadataDto(
+                uploadId = uploadId,
+                filePath = "interpretation-attachments/$uploadId/test.jpg",
+                originalFileName = "test.jpg",
+                contentType = "image/jpeg",
+                fileSize = 12345L,
+                completedAt = createdAt,
+            )
+
+        val savedAttachment =
+            TestEntityFactory.createInterpretationAttachment(
+                interpretationId = interpretationId,
+                fileUploadId = uploadId,
+                originalFileName = "test.jpg",
+                contentType = "image/jpeg",
+                fileSize = 12345L,
+            )
+
+        whenever(currentUserProvider.getCurrentUserId()).thenReturn(Mono.just(userId))
+        whenever(currentUserProvider.getCurrentRole()).thenReturn(Mono.just("MEDIUM"))
+        whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
+        whenever(userProvider.getUserById(userId, "MEDIUM", userId)).thenReturn(Mono.just(testUser))
+        whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
+        whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
+        whenever(fileProvider.verifyAndCompleteUpload(uploadId, userId)).thenReturn(Mono.just(fileMetadata))
+        whenever(interpretationAttachmentRepository.save(any())).thenReturn(Mono.just(savedAttachment))
+        whenever(interpretationEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+
+        val result = divinationService.addInterpretation(spreadId, "Test interpretation", uploadId).block()
+
+        assertNotNull(result)
+        assertEquals(interpretationId, result!!.id)
+        verify(fileProvider).verifyAndCompleteUpload(uploadId, userId)
+        verify(interpretationAttachmentRepository).save(any())
+        verify(interpretationEventPublisher).publishCreated(any())
+    }
+
+    @Test
+    fun `addInterpretation without uploadId should not create attachment`() {
+        val spread = TestEntityFactory.createSpread(id = spreadId, layoutTypeId = layoutTypeId)
+        val savedInterpretation =
+            TestEntityFactory.createInterpretation(
+                id = interpretationId,
+                text = "Test interpretation",
+                authorId = userId,
+                spreadId = spreadId,
+                createdAt = createdAt,
+            )
+
+        whenever(currentUserProvider.getCurrentUserId()).thenReturn(Mono.just(userId))
+        whenever(currentUserProvider.getCurrentRole()).thenReturn(Mono.just("MEDIUM"))
+        whenever(spreadRepository.findById(spreadId)).thenReturn(Mono.just(spread))
+        whenever(userProvider.getUserById(userId, "MEDIUM", userId)).thenReturn(Mono.just(testUser))
+        whenever(interpretationRepository.existsByAuthorAndSpread(userId, spreadId)).thenReturn(Mono.just(false))
+        whenever(interpretationRepository.save(any())).thenReturn(Mono.just(savedInterpretation))
+        whenever(interpretationEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+
+        val result = divinationService.addInterpretation(spreadId, "Test interpretation", null).block()
+
+        assertNotNull(result)
+        assertEquals(interpretationId, result!!.id)
+        verify(fileProvider, never()).verifyAndCompleteUpload(any(), any())
+        verify(interpretationAttachmentRepository, never()).save(any())
+    }
+
+    @Test
+    fun `getInterpretation should include attachment with download url`() {
+        val interpretation =
+            TestEntityFactory.createInterpretation(
+                id = interpretationId,
+                text = "Test",
+                authorId = userId,
+                spreadId = spreadId,
+                createdAt = createdAt,
+            )
+
+        val uploadId = UUID.randomUUID()
+        val attachment =
+            TestEntityFactory.createInterpretationAttachment(
+                interpretationId = interpretationId,
+                fileUploadId = uploadId,
+                originalFileName = "test.jpg",
+                contentType = "image/jpeg",
+                fileSize = 12345L,
+            )
+
+        whenever(interpretationRepository.findById(interpretationId)).thenReturn(Mono.just(interpretation))
+        whenever(userProvider.getSystemUser(userId)).thenReturn(Mono.just(testUser))
+        whenever(
+            interpretationAttachmentRepository.findByInterpretationId(interpretationId),
+        ).thenReturn(Mono.just(attachment))
+        whenever(fileProvider.getDownloadUrl(uploadId)).thenReturn(Mono.just("https://minio.local/test.jpg?sig=xyz"))
+
+        val result = divinationService.getInterpretation(spreadId, interpretationId).block()
+
+        assertNotNull(result)
+        assertNotNull(result!!.attachment)
+        assertEquals("test.jpg", result.attachment!!.originalFileName)
+        assertEquals("image/jpeg", result.attachment!!.contentType)
+        assertEquals(12345L, result.attachment!!.fileSize)
+        assertEquals("https://minio.local/test.jpg?sig=xyz", result.attachment!!.downloadUrl)
     }
 }

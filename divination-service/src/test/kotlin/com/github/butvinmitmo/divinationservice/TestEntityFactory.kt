@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.divinationservice
 
 import com.github.butvinmitmo.divinationservice.domain.model.Interpretation
+import com.github.butvinmitmo.divinationservice.domain.model.InterpretationAttachment
 import com.github.butvinmitmo.divinationservice.domain.model.Spread
 import com.github.butvinmitmo.divinationservice.domain.model.SpreadCard
 import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.InterpretationEntity
@@ -97,6 +98,25 @@ object TestEntityFactory {
             text = text,
             authorId = authorId,
             spreadId = spreadId,
+            createdAt = createdAt,
+        )
+
+    fun createInterpretationAttachment(
+        id: UUID = UUID.randomUUID(),
+        interpretationId: UUID,
+        fileUploadId: UUID = UUID.randomUUID(),
+        originalFileName: String = "test.jpg",
+        contentType: String = "image/jpeg",
+        fileSize: Long = 12345L,
+        createdAt: Instant = Instant.now(),
+    ): InterpretationAttachment =
+        InterpretationAttachment(
+            id = id,
+            interpretationId = interpretationId,
+            fileUploadId = fileUploadId,
+            originalFileName = originalFileName,
+            contentType = contentType,
+            fileSize = fileSize,
             createdAt = createdAt,
         )
 }
