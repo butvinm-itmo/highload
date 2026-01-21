@@ -27,14 +27,12 @@ class JwtAuthenticationFilter(
             return chain.filter(exchange)
         }
 
-        // Extract and validate JWT
-        val authHeader = exchange.request.headers.getFirst("Authorization")
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Extract JWT from Authorization header or query param (for WebSocket)
+        val token = extractToken(exchange)
+        if (token == null) {
             exchange.response.statusCode = HttpStatus.UNAUTHORIZED
             return exchange.response.setComplete()
         }
-
-        val token = authHeader.substring(7)
         val claims =
             jwtUtil.validateAndExtract(token) ?: run {
                 exchange.response.statusCode = HttpStatus.UNAUTHORIZED
@@ -60,4 +58,15 @@ class JwtAuthenticationFilter(
     }
 
     override fun getOrder() = Ordered.HIGHEST_PRECEDENCE
+
+    private fun extractToken(exchange: ServerWebExchange): String? {
+        // Try Authorization header first
+        val authHeader = exchange.request.headers.getFirst("Authorization")
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7)
+        }
+
+        // Fall back to query param for WebSocket connections
+        return exchange.request.queryParams.getFirst("token")
+    }
 }
