@@ -2,12 +2,14 @@ package com.github.butvinmitmo.e2e
 
 import com.github.butvinmitmo.e2e.config.AuthContext
 import com.github.butvinmitmo.shared.client.DivinationServiceClient
+import com.github.butvinmitmo.shared.client.FilesServiceClient
 import com.github.butvinmitmo.shared.client.TarotServiceClient
 import com.github.butvinmitmo.shared.client.UserServiceClient
 import com.github.butvinmitmo.shared.dto.LoginRequest
 import feign.FeignException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -32,6 +34,9 @@ abstract class BaseE2ETest {
 
     @Autowired
     protected lateinit var divinationClient: DivinationServiceClient
+
+    @Autowired
+    protected lateinit var filesClient: FilesServiceClient
 
     // Admin user context for Feign header parameters
     protected val adminUserId: java.util.UUID = java.util.UUID.fromString("10000000-0000-0000-0000-000000000001")
@@ -170,6 +175,22 @@ abstract class BaseE2ETest {
             expectedStatus,
             exception.status(),
             "Expected HTTP status $expectedStatus but got ${exception.status()}",
+        )
+        return exception
+    }
+
+    /**
+     * Assert that a block throws FeignException with one of the expected HTTP status codes.
+     * Useful when the exact error status may vary (e.g., 400 vs 502 for backend failures).
+     */
+    protected fun assertThrowsWithStatus(
+        vararg expectedStatuses: Int,
+        block: () -> Any,
+    ): FeignException {
+        val exception = assertThrows<FeignException> { block() }
+        assertTrue(
+            exception.status() in expectedStatuses,
+            "Expected HTTP status in ${expectedStatuses.toList()} but got ${exception.status()}",
         )
         return exception
     }

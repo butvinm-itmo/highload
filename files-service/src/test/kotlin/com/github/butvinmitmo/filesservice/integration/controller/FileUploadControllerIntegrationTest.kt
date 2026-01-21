@@ -118,7 +118,7 @@ class FileUploadControllerIntegrationTest {
             .bodyValue(request)
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isBadRequest
     }
 
     @Test
@@ -219,7 +219,7 @@ class FileUploadControllerIntegrationTest {
             .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isBadRequest
     }
 
     @Test
@@ -344,7 +344,7 @@ class FileUploadControllerIntegrationTest {
             .header("X-User-Role", "USER")
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isBadRequest
 
         // Verify record is NOT deleted
         val stillExists = springDataFileUploadRepository.findById(uploadId).block()
@@ -428,7 +428,7 @@ class FileUploadControllerIntegrationTest {
             .uri("/internal/files/$uploadId/verify?userId=$wrongUserId")
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isBadRequest
     }
 
     companion object {

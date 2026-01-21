@@ -1,0 +1,127 @@
+package com.github.butvinmitmo.filesservice.exception
+
+import com.github.butvinmitmo.shared.dto.ErrorResponse
+import com.github.butvinmitmo.shared.dto.ValidationErrorResponse
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.validation.FieldError
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.bind.support.WebExchangeBindException
+import org.springframework.web.server.ServerWebExchange
+import java.time.Instant
+
+@RestControllerAdvice
+class GlobalExceptionHandler {
+    private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+
+    @ExceptionHandler(WebExchangeBindException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleValidationExceptions(
+        ex: WebExchangeBindException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ValidationErrorResponse> {
+        val errors = mutableMapOf<String, String>()
+
+        ex.bindingResult.allErrors.forEach { error ->
+            val fieldName = (error as? FieldError)?.field ?: "unknown"
+            val errorMessage = error.defaultMessage ?: "Invalid value"
+            errors[fieldName] = errorMessage
+        }
+
+        val response =
+            ValidationErrorResponse(
+                error = "VALIDATION_ERROR",
+                message = "Validation failed",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+                fieldErrors = errors,
+            )
+
+        return ResponseEntity(response, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleIllegalArgumentException(
+        ex: IllegalArgumentException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "BAD_REQUEST",
+                message = ex.message ?: "Invalid request",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(IllegalStateException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleIllegalStateException(
+        ex: IllegalStateException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "BAD_REQUEST",
+                message = ex.message ?: "Invalid state",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(NoSuchElementException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleNotFoundException(
+        ex: NoSuchElementException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "NOT_FOUND",
+                message = ex.message ?: "Resource not found",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(
+        ex: AccessDeniedException,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        val response =
+            ErrorResponse(
+                error = "FORBIDDEN",
+                message = "Access denied",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(Exception::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleGenericException(
+        ex: Exception,
+        exchange: ServerWebExchange,
+    ): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error on ${exchange.request.path.value()}", ex)
+        val response =
+            ErrorResponse(
+                error = "INTERNAL_SERVER_ERROR",
+                message = "An unexpected error occurred",
+                timestamp = Instant.now(),
+                path = exchange.request.path.value(),
+            )
+        return ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+}
