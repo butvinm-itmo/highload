@@ -51,6 +51,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **API Gateway:** Spring Cloud Gateway
 - **Inter-service:** Spring Cloud OpenFeign
 - **Resilience:** Resilience4j (circuit breaker, retry, time limiter)
+- **Object Storage:** MinIO (S3-compatible)
 - **Code Style:** ktlint 1.5.0
 
 ## Microservices Architecture
@@ -64,8 +65,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **tarot-service** | 8082 | WebFlux + R2DBC | Cards & layout types reference data (reactive) |
 | **divination-service** | 8083 | WebFlux + R2DBC | Spreads & interpretations (reactive) |
 | **notification-service** | 8084 | WebFlux + R2DBC + Kafka | Real-time notifications (reactive) |
+| **files-service** | 8085 | WebFlux + R2DBC + MinIO | File attachments for interpretations (reactive) |
 | **kafka-1/2/3** | 9092-9094 | Apache Kafka (KRaft) | Event streaming cluster (3 brokers) |
 | **kafka-ui** | 8090 | Provectus Kafka UI | Kafka cluster monitoring |
+| **minio** | 9000/9001 | MinIO | S3-compatible object storage |
 
 **Shared modules:** `shared-dto` (DTOs, event data classes), `shared-clients` (Feign clients), `e2e-tests`
 
@@ -87,7 +90,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Clean Architecture
 
-All four backend services (user-service, tarot-service, divination-service, notification-service) follow Clean Architecture with four layers:
+All five backend services (user-service, tarot-service, divination-service, notification-service, files-service) follow Clean Architecture with four layers:
 
 ```
 {service}/
@@ -150,6 +153,8 @@ No "Port", "Adapter", "Impl" suffixes. Technology prefix for implementations:
 | `CurrentUserProvider` | `SecurityContextCurrentUserProvider` |
 | `UserEventPublisher` | `KafkaUserEventPublisher` |
 | `SpreadEventPublisher` | `KafkaSpreadEventPublisher` |
+| `FileEventPublisher` | `KafkaFileEventPublisher` |
+| `FileStorage` | `MinioFileStorage` |
 
 ### Data Flow
 
@@ -231,11 +236,24 @@ Minimum 8 chars, uppercase, lowercase, digit, special character (@$!%*?&#).
 - FK to spread only (internal); author_id stored without FK constraint
 - Unique constraint: (author_id, spread_id)
 
+**interpretation_attachment** - (id UUID PK, interpretation_id UUID FK UNIQUE CASCADE, file_upload_id UUID, original_file_name VARCHAR(256), content_type VARCHAR(128), file_size BIGINT, created_at TIMESTAMPTZ)
+- FK to interpretation only (internal); file_upload_id references files-service without FK constraint
+- UNIQUE on interpretation_id (one attachment per interpretation)
+- File metadata cached locally to avoid N+1 calls to files-service
+
 ### notification-service tables
 
 **notification** - (id UUID PK, recipient_id UUID, interpretation_id UUID UNIQUE, interpretation_author_id UUID, spread_id UUID, title VARCHAR(256), message TEXT, is_read BOOLEAN, created_at TIMESTAMPTZ)
 - UNIQUE on interpretation_id for deduplication (one notification per interpretation)
 - Index on (recipient_id, is_read, created_at DESC)
+- No foreign keys to other services (service independence)
+
+### files-service tables
+
+**file_upload** - (id UUID PK, user_id UUID, file_path VARCHAR(512), original_file_name VARCHAR(256), content_type VARCHAR(128), file_size BIGINT, status VARCHAR(20), created_at TIMESTAMPTZ, expires_at TIMESTAMPTZ, completed_at TIMESTAMPTZ)
+- status: PENDING (upload requested), COMPLETED (file verified in MinIO), EXPIRED (cleanup)
+- expires_at: For PENDING cleanup (default 60 min from creation)
+- Indexes: user_id, status, expires_at (where PENDING)
 - No foreign keys to other services (service independence)
 
 ## API Endpoints
@@ -271,7 +289,7 @@ Base path: `/api/v0.0.1`
 | GET | `/spreads/{id}` | Get spread with cards/interpretations | Any |
 | DELETE | `/spreads/{id}` | Delete spread | Author/ADMIN |
 | GET | `/spreads/{spreadId}/interpretations` | List interpretations | Any |
-| POST | `/spreads/{spreadId}/interpretations` | Add interpretation | MEDIUM/ADMIN |
+| POST | `/spreads/{spreadId}/interpretations` | Add interpretation (optional uploadId for attachment) | MEDIUM/ADMIN |
 | PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation | Author/ADMIN |
 | DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation | Author/ADMIN |
 
@@ -289,6 +307,29 @@ Base path: `/api/v0.0.1`
 
 WebSocket connections receive real-time notifications when interpretations are added to user's spreads.
 
+### files-service
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/files/presigned-upload` | Request presigned URL for direct MinIO upload | Any |
+| GET | `/files/{uploadId}` | Get file upload metadata | Any |
+| GET | `/files/{uploadId}/download-url` | Get presigned download URL | Any |
+| DELETE | `/files/{uploadId}` | Delete file upload | Owner |
+
+**Upload flow:**
+1. Client requests presigned URL via `POST /files/presigned-upload` with fileName and contentType
+2. Service validates content type (image/jpeg, image/png, image/gif, image/webp) and size limit (5MB)
+3. Service creates PENDING record and returns uploadId + presigned PUT URL
+4. Client uploads file directly to MinIO using presigned URL
+5. When creating interpretation, client includes uploadId
+6. divination-service verifies upload via internal API and creates attachment
+
+### files-service (Internal API)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | `/internal/files/{uploadId}/verify` | Verify upload exists and complete it | Service-to-service only |
+| GET | `/internal/files/{uploadId}/metadata` | Get upload metadata | Service-to-service only |
+| GET | `/internal/files/{uploadId}/download-url` | Get presigned download URL | Service-to-service only |
+
 ### divination-service (Internal API)
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
@@ -302,7 +343,7 @@ WebSocket connections receive real-time notifications when interpretations are a
 **Centralized Swagger UI** is available at the API Gateway:
 - **URL:** `http://localhost:8080/swagger-ui.html`
 - **Features:**
-  - Dropdown selector to switch between services (User Service, Tarot Service, Divination Service, Notification Service)
+  - Dropdown selector to switch between services (User Service, Tarot Service, Divination Service, Notification Service, Files Service)
   - "Try it out" functionality for testing endpoints
   - Full OpenAPI 3.1 specification for each service
 
@@ -343,7 +384,8 @@ docker compose up -d && ./gradlew :e2e-tests:test
 - `EUREKA_URL` - Eureka Server URL (required)
 - `JWT_SECRET` - JWT signing key (required for user-service, gateway-service)
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Database connection
-- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses (required for user-service, divination-service, notification-service)
+- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses (required for user-service, divination-service, notification-service, files-service)
+- `MINIO_HOST`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` - MinIO connection (required for files-service)
 
 ## Testing
 
@@ -392,7 +434,7 @@ Feign clients use pattern: `@FeignClient(name = "service-name", url = "${service
 
 ### Flyway with Shared Database
 
-Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`, `flyway_schema_history_notification`.
+Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`, `flyway_schema_history_notification`, `flyway_schema_history_files`.
 
 ### Configuration Repository (highload-config)
 
@@ -434,6 +476,7 @@ git commit -m "Update highload-config"
 | `users-events` | user-service | CREATED, UPDATED, DELETED |
 | `spreads-events` | divination-service | CREATED, DELETED |
 | `interpretations-events` | divination-service | CREATED, UPDATED, DELETED |
+| `files-events` | files-service | COMPLETED, DELETED |
 
 ### Event Consumers
 
@@ -466,6 +509,7 @@ Located in `shared-dto` module (`com.github.butvinmitmo.shared.dto.events`):
 - `UserEventData` - id, username, role, createdAt
 - `SpreadEventData` - id, question, layoutTypeId, authorId, createdAt
 - `InterpretationEventData` - id, text, authorId, spreadId, createdAt
+- `FileEventData` - uploadId, filePath, originalFileName, contentType, fileSize, userId, completedAt
 
 ### Publishing Pattern
 
