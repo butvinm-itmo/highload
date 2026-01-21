@@ -310,6 +310,44 @@ services:
       retries: 10
       start_period: 30s
 
+  files-service:
+    build:
+      context: .
+      dockerfile: files-service/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-tarot_db}
+      DB_USER: ${DB_USER:-tarot_user}
+      DB_PASSWORD: ${DB_PASSWORD:-tarot_password}
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      MINIO_HOST: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8085/actuator/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   minio:
     image: minio/minio:latest
     hostname: minio
