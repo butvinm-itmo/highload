@@ -194,4 +194,54 @@ abstract class BaseE2ETest {
         )
         return exception
     }
+
+    /**
+     * Poll until a condition returns true or timeout is reached.
+     * Used for eventual consistency scenarios where async processing may take time.
+     *
+     * @param maxRetries Maximum number of attempts
+     * @param delayMs Delay between attempts in milliseconds
+     * @param timeoutMessage Message to include in assertion failure
+     * @param condition Lambda that returns true when the expected state is reached
+     */
+    protected fun awaitCondition(
+        maxRetries: Int = 10,
+        delayMs: Long = 500,
+        timeoutMessage: String = "Condition not met within timeout",
+        condition: () -> Boolean,
+    ) {
+        for (attempt in 1..maxRetries) {
+            if (condition()) {
+                return
+            }
+            if (attempt < maxRetries) {
+                Thread.sleep(delayMs)
+            }
+        }
+        throw AssertionError("$timeoutMessage after $maxRetries attempts")
+    }
+
+    /**
+     * Wait until a Feign call returns the expected HTTP status code.
+     * Useful for eventual consistency where a resource should eventually return 404.
+     */
+    protected fun awaitStatus(
+        expectedStatus: Int,
+        maxRetries: Int = 10,
+        delayMs: Long = 500,
+        block: () -> Any,
+    ) {
+        awaitCondition(
+            maxRetries = maxRetries,
+            delayMs = delayMs,
+            timeoutMessage = "Expected HTTP status $expectedStatus",
+        ) {
+            try {
+                block()
+                false // Call succeeded without exception, condition not met if expecting error status
+            } catch (e: FeignException) {
+                e.status() == expectedStatus
+            }
+        }
+    }
 }
