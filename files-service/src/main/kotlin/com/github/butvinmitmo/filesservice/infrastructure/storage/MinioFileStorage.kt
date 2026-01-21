@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 @Component
 class MinioFileStorage(
     private val minioClient: MinioClient,
+    private val presignedMinioClient: MinioClient,
     private val minioProperties: MinioProperties,
 ) : FileStorage {
     override fun generatePresignedUploadUrl(
@@ -24,7 +25,7 @@ class MinioFileStorage(
     ): Mono<String> =
         Mono
             .fromCallable {
-                minioClient.getPresignedObjectUrl(
+                presignedMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs
                         .builder()
                         .method(Method.PUT)
@@ -42,7 +43,7 @@ class MinioFileStorage(
     ): Mono<String> =
         Mono
             .fromCallable {
-                minioClient.getPresignedObjectUrl(
+                presignedMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs
                         .builder()
                         .method(Method.GET)

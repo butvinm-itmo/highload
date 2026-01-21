@@ -25,6 +25,15 @@ class MinioConfig(
             .build()
 
     @Bean
+    fun presignedMinioClient(): MinioClient =
+        MinioClient
+            .builder()
+            .endpoint(properties.getPresignedUrlEndpoint())
+            .credentials(properties.accessKey, properties.secretKey)
+            .region("us-east-1")
+            .build()
+
+    @Bean
     fun initializeBucket(minioClient: MinioClient): ApplicationRunner =
         ApplicationRunner {
             val bucketName = properties.bucket

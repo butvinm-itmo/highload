@@ -96,7 +96,7 @@ class FileUploadControllerIntegrationTest {
                 val body = response.responseBody!!
                 assert(body.uploadId != null) { "uploadId should not be null" }
                 assert(body.uploadUrl.isNotEmpty()) { "uploadUrl should not be empty" }
-                assert(body.uploadUrl.contains("minio")) { "uploadUrl should contain minio endpoint" }
+                assert(body.uploadUrl.startsWith("http")) { "uploadUrl should be a valid URL" }
                 assert(body.expiresAt.isAfter(Instant.now())) { "expiresAt should be in the future" }
             }
     }
@@ -460,6 +460,7 @@ class FileUploadControllerIntegrationTest {
             registry.add("spring.flyway.password") { postgres.password }
             registry.add("spring.flyway.enabled") { "true" }
             registry.add("minio.endpoint") { minio.s3URL }
+            registry.add("minio.external-endpoint") { minio.s3URL }
             registry.add("minio.access-key") { minio.userName }
             registry.add("minio.secret-key") { minio.password }
             registry.add("minio.bucket") { "test-bucket" }

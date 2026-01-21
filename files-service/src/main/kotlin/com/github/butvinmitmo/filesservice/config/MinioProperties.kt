@@ -8,4 +8,7 @@ data class MinioProperties(
     val accessKey: String,
     val secretKey: String,
     val bucket: String,
-)
+    val externalEndpoint: String? = null,
+) {
+    fun getPresignedUrlEndpoint(): String = externalEndpoint ?: endpoint
+}
