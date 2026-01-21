@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.filesservice.unit.service
 
 import com.github.butvinmitmo.filesservice.application.interfaces.provider.CurrentUserProvider
+import com.github.butvinmitmo.filesservice.application.interfaces.publisher.FileEventPublisher
 import com.github.butvinmitmo.filesservice.application.interfaces.repository.FileUploadRepository
 import com.github.butvinmitmo.filesservice.application.interfaces.storage.FileStorage
 import com.github.butvinmitmo.filesservice.application.service.FileUploadService
@@ -34,6 +35,9 @@ class FileUploadServiceTest {
     @Mock
     private lateinit var currentUserProvider: CurrentUserProvider
 
+    @Mock
+    private lateinit var fileEventPublisher: FileEventPublisher
+
     private lateinit var uploadProperties: UploadProperties
     private lateinit var fileUploadService: FileUploadService
 
@@ -56,6 +60,7 @@ class FileUploadServiceTest {
                 fileStorage,
                 currentUserProvider,
                 uploadProperties,
+                fileEventPublisher,
             )
     }
 
@@ -110,6 +115,7 @@ class FileUploadServiceTest {
         whenever(
             fileUploadRepository.updateStatus(eq(testUploadId), eq(FileUploadStatus.COMPLETED), eq(fileSize), any()),
         ).thenReturn(Mono.empty())
+        whenever(fileEventPublisher.publishCompleted(any())).thenReturn(Mono.empty())
 
         StepVerifier
             .create(fileUploadService.verifyAndCompleteUpload(testUploadId, testUserId))
@@ -277,6 +283,7 @@ class FileUploadServiceTest {
         whenever(fileUploadRepository.findByIdAndUserId(testUploadId, testUserId))
             .thenReturn(Mono.just(upload))
         whenever(fileStorage.delete(upload.filePath)).thenReturn(Mono.empty())
+        whenever(fileEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
         whenever(fileUploadRepository.deleteById(testUploadId)).thenReturn(Mono.empty())
 
         StepVerifier
@@ -284,6 +291,7 @@ class FileUploadServiceTest {
             .verifyComplete()
 
         verify(fileStorage).delete(upload.filePath)
+        verify(fileEventPublisher).publishDeleted(upload)
         verify(fileUploadRepository).deleteById(testUploadId)
     }
 

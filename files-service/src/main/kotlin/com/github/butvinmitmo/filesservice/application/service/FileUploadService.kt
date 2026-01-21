@@ -1,6 +1,7 @@
 package com.github.butvinmitmo.filesservice.application.service
 
 import com.github.butvinmitmo.filesservice.application.interfaces.provider.CurrentUserProvider
+import com.github.butvinmitmo.filesservice.application.interfaces.publisher.FileEventPublisher
 import com.github.butvinmitmo.filesservice.application.interfaces.repository.FileUploadRepository
 import com.github.butvinmitmo.filesservice.application.interfaces.storage.FileStorage
 import com.github.butvinmitmo.filesservice.config.UploadProperties
@@ -34,6 +35,7 @@ class FileUploadService(
     private val fileStorage: FileStorage,
     private val currentUserProvider: CurrentUserProvider,
     private val uploadProperties: UploadProperties,
+    private val fileEventPublisher: FileEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(FileUploadService::class.java)
 
@@ -133,9 +135,22 @@ class FileUploadService(
                             )
                         } else {
                             val completedAt = Instant.now()
+                            val completedUpload =
+                                upload.copy(
+                                    status = FileUploadStatus.COMPLETED,
+                                    fileSize = fileSize,
+                                    completedAt = completedAt,
+                                )
                             fileUploadRepository
                                 .updateStatus(uploadId, FileUploadStatus.COMPLETED, fileSize, completedAt)
                                 .then(
+                                    fileEventPublisher
+                                        .publishCompleted(completedUpload)
+                                        .onErrorResume { e ->
+                                            logger.warn("Failed to publish COMPLETED event for upload $uploadId", e)
+                                            Mono.empty()
+                                        },
+                                ).then(
                                     Mono.just(
                                         FileUploadMetadata(
                                             uploadId = upload.id!!,
@@ -201,7 +216,14 @@ class FileUploadService(
                         .onErrorResume { e ->
                             logger.warn("Failed to delete file from storage: ${upload.filePath}", e)
                             Mono.empty()
-                        }.then(fileUploadRepository.deleteById(uploadId))
+                        }.then(
+                            fileEventPublisher
+                                .publishDeleted(upload)
+                                .onErrorResume { e ->
+                                    logger.warn("Failed to publish DELETED event for upload $uploadId", e)
+                                    Mono.empty()
+                                },
+                        ).then(fileUploadRepository.deleteById(uploadId))
                 }
         }
 

@@ -46,6 +46,9 @@ dependencies {
     // Spring Security
     implementation("org.springframework.boot:spring-boot-starter-security")
 
+    // Kafka
+    implementation("org.springframework.kafka:spring-kafka")
+
     // MinIO client
     implementation("io.minio:minio:8.5.7")
 

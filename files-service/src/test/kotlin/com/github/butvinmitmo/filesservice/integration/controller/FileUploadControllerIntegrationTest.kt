@@ -2,6 +2,7 @@ package com.github.butvinmitmo.filesservice.integration.controller
 
 import com.github.butvinmitmo.filesservice.api.dto.PresignedUploadRequest
 import com.github.butvinmitmo.filesservice.api.dto.PresignedUploadResponse
+import com.github.butvinmitmo.filesservice.application.interfaces.publisher.FileEventPublisher
 import com.github.butvinmitmo.filesservice.infrastructure.persistence.entity.FileUploadEntity
 import com.github.butvinmitmo.filesservice.infrastructure.persistence.repository.SpringDataFileUploadRepository
 import io.minio.BucketExistsArgs
@@ -11,8 +12,11 @@ import io.minio.PutObjectArgs
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -22,6 +26,7 @@ import org.testcontainers.containers.MinIOContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import reactor.core.publisher.Mono
 import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.UUID
@@ -36,12 +41,17 @@ class FileUploadControllerIntegrationTest {
     @Autowired
     private lateinit var springDataFileUploadRepository: SpringDataFileUploadRepository
 
+    @MockBean
+    private lateinit var fileEventPublisher: FileEventPublisher
+
     private val testUserId = UUID.randomUUID()
     private val testBucket = "test-bucket"
 
     @BeforeEach
     fun setup() {
         ensureBucketExists()
+        whenever(fileEventPublisher.publishCompleted(any())).thenReturn(Mono.empty())
+        whenever(fileEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
     }
 
     @AfterEach
