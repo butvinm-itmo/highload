@@ -63,6 +63,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **user-service** | 8081 | WebFlux + R2DBC | User management, authentication (reactive) |
 | **tarot-service** | 8082 | WebFlux + R2DBC | Cards & layout types reference data (reactive) |
 | **divination-service** | 8083 | WebFlux + R2DBC | Spreads & interpretations (reactive) |
+| **notification-service** | 8084 | WebFlux + R2DBC + Kafka | Real-time notifications (reactive) |
 | **kafka-1/2/3** | 9092-9094 | Apache Kafka (KRaft) | Event streaming cluster (3 brokers) |
 | **kafka-ui** | 8090 | Provectus Kafka UI | Kafka cluster monitoring |
 
@@ -71,6 +72,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Inter-service Communication:**
 - Services register with Eureka and discover each other dynamically
 - `divination-service` calls other services via Feign clients (synchronous)
+- `notification-service` consumes events from Kafka and pushes via WebSocket (asynchronous)
 - `user-service` and `divination-service` publish domain events to Kafka (asynchronous)
 - External clients access through `gateway-service`
 - Currently all services share a single PostgreSQL database with separate Flyway history tables, but are designed for independent database deployment
@@ -85,7 +87,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Clean Architecture
 
-All three backend services (user-service, tarot-service, divination-service) follow Clean Architecture with four layers:
+All four backend services (user-service, tarot-service, divination-service, notification-service) follow Clean Architecture with four layers:
 
 ```
 {service}/
@@ -229,6 +231,13 @@ Minimum 8 chars, uppercase, lowercase, digit, special character (@$!%*?&#).
 - FK to spread only (internal); author_id stored without FK constraint
 - Unique constraint: (author_id, spread_id)
 
+### notification-service tables
+
+**notification** - (id UUID PK, recipient_id UUID, interpretation_id UUID UNIQUE, interpretation_author_id UUID, spread_id UUID, title VARCHAR(256), message TEXT, is_read BOOLEAN, created_at TIMESTAMPTZ)
+- UNIQUE on interpretation_id for deduplication (one notification per interpretation)
+- Index on (recipient_id, is_read, created_at DESC)
+- No foreign keys to other services (service independence)
+
 ## API Endpoints
 
 Base path: `/api/v0.0.1`
@@ -266,10 +275,25 @@ Base path: `/api/v0.0.1`
 | PUT | `/spreads/{spreadId}/interpretations/{id}` | Update interpretation | Author/ADMIN |
 | DELETE | `/spreads/{spreadId}/interpretations/{id}` | Delete interpretation | Author/ADMIN |
 
+### notification-service
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/notifications?page=N&size=M&isRead=bool` | List notifications for current user | Any |
+| GET | `/notifications/unread-count` | Get unread count for current user | Any |
+| PUT | `/notifications/{id}/read` | Mark notification as read | Any |
+
+### notification-service (WebSocket)
+| Endpoint | Description | Auth |
+|----------|-------------|------|
+| `/ws/notifications?token=JWT` | Real-time notification stream | JWT via query param |
+
+WebSocket connections receive real-time notifications when interpretations are added to user's spreads.
+
 ### divination-service (Internal API)
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | DELETE | `/internal/users/{userId}/data` | Delete all user's spreads and interpretations | Service-to-service only |
+| GET | `/internal/spreads/{spreadId}/owner` | Get spread author ID | Service-to-service only |
 
 **Note:** Internal endpoints are not exposed through the gateway and are only accessible via Eureka service discovery.
 
@@ -278,7 +302,7 @@ Base path: `/api/v0.0.1`
 **Centralized Swagger UI** is available at the API Gateway:
 - **URL:** `http://localhost:8080/swagger-ui.html`
 - **Features:**
-  - Dropdown selector to switch between services (User Service, Tarot Service, Divination Service)
+  - Dropdown selector to switch between services (User Service, Tarot Service, Divination Service, Notification Service)
   - "Try it out" functionality for testing endpoints
   - Full OpenAPI 3.1 specification for each service
 
@@ -319,7 +343,7 @@ docker compose up -d && ./gradlew :e2e-tests:test
 - `EUREKA_URL` - Eureka Server URL (required)
 - `JWT_SECRET` - JWT signing key (required for user-service, gateway-service)
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Database connection
-- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses (required for user-service, divination-service)
+- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses (required for user-service, divination-service, notification-service)
 
 ## Testing
 
@@ -368,7 +392,7 @@ Feign clients use pattern: `@FeignClient(name = "service-name", url = "${service
 
 ### Flyway with Shared Database
 
-Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`.
+Each service uses separate history table: `flyway_schema_history_user`, `flyway_schema_history_tarot`, `flyway_schema_history_divination`, `flyway_schema_history_notification`.
 
 ### Configuration Repository (highload-config)
 
@@ -411,6 +435,12 @@ git commit -m "Update highload-config"
 | `spreads-events` | divination-service | CREATED, DELETED |
 | `interpretations-events` | divination-service | CREATED, UPDATED, DELETED |
 
+### Event Consumers
+
+| Topic | Consumer | Action |
+|-------|----------|--------|
+| `interpretations-events` | notification-service | Creates notification for spread owner when interpretation CREATED (if not self-action) |
+
 ### Event Message Format
 
 Events use Kafka headers for metadata and JSON body for payload:
@@ -452,3 +482,24 @@ Located in `shared-dto` module (`com.github.butvinmitmo.shared.dto.events`):
 **Testing:**
 - Unit tests mock publisher interfaces
 - Integration tests use `@MockBean` for publishers to avoid Kafka dependency
+
+### Notification Flow
+
+```
+interpretations-events (CREATED)
+    ↓
+InterpretationEventConsumer
+    ↓
+SpreadProvider.getSpreadOwnerId(spreadId)
+    ↓
+If authorId != spreadOwnerId:
+    ↓
+NotificationService.create()
+    ↓
+Save to DB + WebSocketSessionManager.sendToUser()
+```
+
+**WebSocket Authentication:**
+- Gateway validates JWT from query param (`?token=JWT`) for WebSocket connections
+- X-User-Id header is set by gateway after JWT validation
+- NotificationWebSocketHandler extracts user ID from header for session management
