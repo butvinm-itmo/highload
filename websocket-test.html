@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        #status { padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .connected { background: #2d5a2d; }
+        .disconnected { background: #5a2d2d; }
+        .connecting { background: #5a5a2d; }
+        #messages { background: #2d2d2d; padding: 10px; height: 400px; overflow-y: auto; border-radius: 4px; }
+        .message { margin: 5px 0; padding: 5px; background: #3d3d3d; border-radius: 2px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .warning { background: #5a4a2d; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Notification Test</h1>
+    <div class="warning">
+        Run via HTTP server: <code>python -m http.server 3000</code> then open <a href="http://localhost:3000/websocket-test.html">http://localhost:3000/websocket-test.html</a>
+    </div>
+    <div style="margin-bottom: 10px;">
+        <label>JWT:</label><br>
+        <input type="text" id="jwt" style="width: 100%; padding: 8px; font-family: monospace; font-size: 12px;" value="eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiIxMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzY4OTU1OTcxLCJleHAiOjE3NjkwNDIzNzF9.DkBikQLQYEVVdP4MVAxMbVHNF48o7AHdauF9GfUmpDtuqYXuLjyhOveLj1NkuXMt">
+    </div>
+    <div style="margin-bottom: 10px;">
+        <label>Port:</label>
+        <select id="port">
+            <option value="8080">8080 (Gateway)</option>
+            <option value="8084">8084 (Direct to notification-service)</option>
+        </select>
+    </div>
+    <div id="status" class="disconnected">Disconnected</div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <h2>Messages:</h2>
+    <div id="messages"></div>
+
+    <script>
+        function getWsUrl() {
+            const jwt = document.getElementById('jwt').value;
+            const port = document.getElementById('port').value;
+            return `ws://localhost:${port}/ws/notifications?token=${jwt}`;
+        }
+
+        let ws = null;
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+
+        function setStatus(text, cls) {
+            statusEl.textContent = text;
+            statusEl.className = cls;
+        }
+
+        function addMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function connect() {
+            if (ws) ws.close();
+
+            const wsUrl = getWsUrl();
+            setStatus('Connecting...', 'connecting');
+            addMessage('Connecting to ' + wsUrl);
+
+            try {
+                ws = new WebSocket(wsUrl);
+            } catch (e) {
+                addMessage('Failed to create WebSocket: ' + e.message);
+                return;
+            }
+
+            ws.onopen = () => {
+                setStatus('Connected', 'connected');
+                addMessage('Connected!');
+            };
+
+            ws.onmessage = (event) => {
+                addMessage('Received: ' + event.data);
+            };
+
+            ws.onclose = (event) => {
+                setStatus('Disconnected', 'disconnected');
+                addMessage(`Closed: code=${event.code}, reason=${event.reason || 'none'}, wasClean=${event.wasClean}`);
+                ws = null;
+            };
+
+            ws.onerror = (error) => {
+                addMessage('Error occurred (check browser console for details)');
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        // Log origin for debugging
+        addMessage('Page origin: ' + window.location.origin);
+    </script>
+</body>
+</html>
