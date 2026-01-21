@@ -43,3 +43,7 @@ out/
 .venv
 
 .env
+_workflow.md
+_workflow.log
+_state.json
+run_workflow.py

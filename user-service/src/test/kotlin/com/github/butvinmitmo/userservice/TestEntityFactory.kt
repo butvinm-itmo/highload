@@ -1,35 +1,44 @@
 package com.github.butvinmitmo.userservice
 
-import com.github.butvinmitmo.userservice.entity.Role
-import com.github.butvinmitmo.userservice.entity.RoleType
-import com.github.butvinmitmo.userservice.entity.User
+import com.github.butvinmitmo.userservice.domain.model.Role
+import com.github.butvinmitmo.userservice.domain.model.RoleType
+import com.github.butvinmitmo.userservice.domain.model.User
+import com.github.butvinmitmo.userservice.infrastructure.persistence.entity.UserEntity
 import java.time.Instant
 import java.util.UUID
 
 object TestEntityFactory {
-    private val testUserRole = Role(id = RoleType.USER_ID, name = "USER")
-    private val testAdminRole = Role(id = RoleType.ADMIN_ID, name = "ADMIN")
+    val testUserRole = Role(id = RoleType.USER_ID, name = "USER")
+    val testMediumRole = Role(id = RoleType.MEDIUM_ID, name = "MEDIUM")
+    val testAdminRole = Role(id = RoleType.ADMIN_ID, name = "ADMIN")
 
     fun createUser(
-        id: UUID,
+        id: UUID? = UUID.randomUUID(),
         username: String,
         passwordHash: String = "\$2a\$10\$testHashForTestingPurposesOnly",
         role: Role = testUserRole,
-        createdAt: Instant = Instant.now(),
-    ): User {
-        val user = User(username = username, passwordHash = passwordHash, role = role)
-        setPrivateField(user, "id", id)
-        setPrivateField(user, "createdAt", createdAt)
-        return user
-    }
+        createdAt: Instant? = Instant.now(),
+    ): User =
+        User(
+            id = id,
+            username = username,
+            passwordHash = passwordHash,
+            role = role,
+            createdAt = createdAt,
+        )
 
-    private fun setPrivateField(
-        obj: Any,
-        fieldName: String,
-        value: Any,
-    ) {
-        val field = obj::class.java.getDeclaredField(fieldName)
-        field.isAccessible = true
-        field.set(obj, value)
-    }
+    fun createUserEntity(
+        id: UUID? = UUID.randomUUID(),
+        username: String,
+        passwordHash: String = "\$2a\$10\$testHashForTestingPurposesOnly",
+        roleId: UUID = RoleType.USER_ID,
+        createdAt: Instant? = Instant.now(),
+    ): UserEntity =
+        UserEntity(
+            id = id,
+            username = username,
+            passwordHash = passwordHash,
+            roleId = roleId,
+            createdAt = createdAt,
+        )
 }

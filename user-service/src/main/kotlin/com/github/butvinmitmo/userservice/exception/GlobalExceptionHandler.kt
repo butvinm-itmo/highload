@@ -7,20 +7,22 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.FieldError
-import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import org.springframework.web.context.request.WebRequest
+import org.springframework.web.bind.support.WebExchangeBindException
+import org.springframework.web.server.ServerWebExchange
 import java.time.Instant
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-    @ExceptionHandler(MethodArgumentNotValidException::class)
+    private val logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+
+    @ExceptionHandler(WebExchangeBindException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleValidationExceptions(
-        ex: MethodArgumentNotValidException,
-        request: WebRequest,
+        ex: WebExchangeBindException,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ValidationErrorResponse> {
         val errors = mutableMapOf<String, String>()
 
@@ -35,7 +37,7 @@ class GlobalExceptionHandler {
                 error = "VALIDATION_ERROR",
                 message = "Validation failed",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
                 fieldErrors = errors,
             )
 
@@ -46,14 +48,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleNotFoundException(
         ex: NotFoundException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "NOT_FOUND",
                 message = ex.message ?: "Resource not found",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
     }
@@ -62,14 +64,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     fun handleConflictException(
         ex: ConflictException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "CONFLICT",
                 message = ex.message ?: "Conflict occurred",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.CONFLICT)
     }
@@ -78,14 +80,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handleUnauthorizedException(
         ex: UnauthorizedException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "UNAUTHORIZED",
                 message = ex.message ?: "Unauthorized",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.UNAUTHORIZED)
     }
@@ -94,14 +96,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleForbiddenException(
         ex: ForbiddenException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "FORBIDDEN",
                 message = ex.message ?: "Forbidden",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
@@ -110,14 +112,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleAccessDeniedException(
         ex: AccessDeniedException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "FORBIDDEN",
                 message = "Access denied",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.FORBIDDEN)
     }
@@ -126,14 +128,14 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     fun handleServiceUnavailable(
         ex: ServiceUnavailableException,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
         val response =
             ErrorResponse(
                 error = "SERVICE_UNAVAILABLE",
                 message = ex.message ?: "Service temporarily unavailable",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.SERVICE_UNAVAILABLE)
     }
@@ -142,14 +144,15 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleGenericException(
         ex: Exception,
-        request: WebRequest,
+        exchange: ServerWebExchange,
     ): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error on ${exchange.request.path.value()}", ex)
         val response =
             ErrorResponse(
                 error = "INTERNAL_SERVER_ERROR",
                 message = "An unexpected error occurred",
                 timestamp = Instant.now(),
-                path = request.getDescription(false).removePrefix("uri="),
+                path = exchange.request.path.value(),
             )
         return ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR)
     }

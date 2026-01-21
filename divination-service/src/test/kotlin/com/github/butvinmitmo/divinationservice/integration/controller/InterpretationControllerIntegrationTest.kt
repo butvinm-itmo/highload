@@ -4,6 +4,7 @@ import com.github.butvinmitmo.shared.dto.ArcanaTypeDto
 import com.github.butvinmitmo.shared.dto.CardDto
 import com.github.butvinmitmo.shared.dto.CreateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.CreateSpreadRequest
+import com.github.butvinmitmo.shared.dto.FileUploadMetadataDto
 import com.github.butvinmitmo.shared.dto.LayoutTypeDto
 import com.github.butvinmitmo.shared.dto.UpdateInterpretationRequest
 import com.github.butvinmitmo.shared.dto.UserDto
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import reactor.core.publisher.Mono
 import java.time.Instant
 import java.util.UUID
 
@@ -367,5 +369,192 @@ class InterpretationControllerIntegrationTest : BaseControllerIntegrationTest() 
             .exchange()
             .expectStatus()
             .isForbidden
+    }
+
+    @Test
+    fun `addInterpretation with uploadId should create interpretation with attachment`() {
+        val spreadId = createSpread("MEDIUM")
+        val uploadId = UUID.randomUUID()
+        val request = CreateInterpretationRequest(text = "Test interpretation", uploadId = uploadId)
+
+        // Mock file provider for upload verification
+        val fileMetadata =
+            FileUploadMetadataDto(
+                uploadId = uploadId,
+                filePath = "interpretation-attachments/$uploadId/test.jpg",
+                originalFileName = "test.jpg",
+                contentType = "image/jpeg",
+                fileSize = 12345L,
+                completedAt = Instant.now(),
+            )
+        `when`(fileProvider.verifyAndCompleteUpload(uploadId, testUserId)).thenReturn(Mono.just(fileMetadata))
+        `when`(
+            fileProvider.getDownloadUrl(uploadId),
+        ).thenReturn(Mono.just("https://minio.local/test.jpg?signature=xyz"))
+
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "MEDIUM")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isCreated
+            .expectBody()
+            .jsonPath("$.id")
+            .exists()
+    }
+
+    @Test
+    fun `getInterpretation should include attachment with download url`() {
+        val spreadId = createSpread("MEDIUM")
+        val uploadId = UUID.randomUUID()
+        val request = CreateInterpretationRequest(text = "Test interpretation", uploadId = uploadId)
+
+        // Mock file provider for upload verification
+        val fileMetadata =
+            FileUploadMetadataDto(
+                uploadId = uploadId,
+                filePath = "interpretation-attachments/$uploadId/test.jpg",
+                originalFileName = "test.jpg",
+                contentType = "image/jpeg",
+                fileSize = 12345L,
+                completedAt = Instant.now(),
+            )
+        `when`(fileProvider.verifyAndCompleteUpload(uploadId, testUserId)).thenReturn(Mono.just(fileMetadata))
+        `when`(
+            fileProvider.getDownloadUrl(uploadId),
+        ).thenReturn(Mono.just("https://minio.local/test.jpg?signature=xyz"))
+
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "MEDIUM")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .returnResult()
+                .responseBody
+                ?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
+
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.id")
+            .isEqualTo(interpretationId)
+            .jsonPath("$.attachment.originalFileName")
+            .isEqualTo("test.jpg")
+            .jsonPath("$.attachment.contentType")
+            .isEqualTo("image/jpeg")
+            .jsonPath("$.attachment.fileSize")
+            .isEqualTo(12345)
+            .jsonPath("$.attachment.downloadUrl")
+            .isEqualTo("https://minio.local/test.jpg?signature=xyz")
+    }
+
+    @Test
+    fun `addInterpretation without uploadId should create interpretation without attachment`() {
+        val spreadId = createSpread("MEDIUM")
+        val request = CreateInterpretationRequest(text = "Test interpretation without attachment")
+
+        val interpretationId =
+            webTestClient
+                .post()
+                .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+                .header("X-User-Id", testUserId.toString())
+                .header("X-User-Role", "MEDIUM")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus()
+                .isCreated
+                .expectBody()
+                .returnResult()
+                .responseBody
+                ?.let { body ->
+                    objectMapper.readTree(body).get("id").asText()
+                }!!
+
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations/$interpretationId")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.id")
+            .isEqualTo(interpretationId)
+            .jsonPath("$.attachment")
+            .doesNotExist()
+    }
+
+    @Test
+    fun `getSpread should include interpretations with attachments`() {
+        val spreadId = createSpread("MEDIUM")
+        val uploadId = UUID.randomUUID()
+        val request = CreateInterpretationRequest(text = "Test interpretation", uploadId = uploadId)
+
+        // Mock file provider
+        val fileMetadata =
+            FileUploadMetadataDto(
+                uploadId = uploadId,
+                filePath = "interpretation-attachments/$uploadId/test.png",
+                originalFileName = "test.png",
+                contentType = "image/png",
+                fileSize = 54321L,
+                completedAt = Instant.now(),
+            )
+        `when`(fileProvider.verifyAndCompleteUpload(uploadId, testUserId)).thenReturn(Mono.just(fileMetadata))
+        `when`(fileProvider.getDownloadUrl(uploadId)).thenReturn(Mono.just("https://minio.local/test.png?sig=abc"))
+
+        // Mock cards lookup for getSpread (system context)
+        val arcanaType = ArcanaTypeDto(id = UUID.fromString("00000000-0000-0000-0000-000000000010"), name = "MAJOR")
+        val cards =
+            listOf(
+                CardDto(
+                    id = UUID.fromString("00000000-0000-0000-0000-000000000030"),
+                    name = "The Fool",
+                    arcanaType = arcanaType,
+                ),
+            )
+        `when`(tarotServiceClient.getCards(systemUserId, systemRole, 0, 50)).thenReturn(ResponseEntity.ok(cards))
+
+        webTestClient
+            .post()
+            .uri("/api/v0.0.1/spreads/$spreadId/interpretations")
+            .header("X-User-Id", testUserId.toString())
+            .header("X-User-Role", "MEDIUM")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isCreated
+
+        webTestClient
+            .get()
+            .uri("/api/v0.0.1/spreads/$spreadId")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.interpretations[0].attachment.originalFileName")
+            .isEqualTo("test.png")
+            .jsonPath("$.interpretations[0].attachment.contentType")
+            .isEqualTo("image/png")
+            .jsonPath("$.interpretations[0].attachment.downloadUrl")
+            .exists()
     }
 }

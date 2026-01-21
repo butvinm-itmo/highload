@@ -33,6 +33,16 @@ spring:
     user: test_user
     password: test_password
 
+spring.kafka:
+  bootstrap-servers: localhost:9092
+  consumer:
+    group-id: divination-service-test
+    auto-offset-reset: earliest
+
+kafka:
+  topics:
+    users-events: users-events
+
 eureka:
   client:
     enabled: false

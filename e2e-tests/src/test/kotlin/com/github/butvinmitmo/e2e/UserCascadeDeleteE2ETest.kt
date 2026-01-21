@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test
  * Tests for user deletion cascade behavior.
  *
  * Verifies that when a user is deleted, their spreads and interpretations
- * are also deleted via the internal API call to divination-service.
+ * are eventually deleted via Kafka event consumption in divination-service.
+ * Uses polling since cleanup is now asynchronous (eventual consistency).
  */
 class UserCascadeDeleteE2ETest : BaseE2ETest() {
     @Test
@@ -58,8 +59,8 @@ class UserCascadeDeleteE2ETest : BaseE2ETest() {
         val deleteResponse = userClient.deleteUser(currentUserId, currentRole, testUserId)
         assertEquals(204, deleteResponse.statusCode.value())
 
-        // Verify spread is deleted (should return 404)
-        assertThrowsWithStatus(404) {
+        // Verify spread is eventually deleted (async via Kafka)
+        awaitStatus(404) {
             divinationClient.getSpreadById(spreadId)
         }
 
@@ -118,8 +119,8 @@ class UserCascadeDeleteE2ETest : BaseE2ETest() {
         val deleteResponse = userClient.deleteUser(currentUserId, currentRole, userAId)
         assertEquals(204, deleteResponse.statusCode.value())
 
-        // UserA's spread should be deleted
-        assertThrowsWithStatus(404) {
+        // UserA's spread should be eventually deleted (async via Kafka)
+        awaitStatus(404) {
             divinationClient.getSpreadById(spreadAId)
         }
 

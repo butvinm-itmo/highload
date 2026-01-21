@@ -1,8 +1,12 @@
 package com.github.butvinmitmo.divinationservice
 
-import com.github.butvinmitmo.divinationservice.entity.Interpretation
-import com.github.butvinmitmo.divinationservice.entity.Spread
-import com.github.butvinmitmo.divinationservice.entity.SpreadCard
+import com.github.butvinmitmo.divinationservice.domain.model.Interpretation
+import com.github.butvinmitmo.divinationservice.domain.model.InterpretationAttachment
+import com.github.butvinmitmo.divinationservice.domain.model.Spread
+import com.github.butvinmitmo.divinationservice.domain.model.SpreadCard
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.InterpretationEntity
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.SpreadCardEntity
+import com.github.butvinmitmo.divinationservice.infrastructure.persistence.entity.SpreadEntity
 import java.time.Instant
 import java.util.UUID
 
@@ -15,6 +19,21 @@ object TestEntityFactory {
         createdAt: Instant = Instant.now(),
     ): Spread =
         Spread(
+            id = id,
+            question = question,
+            layoutTypeId = layoutTypeId,
+            authorId = authorId,
+            createdAt = createdAt,
+        )
+
+    fun createSpreadEntity(
+        id: UUID? = UUID.randomUUID(),
+        question: String? = "Test question",
+        layoutTypeId: UUID = UUID.randomUUID(),
+        authorId: UUID = UUID.randomUUID(),
+        createdAt: Instant? = Instant.now(),
+    ): SpreadEntity =
+        SpreadEntity(
             id = id,
             question = question,
             layoutTypeId = layoutTypeId,
@@ -37,6 +56,21 @@ object TestEntityFactory {
             isReversed = isReversed,
         )
 
+    fun createSpreadCardEntity(
+        id: UUID? = UUID.randomUUID(),
+        spreadId: UUID,
+        cardId: UUID = UUID.randomUUID(),
+        positionInSpread: Int = 1,
+        isReversed: Boolean = false,
+    ): SpreadCardEntity =
+        SpreadCardEntity(
+            id = id,
+            spreadId = spreadId,
+            cardId = cardId,
+            positionInSpread = positionInSpread,
+            isReversed = isReversed,
+        )
+
     fun createInterpretation(
         id: UUID = UUID.randomUUID(),
         text: String = "Test interpretation",
@@ -49,6 +83,40 @@ object TestEntityFactory {
             text = text,
             authorId = authorId,
             spreadId = spreadId,
+            createdAt = createdAt,
+        )
+
+    fun createInterpretationEntity(
+        id: UUID? = UUID.randomUUID(),
+        text: String = "Test interpretation",
+        authorId: UUID = UUID.randomUUID(),
+        spreadId: UUID,
+        createdAt: Instant? = Instant.now(),
+    ): InterpretationEntity =
+        InterpretationEntity(
+            id = id,
+            text = text,
+            authorId = authorId,
+            spreadId = spreadId,
+            createdAt = createdAt,
+        )
+
+    fun createInterpretationAttachment(
+        id: UUID = UUID.randomUUID(),
+        interpretationId: UUID,
+        fileUploadId: UUID = UUID.randomUUID(),
+        originalFileName: String = "test.jpg",
+        contentType: String = "image/jpeg",
+        fileSize: Long = 12345L,
+        createdAt: Instant = Instant.now(),
+    ): InterpretationAttachment =
+        InterpretationAttachment(
+            id = id,
+            interpretationId = interpretationId,
+            fileUploadId = fileUploadId,
+            originalFileName = originalFileName,
+            contentType = contentType,
+            fileSize = fileSize,
             createdAt = createdAt,
         )
 }

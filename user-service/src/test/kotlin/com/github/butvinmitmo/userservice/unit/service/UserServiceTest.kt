@@ -1,42 +1,34 @@
 package com.github.butvinmitmo.userservice.unit.service
 
-import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
-import com.github.butvinmitmo.shared.client.ServiceUnavailableException
-import com.github.butvinmitmo.shared.dto.CreateUserRequest
-import com.github.butvinmitmo.shared.dto.LoginRequest
-import com.github.butvinmitmo.shared.dto.UpdateUserRequest
 import com.github.butvinmitmo.userservice.TestEntityFactory
-import com.github.butvinmitmo.userservice.entity.Role
-import com.github.butvinmitmo.userservice.entity.RoleType
-import com.github.butvinmitmo.userservice.entity.User
+import com.github.butvinmitmo.userservice.application.interfaces.provider.PasswordEncoder
+import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenProvider
+import com.github.butvinmitmo.userservice.application.interfaces.provider.TokenResult
+import com.github.butvinmitmo.userservice.application.interfaces.publisher.UserEventPublisher
+import com.github.butvinmitmo.userservice.application.interfaces.repository.RoleRepository
+import com.github.butvinmitmo.userservice.application.interfaces.repository.UserRepository
+import com.github.butvinmitmo.userservice.application.service.UserService
+import com.github.butvinmitmo.userservice.domain.model.User
 import com.github.butvinmitmo.userservice.exception.ConflictException
 import com.github.butvinmitmo.userservice.exception.NotFoundException
 import com.github.butvinmitmo.userservice.exception.UnauthorizedException
-import com.github.butvinmitmo.userservice.mapper.UserMapper
-import com.github.butvinmitmo.userservice.repository.RoleRepository
-import com.github.butvinmitmo.userservice.repository.UserRepository
-import com.github.butvinmitmo.userservice.security.JwtUtil
-import com.github.butvinmitmo.userservice.service.RoleService
-import com.github.butvinmitmo.userservice.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
-import org.springframework.http.ResponseEntity
-import org.springframework.security.crypto.password.PasswordEncoder
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import reactor.test.StepVerifier
 import java.time.Instant
-import java.util.Optional
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
@@ -48,170 +40,155 @@ class UserServiceTest {
     private lateinit var roleRepository: RoleRepository
 
     @Mock
-    private lateinit var roleService: RoleService
-
-    @Mock
     private lateinit var passwordEncoder: PasswordEncoder
 
     @Mock
-    private lateinit var jwtUtil: JwtUtil
+    private lateinit var tokenProvider: TokenProvider
 
     @Mock
-    private lateinit var divinationServiceInternalClient: DivinationServiceInternalClient
+    private lateinit var userEventPublisher: UserEventPublisher
 
     private lateinit var userService: UserService
-    private val userMapper = UserMapper()
 
     private val userId = UUID.randomUUID()
     private val createdAt = Instant.now()
-    private val testUserRole = Role(id = RoleType.USER_ID, name = "USER")
+    private val testUserRole = TestEntityFactory.testUserRole
 
     @BeforeEach
     fun setup() {
+        lenient().`when`(userEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+        lenient().`when`(userEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
+        lenient().`when`(userEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
+
         userService =
             UserService(
                 userRepository,
                 roleRepository,
-                roleService,
-                userMapper,
                 passwordEncoder,
-                jwtUtil,
-                divinationServiceInternalClient,
+                tokenProvider,
+                userEventPublisher,
             )
     }
 
     @Test
     fun `createUser should create new user successfully`() {
-        val request = CreateUserRequest(username = "testuser", password = "Test@123")
         val savedUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
-        whenever(userRepository.findByUsername("testuser")).thenReturn(null)
-        whenever(roleService.getRoleByName(null)).thenReturn(testUserRole)
+        whenever(userRepository.findByUsername("testuser")).thenReturn(Mono.empty())
+        whenever(roleRepository.findByName("USER")).thenReturn(Mono.just(testUserRole))
         whenever(passwordEncoder.encode("Test@123")).thenReturn("hashedPassword")
-        whenever(userRepository.save(any())).thenReturn(savedUser)
+        whenever(userRepository.save(any<User>())).thenReturn(Mono.just(savedUser))
 
-        val result = userService.createUser(request)
-
-        assertNotNull(result)
-        assertEquals(userId, result.id)
+        StepVerifier
+            .create(userService.createUser("testuser", "Test@123", null))
+            .assertNext { result ->
+                assertNotNull(result)
+                assertEquals(userId, result)
+            }.verifyComplete()
 
         val userCaptor = argumentCaptor<User>()
         verify(userRepository).save(userCaptor.capture())
         assertEquals("testuser", userCaptor.firstValue.username)
+        verify(userEventPublisher).publishCreated(savedUser)
     }
 
     @Test
     fun `createUser should throw ConflictException when user already exists`() {
-        val request = CreateUserRequest(username = "testuser", password = "Test@123")
         val existingUser = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
-        whenever(userRepository.findByUsername("testuser")).thenReturn(existingUser)
+        whenever(userRepository.findByUsername("testuser")).thenReturn(Mono.just(existingUser))
 
-        val exception =
-            assertThrows<ConflictException> {
-                userService.createUser(request)
-            }
-        assertEquals("User with this username already exists", exception.message)
+        StepVerifier
+            .create(userService.createUser("testuser", "Test@123", null))
+            .expectErrorMatches { it is ConflictException && it.message == "User with this username already exists" }
+            .verify()
 
-        verify(userRepository, never()).save(any())
+        verify(userRepository, never()).save(any<User>())
     }
 
     @Test
     fun `getUser should return user when found`() {
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(userRepository.findById(userId)).thenReturn(Mono.just(user))
 
-        val result = userService.getUser(userId)
-
-        assertNotNull(result)
-        assertEquals(userId, result.id)
-        assertEquals("testuser", result.username)
+        StepVerifier
+            .create(userService.getUser(userId))
+            .assertNext { result ->
+                assertNotNull(result)
+                assertEquals(userId, result.id)
+                assertEquals("testuser", result.username)
+            }.verifyComplete()
     }
 
     @Test
     fun `getUser should throw NotFoundException when user not found`() {
-        whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+        whenever(userRepository.findById(userId)).thenReturn(Mono.empty())
 
-        val exception =
-            assertThrows<NotFoundException> {
-                userService.getUser(userId)
-            }
-        assertEquals("User not found", exception.message)
+        StepVerifier
+            .create(userService.getUser(userId))
+            .expectErrorMatches { it is NotFoundException && it.message == "User not found" }
+            .verify()
     }
 
     @Test
     fun `updateUser should update username when provided`() {
         val existingUser = TestEntityFactory.createUser(id = userId, username = "oldname", createdAt = createdAt)
-        val updateRequest = UpdateUserRequest(username = "newname")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(existingUser))
-        whenever(userRepository.save(any())).thenAnswer { it.arguments[0] as User }
+        whenever(userRepository.findById(userId)).thenReturn(Mono.just(existingUser))
+        whenever(userRepository.save(any<User>())).thenAnswer { Mono.just(it.arguments[0] as User) }
 
-        val result = userService.updateUser(userId, updateRequest)
-
-        assertNotNull(result)
-        assertEquals("newname", result.username)
+        StepVerifier
+            .create(userService.updateUser(userId, "newname", null, null))
+            .assertNext { result ->
+                assertNotNull(result)
+                assertEquals("newname", result.username)
+            }.verifyComplete()
 
         val userCaptor = argumentCaptor<User>()
         verify(userRepository).save(userCaptor.capture())
         assertEquals("newname", userCaptor.firstValue.username)
+        verify(userEventPublisher).publishUpdated(any())
     }
 
     @Test
     fun `updateUser should throw NotFoundException when user not found`() {
-        val updateRequest = UpdateUserRequest(username = "newname")
+        whenever(userRepository.findById(userId)).thenReturn(Mono.empty())
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+        StepVerifier
+            .create(userService.updateUser(userId, "newname", null, null))
+            .expectErrorMatches { it is NotFoundException && it.message == "User not found" }
+            .verify()
 
-        val exception =
-            assertThrows<NotFoundException> {
-                userService.updateUser(userId, updateRequest)
-            }
-        assertEquals("User not found", exception.message)
-
-        verify(userRepository, never()).save(any())
+        verify(userRepository, never()).save(any<User>())
     }
 
     @Test
-    fun `deleteUser should delete user when exists and cleanup succeeds`() {
-        whenever(userRepository.existsById(userId)).thenReturn(true)
-        whenever(divinationServiceInternalClient.deleteUserData(userId)).thenReturn(ResponseEntity.noContent().build())
+    fun `deleteUser should delete user when exists`() {
+        val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
-        userService.deleteUser(userId)
+        whenever(userRepository.findById(userId)).thenReturn(Mono.just(user))
+        whenever(userRepository.deleteById(userId)).thenReturn(Mono.empty())
 
-        verify(divinationServiceInternalClient).deleteUserData(userId)
+        StepVerifier
+            .create(userService.deleteUser(userId))
+            .verifyComplete()
+
         verify(userRepository).deleteById(userId)
+        verify(userEventPublisher).publishDeleted(user)
     }
 
     @Test
     fun `deleteUser should throw NotFoundException when user not found`() {
-        whenever(userRepository.existsById(userId)).thenReturn(false)
+        whenever(userRepository.findById(userId)).thenReturn(Mono.empty())
 
-        val exception =
-            assertThrows<NotFoundException> {
-                userService.deleteUser(userId)
-            }
-        assertEquals("User not found", exception.message)
+        StepVerifier
+            .create(userService.deleteUser(userId))
+            .expectErrorMatches { it is NotFoundException && it.message == "User not found" }
+            .verify()
 
-        verify(divinationServiceInternalClient, never()).deleteUserData(any())
-        verify(userRepository, never()).deleteById(any())
-    }
-
-    @Test
-    fun `deleteUser should throw ServiceUnavailableException when cleanup fails`() {
-        whenever(userRepository.existsById(userId)).thenReturn(true)
-        whenever(divinationServiceInternalClient.deleteUserData(userId))
-            .thenThrow(ServiceUnavailableException("divination-service"))
-
-        val exception =
-            assertThrows<ServiceUnavailableException> {
-                userService.deleteUser(userId)
-            }
-        assertEquals("divination-service", exception.serviceName)
-
-        verify(divinationServiceInternalClient).deleteUserData(userId)
-        verify(userRepository, never()).deleteById(any())
+        verify(userRepository, never()).deleteById(any<UUID>())
+        verify(userEventPublisher, never()).publishDeleted(any())
     }
 
     @Test
@@ -221,82 +198,81 @@ class UserServiceTest {
                 TestEntityFactory.createUser(id = UUID.randomUUID(), username = "user1", createdAt = createdAt),
                 TestEntityFactory.createUser(id = UUID.randomUUID(), username = "user2", createdAt = createdAt),
             )
-        val pageable = PageRequest.of(0, 2)
-        val page = PageImpl(users, pageable, 2)
 
-        whenever(userRepository.findAll(pageable)).thenReturn(page)
+        whenever(userRepository.count()).thenReturn(Mono.just(2L))
+        whenever(userRepository.findAllPaginated(0L, 2)).thenReturn(Flux.fromIterable(users))
 
-        val result = userService.getUsers(0, 2)
-
-        assertNotNull(result)
-        assertEquals(2, result.content.size)
-        assertEquals("user1", result.content[0].username)
-        assertEquals("user2", result.content[1].username)
+        StepVerifier
+            .create(userService.getUsers(0, 2))
+            .assertNext { result ->
+                assertNotNull(result)
+                assertEquals(2, result.content.size)
+                assertEquals("user1", result.content[0].username)
+                assertEquals("user2", result.content[1].username)
+            }.verifyComplete()
     }
 
     @Test
     fun `getUsers should return empty list when no users exist`() {
-        val pageable = PageRequest.of(0, 10)
-        val emptyPage = PageImpl<User>(emptyList(), pageable, 0)
+        whenever(userRepository.count()).thenReturn(Mono.just(0L))
+        whenever(userRepository.findAllPaginated(0L, 10)).thenReturn(Flux.empty())
 
-        whenever(userRepository.findAll(pageable)).thenReturn(emptyPage)
-
-        val result = userService.getUsers(0, 10)
-
-        assertNotNull(result)
-        assertEquals(0, result.content.size)
+        StepVerifier
+            .create(userService.getUsers(0, 10))
+            .assertNext { result ->
+                assertNotNull(result)
+                assertEquals(0, result.content.size)
+            }.verifyComplete()
     }
 
     @Test
     fun `authenticate should return token for valid credentials`() {
-        val request = LoginRequest(username = "testuser", password = "Test@123")
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
         val expiresAt = Instant.now().plusSeconds(86400)
+        val tokenResult = TokenResult("mock-jwt-token", expiresAt)
 
-        whenever(userRepository.findByUsername("testuser")).thenReturn(user)
+        whenever(userRepository.findByUsername("testuser")).thenReturn(Mono.just(user))
         whenever(passwordEncoder.matches("Test@123", user.passwordHash)).thenReturn(true)
-        whenever(jwtUtil.generateToken(user)).thenReturn(Pair("mock-jwt-token", expiresAt))
+        whenever(tokenProvider.generateToken(user)).thenReturn(tokenResult)
 
-        val result = userService.authenticate(request)
+        StepVerifier
+            .create(userService.authenticate("testuser", "Test@123"))
+            .assertNext { result ->
+                assertNotNull(result)
+                assertEquals("mock-jwt-token", result.token)
+                assertEquals(expiresAt, result.expiresAt)
+                assertEquals("testuser", result.username)
+                assertEquals("USER", result.role)
+            }.verifyComplete()
 
-        assertNotNull(result)
-        assertEquals("mock-jwt-token", result.token)
-        assertEquals(expiresAt, result.expiresAt)
-        assertEquals("testuser", result.username)
-        assertEquals("USER", result.role)
-        verify(jwtUtil).generateToken(user)
+        verify(tokenProvider).generateToken(user)
     }
 
     @Test
     fun `authenticate should throw UnauthorizedException for invalid username`() {
-        val request = LoginRequest(username = "nonexistent", password = "Test@123")
+        whenever(userRepository.findByUsername("nonexistent")).thenReturn(Mono.empty())
 
-        whenever(userRepository.findByUsername("nonexistent")).thenReturn(null)
-
-        val exception =
-            assertThrows<UnauthorizedException> {
-                userService.authenticate(request)
-            }
-        assertEquals("Invalid username or password", exception.message)
+        StepVerifier
+            .create(userService.authenticate("nonexistent", "Test@123"))
+            .expectErrorMatches { it is UnauthorizedException && it.message == "Invalid username or password" }
+            .verify()
 
         verify(passwordEncoder, never()).matches(any(), any())
-        verify(jwtUtil, never()).generateToken(any())
+        verify(tokenProvider, never()).generateToken(any())
     }
 
     @Test
     fun `authenticate should throw UnauthorizedException for invalid password`() {
-        val request = LoginRequest(username = "testuser", password = "WrongPassword")
         val user = TestEntityFactory.createUser(id = userId, username = "testuser", createdAt = createdAt)
 
-        whenever(userRepository.findByUsername("testuser")).thenReturn(user)
+        whenever(userRepository.findByUsername("testuser")).thenReturn(Mono.just(user))
         whenever(passwordEncoder.matches("WrongPassword", user.passwordHash)).thenReturn(false)
 
-        val exception =
-            assertThrows<UnauthorizedException> {
-                userService.authenticate(request)
-            }
-        assertEquals("Invalid username or password", exception.message)
+        StepVerifier
+            .create(userService.authenticate("testuser", "WrongPassword"))
+            .expectErrorMatches { it is UnauthorizedException && it.message == "Invalid username or password" }
+            .verify()
 
-        verify(jwtUtil, never()).generateToken(any())
+        verify(tokenProvider, never()).generateToken(any())
     }
 }

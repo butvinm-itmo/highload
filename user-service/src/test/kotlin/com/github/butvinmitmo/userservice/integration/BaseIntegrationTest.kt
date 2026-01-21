@@ -1,7 +1,7 @@
 package com.github.butvinmitmo.userservice.integration
 
-import com.github.butvinmitmo.shared.client.DivinationServiceInternalClient
-import com.github.butvinmitmo.userservice.repository.UserRepository
+import com.github.butvinmitmo.userservice.application.interfaces.publisher.UserEventPublisher
+import com.github.butvinmitmo.userservice.infrastructure.persistence.repository.SpringDataUserRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
@@ -9,12 +9,12 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
+import reactor.core.publisher.Mono
 import java.util.UUID
 
 @SpringBootTest
@@ -22,24 +22,26 @@ import java.util.UUID
 @Testcontainers
 abstract class BaseIntegrationTest {
     @Autowired
-    protected lateinit var userRepository: UserRepository
+    protected lateinit var springDataUserRepository: SpringDataUserRepository
 
     @MockBean
-    protected lateinit var divinationServiceInternalClient: DivinationServiceInternalClient
+    protected lateinit var userEventPublisher: UserEventPublisher
 
     @BeforeEach
     fun setupMocks() {
-        // Default mock behavior: cleanup always succeeds
-        whenever(divinationServiceInternalClient.deleteUserData(any())).thenReturn(ResponseEntity.noContent().build())
+        whenever(userEventPublisher.publishCreated(any())).thenReturn(Mono.empty())
+        whenever(userEventPublisher.publishUpdated(any())).thenReturn(Mono.empty())
+        whenever(userEventPublisher.publishDeleted(any())).thenReturn(Mono.empty())
     }
 
     @AfterEach
     fun cleanupDatabase() {
         val seedUserId = UUID.fromString("00000000-0000-0000-0000-000000000001")
-        userRepository
+        springDataUserRepository
             .findAll()
             .filter { it.id != seedUserId }
-            .forEach { userRepository.delete(it) }
+            .flatMap { springDataUserRepository.delete(it) }
+            .blockLast()
     }
 
     companion object {
@@ -56,10 +58,15 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url") { postgres.jdbcUrl }
-            registry.add("spring.datasource.username") { postgres.username }
-            registry.add("spring.datasource.password") { postgres.password }
-            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
+            registry.add("spring.r2dbc.url") {
+                "r2dbc:postgresql://${postgres.host}:${postgres.getMappedPort(5432)}/${postgres.databaseName}"
+            }
+            registry.add("spring.r2dbc.username") { postgres.username }
+            registry.add("spring.r2dbc.password") { postgres.password }
+            registry.add("spring.flyway.url") { postgres.jdbcUrl }
+            registry.add("spring.flyway.user") { postgres.username }
+            registry.add("spring.flyway.password") { postgres.password }
+            registry.add("spring.flyway.enabled") { "true" }
         }
     }
 }

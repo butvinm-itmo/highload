@@ -1,6 +1,6 @@
 package com.github.butvinmitmo.divinationservice.config
 
-import com.github.butvinmitmo.divinationservice.security.GatewayAuthenticationWebFilter
+import com.github.butvinmitmo.divinationservice.infrastructure.security.GatewayAuthenticationWebFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod

@@ -60,3 +60,11 @@ class DivinationServiceInternalFallbackFactory(
     override fun create(cause: Throwable): DivinationServiceInternalClient =
         factory.create("divination-service", DivinationServiceInternalClient::class.java, cause)
 }
+
+@Component
+class FilesServiceInternalFallbackFactory(
+    private val factory: FeignFallbackFactory,
+) : FallbackFactory<FilesServiceInternalClient> {
+    override fun create(cause: Throwable): FilesServiceInternalClient =
+        factory.create("files-service", FilesServiceInternalClient::class.java, cause)
+}
