@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: files-service
+  cloud:
+    config:
+      enabled: false
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/test_db
+    username: test_user
+    password: test_password
+    pool:
+      initial-size: 5
+      max-size: 20
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_files
+    baseline-on-migrate: true
+    baseline-version: 0
+    url: jdbc:postgresql://localhost:5432/test_db
+    user: test_user
+    password: test_password
+
+eureka:
+  client:
+    enabled: false
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: test-bucket
+
+upload:
+  expiration-minutes: 60
+  max-file-size: 5242880
+  allowed-content-types:
+    - image/jpeg
+    - image/png
+    - image/gif
+    - image/webp
+  cleanup-interval-ms: 300000

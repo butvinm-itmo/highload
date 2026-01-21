@@ -61,7 +61,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers:2.0.2")
     testImplementation("org.testcontainers:testcontainers-postgresql:2.0.2")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.2")
-    testImplementation("org.testcontainers:minio:2.0.2")
+    testImplementation("org.testcontainers:testcontainers-minio:2.0.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
